@@ -1,0 +1,7 @@
+<resources>
+
+  <dimen name="popup_item_height">40dp</dimen>
+
+  <dimen name="layout_title_bar_height">50dp</dimen>
+
+</resources>

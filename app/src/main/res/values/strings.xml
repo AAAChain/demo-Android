@@ -1,0 +1,47 @@
+<resources>
+  <string name="app_name">aaaChain</string>
+
+  <string name="login">登录</string>
+  <string name="send_verification_code">发送验证码</string>
+  <string name="task_hall">任务大厅</string>
+  <string name="my_task">我的任务</string>
+  <string name="my_home">我的</string>
+
+  <string name="myAccount">我的账户</string>
+  <string name="myWallet">我的钱包</string>
+  <string name="setting">设置</string>
+
+
+  <array name="my_task_tab">
+    <item>正在进行</item>
+    <item>审核中</item>
+    <item>审核成功</item>
+    <item>审核失败</item>
+  </array>
+
+
+  <string name="task_hall_title_name">aaa chain 数据收集平台</string>
+
+
+  <string name="string_album">相册</string>
+  <string name="string_take_a_picture">拍照</string>
+  <string name="string_cancel">取消</string>
+
+
+  <string name="account_name">账户名</string>
+  <string name="phone_number">手机号</string>
+  <string name="change_phone_number">更换手机号</string>
+  <string name="commit">提交</string>
+
+  <string name="wallet_address">钱包地址</string>
+  <string name="available_balance">可用余额</string>
+  <string name="transfer_accounts">转账</string>
+  <string name="transfer_amount">转账金额</string>
+  <string name="account_password">账号密码</string>
+  <string name="transaction_history">交易历史</string>
+
+  <string name="user_agreement">用户协议</string>
+  <string name="about_us">关于我们</string>
+
+  <string name="logout">退出登陆</string>
+</resources>

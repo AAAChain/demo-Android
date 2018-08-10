@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    >
+
+  <TextView
+      android:id="@+id/tv_beneficiary_address_label"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginLeft="10dp"
+      android:layout_marginTop="10dp"
+      android:text="收款地址:"
+      app:layout_constraintStart_toStartOf="parent"
+      app:layout_constraintTop_toTopOf="parent"
+      />
+
+  <EditText
+      android:id="@+id/et_beneficiary_address"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginLeft="10dp"
+      android:text="0x123"
+      app:layout_constraintBottom_toBottomOf="@id/tv_beneficiary_address_label"
+      app:layout_constraintStart_toEndOf="@id/tv_beneficiary_address_label"
+      app:layout_constraintTop_toTopOf="@id/tv_beneficiary_address_label"
+      />
+
+  <TextView
+      android:id="@+id/tv_coin_number_label"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="20dp"
+      android:text="数量："
+      app:layout_constraintStart_toStartOf="@id/tv_beneficiary_address_label"
+      app:layout_constraintTop_toBottomOf="@+id/tv_beneficiary_address_label"
+      />
+  <EditText
+      android:id="@+id/et_coin_number"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginLeft="10dp"
+      android:text="100"
+      app:layout_constraintBottom_toBottomOf="@id/tv_coin_number_label"
+      app:layout_constraintStart_toEndOf="@id/tv_coin_number_label"
+      app:layout_constraintTop_toTopOf="@id/tv_coin_number_label"
+      />
+
+  <TextView
+      android:id="@+id/tv_balance_label"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="20dp"
+      android:text="余额:"
+      app:layout_constraintStart_toStartOf="@id/tv_coin_number_label"
+      app:layout_constraintTop_toBottomOf="@id/tv_coin_number_label"
+      />
+  <TextView
+      android:id="@+id/tv_balance"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginLeft="10dp"
+      android:text="100"
+      app:layout_constraintBottom_toBottomOf="@id/tv_balance_label"
+      app:layout_constraintStart_toEndOf="@id/tv_balance_label"
+      app:layout_constraintTop_toTopOf="@id/tv_balance_label"
+      />
+
+  <TextView
+      android:id="@+id/tv_handling_fee_label"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="20dp"
+      android:text="矿工费"
+      app:layout_constraintStart_toStartOf="@id/tv_balance_label"
+      app:layout_constraintTop_toBottomOf="@id/tv_balance_label"
+      />
+  <TextView
+      android:id="@+id/tv_handling_fee"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginLeft="10dp"
+      android:text="538438"
+      app:layout_constraintBottom_toBottomOf="@id/tv_handling_fee_label"
+      app:layout_constraintLeft_toRightOf="@id/tv_handling_fee_label"
+      app:layout_constraintTop_toTopOf="@id/tv_handling_fee_label"
+      />
+
+  <Button
+      android:id="@+id/btn_transfer_accounts"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="20dp"
+      android:text="transfer"
+      app:layout_constraintTop_toBottomOf="@id/tv_handling_fee_label"
+      />
+
+</android.support.constraint.ConstraintLayout>
