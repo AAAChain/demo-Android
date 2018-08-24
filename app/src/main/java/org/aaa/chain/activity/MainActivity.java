@@ -9,7 +9,8 @@ import android.widget.Toast;
 import com.squareup.leakcanary.RefWatcher;
 import java.util.ArrayList;
 import java.util.List;
-import org.aaa.chain.IpfsApplication;
+import org.aaa.chain.ChainApplication;
+import org.aaa.chain.JSInteraction;
 import org.aaa.chain.R;
 import org.aaa.chain.entities.TabItem;
 import org.aaa.chain.permissions.PermissionsManager;
@@ -34,6 +35,7 @@ public class MainActivity extends BaseActivity {
 
         initTab();
         requestPermissions();
+        JSInteraction.getInstance().initWebKit(this);
     }
 
     private void initTab() {
@@ -100,7 +102,7 @@ public class MainActivity extends BaseActivity {
 
     @Override protected void onDestroy() {
         super.onDestroy();
-        RefWatcher refWatcher = IpfsApplication.getRefWatcher(this);
+        RefWatcher refWatcher = ChainApplication.getRefWatcher(this);
         refWatcher.watch(this);
     }
 }

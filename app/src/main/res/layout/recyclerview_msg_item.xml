@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    >
+
+  <ImageView
+      android:id="@+id/iv_company_avatar"
+      android:layout_width="40dp"
+      android:layout_height="40dp"
+      android:layout_margin="10dp"
+      android:src="@mipmap/ic_launcher"
+      app:layout_constraintStart_toStartOf="parent"
+      app:layout_constraintTop_toTopOf="parent"
+      />
+  <TextView
+      android:id="@+id/tv_company_notice"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginLeft="10dp"
+      android:text="新浪科技java职位需要您，请授权您的简历"
+      app:layout_constraintBottom_toBottomOf="@id/iv_company_avatar"
+      app:layout_constraintLeft_toRightOf="@id/iv_company_avatar"
+      app:layout_constraintTop_toTopOf="@id/iv_company_avatar"
+      />
+  <TextView
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginRight="20dp"
+      android:text="15:50"
+      app:layout_constraintEnd_toEndOf="parent"
+      app:layout_constraintTop_toTopOf="@id/iv_company_avatar"
+      />
+</android.support.constraint.ConstraintLayout>

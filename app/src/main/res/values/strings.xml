@@ -2,10 +2,9 @@
   <string name="app_name">aaaChain</string>
 
   <string name="login">登录</string>
-  <string name="send_verification_code">发送验证码</string>
-  <string name="task_hall">任务大厅</string>
-  <string name="my_task">我的任务</string>
-  <string name="my_home">我的</string>
+  <string name="task_hall">简历上传</string>
+  <string name="my_task">查询与交易</string>
+  <string name="my_home">个人中心</string>
 
   <string name="myAccount">我的账户</string>
   <string name="myWallet">我的钱包</string>
@@ -13,10 +12,8 @@
 
 
   <array name="my_task_tab">
-    <item>正在进行</item>
-    <item>审核中</item>
-    <item>审核成功</item>
-    <item>审核失败</item>
+    <item>查询</item>
+    <item>通知</item>
   </array>
 
 

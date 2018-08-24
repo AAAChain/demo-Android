@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="50dp"
     android:background="@color/view_title_bar_bg"
     >
   <TextView
@@ -10,7 +11,7 @@
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
       android:text="返回"
-      android:textColor="#0076FF"
+      android:textColor="@color/white_color"
       app:layout_constraintBottom_toBottomOf="parent"
       app:layout_constraintEnd_toStartOf="@+id/tv_title_bar_title"
       app:layout_constraintHorizontal_bias="0.097"
@@ -21,10 +22,24 @@
       android:id="@+id/tv_title_bar_title"
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
+      android:textColor="@color/white_color"
       android:textSize="18sp"
       app:layout_constraintBottom_toBottomOf="@+id/tv_title_bar_back"
       app:layout_constraintEnd_toEndOf="parent"
       app:layout_constraintStart_toStartOf="parent"
       app:layout_constraintTop_toTopOf="@+id/tv_title_bar_back"
+      />
+
+  <TextView
+      android:id="@+id/tv_title_bar_done"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginRight="10dp"
+      android:text="完成"
+      android:textColor="@color/white_color"
+      android:visibility="gone"
+      app:layout_constraintBottom_toBottomOf="parent"
+      app:layout_constraintRight_toRightOf="parent"
+      app:layout_constraintTop_toTopOf="parent"
       />
 </android.support.constraint.ConstraintLayout>

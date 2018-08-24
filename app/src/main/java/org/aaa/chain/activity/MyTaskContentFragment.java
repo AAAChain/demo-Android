@@ -1,14 +1,13 @@
 package org.aaa.chain.activity;
 
+import android.content.Intent;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
-import android.widget.TextView;
 import com.squareup.leakcanary.RefWatcher;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-import org.aaa.chain.IpfsApplication;
+import org.aaa.chain.ChainApplication;
 import org.aaa.chain.R;
 import org.aaa.chain.adapter.BaseRecyclerViewAdapter;
 import org.aaa.chain.adapter.BaseViewHolder;
@@ -41,16 +40,22 @@ public class MyTaskContentFragment extends BaseFragment {
         BaseRecyclerViewAdapter adapter =
                 new RecyclerViewAdapter<>(getActivity(), dataEntities, R.layout.recyclerview_item, new BindViewHolderInterface<DataEntity>() {
                     @Override public void bindViewHolder(BaseViewHolder holder, DataEntity dataEntity) {
-                        ((TextView) holder.getView(R.id.tv_item_description)).setText(dataEntity.getDescription());
-                        ((TextView) holder.getView(R.id.tv_item_title)).setText(dataEntity.getTitle());
-                        holder.getView(R.id.btn_item_entry).setOnClickListener(new View.OnClickListener() {
+                        holder.getItemView().setOnClickListener(new View.OnClickListener() {
                             @Override public void onClick(View v) {
-                                ((BaseActivity) Objects.requireNonNull(getActivity())).startActivity(ProjectDetailActivity.class, null);
+                                startActivity(new Intent(getActivity(),ResumeDetailsActivity.class).putExtra("type",0));
                             }
                         });
+                        //((TextView) holder.getView(R.id.tv_item_description)).setText(dataEntity.getDescription());
+                        //((TextView) holder.getView(R.id.tv_item_title)).setText(dataEntity.getTitle());
+                        //holder.getView(R.id.btn_item_entry).setOnClickListener(new View.OnClickListener() {
+                        //    @Override public void onClick(View v) {
+                        //        ((BaseActivity) Objects.requireNonNull(getActivity())).startActivity(CreateSmallResumeActivity.class, null);
+                        //    }
+                        //});
                     }
                 });
         recyclerView.setAdapter(adapter);
+
     }
 
     @Override public void onClick(View v) {
@@ -63,7 +68,7 @@ public class MyTaskContentFragment extends BaseFragment {
 
     @Override public void onDestroy() {
         super.onDestroy();
-        RefWatcher refWatcher = IpfsApplication.getRefWatcher(getActivity());
+        RefWatcher refWatcher = ChainApplication.getRefWatcher(getActivity());
         refWatcher.watch(this);
     }
 }

@@ -1,84 +1,91 @@
 <?xml version="1.0" encoding="utf-8"?>
 <android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="15dp"
     >
 
   <TextView
-      android:id="@+id/textView"
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
-      android:text="手机号登陆"
+      android:text="链聘"
+      android:textColor="@color/color_1FCA23"
+      android:textSize="25sp"
+      app:layout_constraintBottom_toTopOf="@+id/textView"
+      app:layout_constraintEnd_toEndOf="parent"
       app:layout_constraintStart_toStartOf="parent"
       app:layout_constraintTop_toTopOf="parent"
       />
+
   <TextView
-      android:id="@+id/textView2"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="20dp"
-      android:text="（未注册将自动创建账户）"
-      app:layout_constraintStart_toStartOf="@+id/textView"
-      app:layout_constraintTop_toBottomOf="@+id/textView"
-      />
-  <EditText
-      android:id="@+id/et_verification_code"
-      android:layout_width="0dp"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="10dp"
-      android:hint="输入验证码"
-      android:inputType="number"
-      app:layout_constraintEnd_toStartOf="@+id/btn_send_code"
-      app:layout_constraintHorizontal_weight="2"
+      android:id="@+id/textView"
+      android:layout_width="331dp"
+      android:layout_height="0dp"
+      android:layout_marginBottom="50dp"
+      android:layout_marginEnd="16dp"
+      android:layout_marginStart="16dp"
+      android:text="基于AAAChain公链的去中心化的区块链招聘平台
+隐私信息加密上链，求职者拥有简历的绝对资产权；
+招聘方直接对接求职者，简历下载token费用归求职者"
+
+      android:textSize="18sp"
+      app:layout_constraintBottom_toTopOf="@id/layout"
+      app:layout_constraintEnd_toEndOf="parent"
       app:layout_constraintStart_toStartOf="parent"
-      app:layout_constraintTop_toBottomOf="@+id/et_phone_num"
       />
-  <EditText
-      android:id="@+id/et_phone_num"
+
+
+  <LinearLayout
+      android:id="@+id/layout"
       android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="20dp"
-      android:hint="输入手机号"
-      android:inputType="phone"
-      app:layout_constraintEnd_toEndOf="parent"
-      app:layout_constraintStart_toStartOf="parent"
-      app:layout_constraintTop_toBottomOf="@+id/textView2"
-      />
-  <Button
-      android:id="@+id/btn_send_code"
-      android:layout_width="0dp"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="10dp"
-      android:text="@string/send_verification_code"
-      app:layout_constraintEnd_toEndOf="@+id/et_phone_num"
-      app:layout_constraintHorizontal_weight="1"
-      app:layout_constraintStart_toEndOf="@+id/et_verification_code"
-      app:layout_constraintTop_toBottomOf="@+id/et_phone_num"
-      />
-  <TextView
-      android:id="@+id/tv_protocol"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:layout_marginEnd="8dp"
-      android:layout_marginStart="8dp"
-      android:layout_marginTop="16dp"
-      android:text="点击登录表示您同意用户协议"
-      app:layout_constraintEnd_toEndOf="parent"
-      app:layout_constraintStart_toStartOf="parent"
-      app:layout_constraintTop_toBottomOf="@+id/btn_send_code"
-      />
-  <Button
-      android:id="@+id/btn_login"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:layout_marginEnd="8dp"
-      android:layout_marginStart="8dp"
-      android:layout_marginTop="16dp"
-      android:text="@string/login"
-      app:layout_constraintEnd_toEndOf="parent"
-      app:layout_constraintStart_toStartOf="parent"
-      app:layout_constraintTop_toBottomOf="@+id/tv_protocol"
-      />
+      android:layout_height="45dp"
+      android:layout_marginLeft="10dp"
+      android:layout_marginRight="10dp"
+      android:background="@drawable/shape_white_bg"
+      android:focusable="true"
+      android:focusableInTouchMode="true"
+      android:gravity="center_vertical"
+      android:orientation="horizontal"
+      app:layout_constraintBottom_toBottomOf="parent"
+      app:layout_constraintTop_toTopOf="parent"
+      >
+
+    <TextView
+        android:id="@+id/tv_key"
+        android:layout_width="70dp"
+        android:layout_height="match_parent"
+        android:drawableRight="@mipmap/ic_arrow_down"
+        android:gravity="center_vertical"
+        android:paddingLeft="15dp"
+        android:paddingRight="5dp"
+        android:text="key1"
+        android:textColor="@color/color_333333"
+        />
+
+
+    <EditText
+        android:id="@+id/et_key"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:background="@null"
+        android:hint="请输入秘钥"
+        android:inputType="text"
+        android:lines="1"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp"
+        android:textColor="@color/color_333333"
+        android:textColorHint="@color/color_999999"
+        android:textSize="15sp"
+        />
+
+    <Button
+        android:id="@+id/btn_login"
+        android:layout_width="30dp"
+        android:layout_height="20dp"
+        android:layout_marginRight="15dp"
+        android:background="@mipmap/ic_arrow_right"
+        />
+  </LinearLayout>
 </android.support.constraint.ConstraintLayout>

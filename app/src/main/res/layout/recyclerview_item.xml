@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -8,50 +8,90 @@
 
   <android.support.v7.widget.CardView
       android:id="@+id/cardView"
-      android:layout_width="0dp"
+      android:layout_width="match_parent"
       android:layout_height="wrap_content"
+      android:layout_margin="5dp"
+      android:elevation="5dp"
       app:layout_constraintEnd_toEndOf="parent"
       app:layout_constraintStart_toStartOf="parent"
       app:layout_constraintTop_toTopOf="parent"
-      android:layout_margin="5dp"
-      android:elevation="5dp"
       >
 
 
-    <LinearLayout
+    <android.support.constraint.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
         android:layout_margin="10dp"
+        android:orientation="horizontal"
         >
-      <TextView
-          android:id="@+id/tv_item_description"
-          android:layout_width="0dp"
-          android:layout_height="wrap_content"
-          android:layout_gravity="center_vertical"
-          android:layout_weight="2"
-          android:text="adfadfafda"
+
+      <ImageView
+          android:id="@+id/iv_applicant_avatar"
+          android:layout_width="40dp"
+          android:layout_height="40dp"
+          android:src="@mipmap/ic_launcher"
           />
-      <LinearLayout
-          android:layout_width="0dp"
+      <TextView
+          android:id="@+id/tv_applicant_name"
+          android:layout_width="wrap_content"
           android:layout_height="wrap_content"
-          android:layout_weight="1"
-          android:gravity="center_horizontal"
-          android:orientation="vertical"
-          >
-        <TextView
-            android:id="@+id/tv_item_title"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="adfafafalfsdfsdfsdsdfdsfjlaaff"
-            />
-        <Button
-            android:id="@+id/btn_item_entry"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="马上进入"
-            />
-      </LinearLayout>
-    </LinearLayout>
+          android:layout_marginLeft="10dp"
+          android:text="test"
+          app:layout_constraintLeft_toRightOf="@id/iv_applicant_avatar"
+          />
+      <TextView
+          android:id="@+id/tv_applicant_work_hours"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_marginLeft="10dp"
+          android:text="5年"
+          app:layout_constraintLeft_toRightOf="@id/tv_applicant_name"
+          />
+      <TextView
+          android:id="@+id/tv_applicant_education"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_marginLeft="5dp"
+          android:text="本科"
+          app:layout_constraintLeft_toRightOf="@id/tv_applicant_work_hours"
+          />
+      <TextView
+          android:id="@+id/tv_applicant_salary"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_marginLeft="5dp"
+          android:text="14K"
+          app:layout_constraintLeft_toRightOf="@id/tv_applicant_education"
+          />
+      <TextView
+          android:id="@+id/tv_applicant_company"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="雷尚科技"
+          app:layout_constraintTop_toBottomOf="@id/tv_applicant_name"
+          app:layout_constraintLeft_toRightOf="@id/iv_applicant_avatar"
+          android:layout_marginLeft="10dp"
+          android:layout_marginTop="5dp"
+          />
+      <TextView
+          android:id="@+id/tv_applicant_position"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="游戏ui设计"
+          app:layout_constraintTop_toBottomOf="@id/tv_applicant_name"
+          app:layout_constraintLeft_toRightOf="@id/tv_applicant_company"
+          android:layout_marginLeft="5dp"
+          android:layout_marginTop="5dp"
+          />
+      <TextView
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:ellipsize="end"
+          android:maxLines="2"
+          app:layout_constraintTop_toBottomOf="@id/iv_applicant_avatar"
+          android:layout_marginTop="5dp"
+          android:text="4年ui设计经验，擅长欧美风，日韩风 熟悉界面操作规范。学习能力和色彩感觉好。"
+          />
+    </android.support.constraint.ConstraintLayout>
   </android.support.v7.widget.CardView>
-</android.support.constraint.ConstraintLayout>
+</LinearLayout>

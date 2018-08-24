@@ -1,39 +1,53 @@
 package org.aaa.chain.activity;
 
-import android.annotation.TargetApi;
-import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.os.Environment;
-import android.support.annotation.NonNull;
-import android.util.Log;
+import android.text.TextUtils;
+import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ListPopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 import com.squareup.leakcanary.RefWatcher;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import org.aaa.chain.AAAWalletUtils;
-import org.aaa.chain.IpfsApplication;
+import org.aaa.chain.ChainApplication;
 import org.aaa.chain.R;
-import org.aaa.chain.common.ListenerCallback;
-import org.aaa.chain.common.LoginManager;
-import org.aaa.chain.permissions.PermissionsManager;
-import org.aaa.chain.permissions.PermissionsResultAction;
-import org.aaa.chain.utils.ImageUtils;
-import org.aaa.chain.views.CommonPopupWindow;
-import org.web3j.crypto.CipherException;
 
-public class LoginActivity extends BaseActivity implements ListenerCallback {
+public class LoginActivity extends BaseActivity {
 
-    private EditText etPhoneNum;
-    private EditText etVerificationCode;
+    private TextView tvKey;
+    private EditText etKey;
+    private Button btnLogin;
+    private ListPopupWindow listPopupWindow;
+
+    /**
+     * aaauser1
+     *
+     * Owner key:
+     * Private key: 5Jtsaf2tyLGBTJER4bCBV5pvKiAE4v3v3G4agfQ91DkfLHRSLzX
+     * Public key: EOS5odhW8Tw51UetwxnjVMRKv6Eq4SPn6UqidCt57HYN5KjymsA2v
+     *
+     * Active Key
+     * Private key: 5JobQnxtEvshVRZW6berfYvzaUMZq2A8Ax5eZhuZqdTCqT19iLV
+     * Public key: EOS5YQkZpsD8xzmguAGL88r2b4RBXxKbV3QGjS8Vg1maBzd8Df9zX
+     *
+     * ################################################################################
+     * aaauser2
+     *
+     * Owner key:
+     * Private key: 5KejiFM4Qq1kshgtShE5n9bVLf63AmVhkReMYjhJPChcoKAog1c
+     * Public key: EOS7gqLCvRQFxLfbT2LMbzQQwAngToB3YApob74zgsZ7VN7vUBUtX
+     *
+     * Active Key
+     * Private key: 5J4a77MxGSDnASAZHAV7gThSeoenvLB4nb8wFPkepXoiLyesuf5
+     * Public key: EOS5SW9SkzUuTwhbJMsFDRge7cgKoTABiQ6ac3DrDux2UjjpKbm1h
+     **/
+
+    private String[] keysName = { "key1", "key2" };
+    private String[] keys = { "5Jtsaf2tyLGBTJER4bCBV5pvKiAE4v3v3G4agfQ91DkfLHRSLzX", "5KejiFM4Qq1kshgtShE5n9bVLf63AmVhkReMYjhJPChcoKAog1c" };
 
     @Override public int initLayout() {
         return R.layout.activity_login;
@@ -41,71 +55,51 @@ public class LoginActivity extends BaseActivity implements ListenerCallback {
 
     @Override public void getViewById() {
 
-        etPhoneNum = $(R.id.et_phone_num);
-        etVerificationCode = $(R.id.et_verification_code);
-        Button btnSendCode = $(R.id.btn_send_code);
-        Button btnLogin = $(R.id.btn_login);
+        tvKey = $(R.id.tv_key);
+        etKey = $(R.id.et_key);
+        btnLogin = $(R.id.btn_login);
 
-
-        btnSendCode.setOnClickListener(this);
+        tvKey.setOnClickListener(this);
         btnLogin.setOnClickListener(this);
-
+        listPopupWindow = new ListPopupWindow(this);
+        ArrayAdapter adapter = new ArrayAdapter(this, R.layout.listpopupwindow_item, keysName);
+        listPopupWindow.setAdapter(adapter);
+        listPopupWindow.setWidth(LinearLayout.LayoutParams.WRAP_CONTENT);
+        listPopupWindow.setHeight(LinearLayout.LayoutParams.WRAP_CONTENT);
+        listPopupWindow.setModal(true);
+        listPopupWindow.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                tvKey.setText(keysName[position]);
+                etKey.setText(keys[position]);
+                listPopupWindow.dismiss();
+            }
+        });
     }
 
     @Override public void onClick(View v) {
-
         switch (v.getId()) {
-            case R.id.btn_send_code:
-                //new CommonPopupWindow(LoginActivity.this).pupupWindowOnBottom();
+            case R.id.tv_key:
+                listPopupWindow.setAnchorView(tvKey);
+                listPopupWindow.setWidth(ViewGroup.LayoutParams.WRAP_CONTENT);
+                listPopupWindow.setHeight(ViewGroup.LayoutParams.WRAP_CONTENT);
+                listPopupWindow.setModal(true);
+                listPopupWindow.setDropDownGravity(Gravity.START | Gravity.BOTTOM);
+                listPopupWindow.show();
                 break;
 
             case R.id.btn_login:
-                new LoginManager().doLogin(etPhoneNum.getText().toString(), etVerificationCode.getText().toString(), this);
+                if (!TextUtils.isEmpty(etKey.getText())) {
+                    startActivity(MainActivity.class, null);
+                } else {
+                    Toast.makeText(LoginActivity.this, "请输入秘钥", Toast.LENGTH_SHORT).show();
+                }
                 break;
         }
     }
 
-    @Override public void onCallBackError(String msg, int code) {
-
-        showToast(this, msg);
-        startActivity(MainActivity.class, null);
-        //startActivity(JSActivity.class, null);
-        //finish();
-    }
-
-    @Override public void onCallBackSuccess() {
-        showToast(this, "successful");
-        //startActivity(MainActivity.class, null);
-        startActivity(JSActivity.class, null);
-    }
-
-    @Override public void showProgress() {
-
-    }
-
-    @Override public void hideProgress() {
-
-    }
-
-    //@Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-    //    super.onActivityResult(requestCode, resultCode, data);
-    //    if (ImageUtils.ALBUM_REQUEST_CODE == requestCode && data != null) {
-    //        ImageUtils.getInstance().handleImage(LoginActivity.this, data);
-    //    } else if (ImageUtils.TAKE_PHOTO_REQUEST_CODE == requestCode) {
-    //        ImageUtils.getInstance().handleImage(LoginActivity.this, null);
-    //    } else if (ImageUtils.CROP_IMAGE_REQUEST_CODE == requestCode && data != null) {
-    //        Bitmap bit;
-    //        try {
-    //            bit = BitmapFactory.decodeStream(getContentResolver().openInputStream(data.getData()));
-    //        } catch (FileNotFoundException e) {
-    //            e.printStackTrace();
-    //        }
-    //    }
-    //}
-
     @Override protected void onDestroy() {
         super.onDestroy();
-        RefWatcher refWatcher = IpfsApplication.getRefWatcher(this);
+        RefWatcher refWatcher = ChainApplication.getRefWatcher(this);
         refWatcher.watch(this);
     }
 }

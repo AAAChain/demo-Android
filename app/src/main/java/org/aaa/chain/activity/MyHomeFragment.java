@@ -4,7 +4,7 @@ import android.os.Bundle;
 import android.view.View;
 import com.squareup.leakcanary.RefWatcher;
 import java.util.Objects;
-import org.aaa.chain.IpfsApplication;
+import org.aaa.chain.ChainApplication;
 import org.aaa.chain.R;
 
 public class MyHomeFragment extends BaseFragment {
@@ -45,7 +45,7 @@ public class MyHomeFragment extends BaseFragment {
 
     @Override public void onDestroy() {
         super.onDestroy();
-        RefWatcher refWatcher = IpfsApplication.getRefWatcher(getActivity());
+        RefWatcher refWatcher = ChainApplication.getRefWatcher(getActivity());
         refWatcher.watch(this);
     }
 }
