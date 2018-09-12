@@ -1,5 +1,9 @@
 <resources>
-  <string name="app_name">aaaChain</string>
+  <string name="app_name">链聘</string>
+  <string name="app_main_name">链聘</string>
+  <string name="app_introduction">基于AAAChain公链的去中心化的区块链招聘平台
+隐私信息加密上链，求职者拥有简历的绝对资产权；
+招聘方直接对接求职者，简历下载token费用归求职者</string>
 
   <string name="login">登录</string>
   <string name="task_hall">简历上传</string>
@@ -17,7 +21,76 @@
   </array>
 
 
-  <string name="task_hall_title_name">aaa chain 数据收集平台</string>
+  <string name="company_name">公司名称</string>
+  <string name="recent_work_experience">最近一份工作</string>
+  <string name="position_type">职位类型</string>
+  <string name="skill_label">技能标签</string>
+  <string name="last_job">工作内容</string>
+  <string name="next">下一步</string>
+  <string name="last_job_details">1.主要负责新员工入职培训 2.分析制定员工每月个人销售业绩 3.帮助员工提高每日客单价，整体店面管理等工作。</string>
+
+  <string name="loading_more">正在加载更多</string>
+  <string name="no_more">没有更多数据</string>
+
+
+  <string name="create_a_resume">创建微简历</string>
+  <string name="buy_a_resume">购买完整简历(%s) AAA</string>
+  <string name="order_generation">订单生成中...</string>
+  <string name="already_ordered">已下单</string>
+  <string name="resume_authorization">简历授权</string>
+  <string name="waiting_transaction_done">下单成功，等待交易完成</string>
+  <string name="order_failure">下单失败</string>
+  <string name="input_secret_key">请输入秘钥</string>
+  <string name="waiting_seller_authorization">等待对方授权</string>
+  <string name="waiting_buyer_authorization">等待授权</string>
+  <string name="order_authorization">订单正在授权中...</string>
+  <string name="waiting_receive">等待接收</string>
+  <string name="download_failure">下载失败</string>
+  <string name="authorization_failure">授权失败</string>
+  <string name="authorization_successful">授权成功</string>
+  <string name="resume_received">已接收</string>
+  <string name="transaction_done">交易完成</string>
+  <string name="get_resource_failure">获取失败</string>
+  <string name="upload_successful">上传成功</string>
+  <string name="setting_price">设置简历价格</string>
+  <string name="upload_secret_resume">完整简历加密上传</string>
+  <string name="upload_resume">完整简历上传</string>
+  <string name="done">完成</string>
+  <string name="upload_resume_format">附件格式应为doc,docx,pdf,jpg,png,大小不超过10M</string>
+  <string name="upload_resume_introduction">请在简历里面包含姓名、电话等联系信息
+这个文件我们将用您的公钥加密存贮，只有您授权，别人才能下载和使用。
+您可以收取授权费用，费用AAA结算。</string>
+  <string name="applicant_work_experience">4年ui设计经验，擅长欧美风，日韩风 熟悉界面操作规范。学习能力和色彩感觉好。</string>
+  <string name="applicant_work_position">游戏ui设计</string>
+  <string name="applicant_work_company">雷尚科技</string>
+  <string name="applicant_education">本科</string>
+  <string name="back">返回</string>
+  <string name="input_phone_number">输入手机号</string>
+  <string name="send_verification_code">发送验证码</string>
+  <string name="input_verification_code">输入验证码</string>
+  <string name="resume_info_description">只需要基本的描述信息，用于查询和预览；
+姓名、电话、邮箱等隐私信息请放在简历附件中提交，采用非对称加密方式存贮</string>
+  <string name="sex">性别</string>
+  <string name="male">男</string>
+  <string name="female">女</string>
+  <string name="workours">参加工作时间</string>
+  <string name="choose">请选择</string>
+  <string name="birthday">出生年月</string>
+  <string name="active">刚刚活跃</string>
+  <string name="on_the_job">在职-考虑机会</string>
+  <string name="position_and_company">游戏设计 雷尚科技</string>
+
+
+
+  <string name="java_engineer">java 高级工程师</string>
+  <string name="applicant_name">刘钢锋</string>
+  <string name="interviewer_info">北京软交所 招聘者</string>
+  <string name="position_detail">职位详情</string>
+  <string name="position_introduction">岗位介绍</string>
+  <string name="applicant_base_info">北京 中关村 2--5年 本科</string>
+  <string name="work_experience">工作经历</string>
+  <string name="work_range">017.03-至今</string>
+  <string name="job_expectation">求职期望</string>
 
 
   <string name="string_album">相册</string>

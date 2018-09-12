@@ -10,6 +10,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.List;
+import org.aaa.chain.R;
 
 public abstract class BaseRecyclerViewAdapter<T> extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
@@ -17,8 +18,8 @@ public abstract class BaseRecyclerViewAdapter<T> extends RecyclerView.Adapter<Re
     private List<T> dataEntityList;
     private int normalType = 1;
     private int footType = 2;
-    private boolean hasMore = true;   //是否有更多数据
-    private boolean fadeTips = false; //是否隐藏了底部的提示
+    private boolean hasMore = false;   //have more data or not
+    private boolean fadeTips = false; //have hide bottom prompt or not
     private int layoutId;
 
     BaseRecyclerViewAdapter(Context context, List<T> dataEntities, int layoutId) {
@@ -51,11 +52,11 @@ public abstract class BaseRecyclerViewAdapter<T> extends RecyclerView.Adapter<Re
             if (hasMore) {
                 fadeTips = false;
                 if (dataEntityList.size() > 0) {
-                    ((FootViewHolder) holder).tvLoadMore.setText("正在加载更多...");
+                    ((FootViewHolder) holder).tvLoadMore.setText(context.getResources().getString(R.string.loading_more));
                 }
             } else {
                 if (dataEntityList.size() > 0) {
-                    ((FootViewHolder) holder).tvLoadMore.setText("没有更多数据了");
+                    ((FootViewHolder) holder).tvLoadMore.setText(context.getResources().getString(R.string.no_more));
 
                     new Handler().postDelayed(new Runnable() {
                         @Override public void run() {

@@ -11,8 +11,9 @@ import com.squareup.leakcanary.RefWatcher;
 import java.util.Objects;
 import org.aaa.chain.ChainApplication;
 import org.aaa.chain.R;
-import org.aaa.chain.entities.PersonalEntity;
 import org.aaa.chain.utils.CommonUtils;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import static android.app.Activity.RESULT_OK;
 
@@ -30,15 +31,13 @@ public class TaskHallFragment extends BaseFragment {
     private TextView tvDate;
     private TextView tvBirthday;
     private TextView tvCompany;
-    private PersonalEntity personalEntity;
+    private JSONObject object = new JSONObject();
 
     @Override public int initLayout() {
         return R.layout.fragment_task_hall;
     }
 
     @Override public void getViewById() {
-
-        ((BaseActivity) Objects.requireNonNull(getActivity())).setTitleName("个人信息");
 
         rgSex = $(R.id.rg_sex);
         rbFemale = $(R.id.rb_female);
@@ -47,19 +46,25 @@ public class TaskHallFragment extends BaseFragment {
         tvBirthday = $(R.id.tv_birthday_show);
         tvCompany = $(R.id.tv_company);
 
-        personalEntity = new PersonalEntity();
-
         rbMale.setChecked(true);
 
         rgSex.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
             @Override public void onCheckedChanged(RadioGroup group, int checkedId) {
                 switch (checkedId) {
                     case R.id.rb_female:
-                        personalEntity.setSex(1);
+                        try {
+                            object.put("sex", "female");
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
                         break;
 
                     case R.id.rb_male:
-                        personalEntity.setSex(0);
+                        try {
+                            object.put("sex", "male");
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
 
                         break;
                 }
@@ -86,7 +91,7 @@ public class TaskHallFragment extends BaseFragment {
                 CommonUtils.getInstance().initDate(getActivity(), tvBirthday);
                 break;
             case R.id.rl_company:
-                startActivityForResult(new Intent(getActivity(), UpdateInfoActivity.class).putExtra("title", "公司名称"), 1000);
+                startActivityForResult(new Intent(getActivity(), UpdateInfoActivity.class).putExtra("title", getResources().getString(R.string.company_name)), 1000);
                 break;
 
             case R.id.btn_next:
@@ -102,10 +107,15 @@ public class TaskHallFragment extends BaseFragment {
                 //    Toast.makeText(getActivity(), "请设置公司名称", Toast.LENGTH_SHORT).show();
                 //    return;
                 //}
-                personalEntity.setWorkHours(tvDate.getText().toString());
-                personalEntity.setBirthday(tvBirthday.getText().toString());
-                personalEntity.setCompany(tvCompany.getText().toString());
-                startActivity(new Intent(getActivity(), CreateSmallResumeActivity.class).putExtra("personal", personalEntity));
+
+                try {
+                    object.put("workours", tvDate.getText().toString());
+                    object.put("birthday", tvBirthday.getText().toString());
+                    object.put("company", tvCompany.getText().toString());
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+                startActivity(new Intent(getActivity(), CreateSmallResumeActivity.class).putExtra("personalinfo", object.toString()));
                 break;
         }
     }

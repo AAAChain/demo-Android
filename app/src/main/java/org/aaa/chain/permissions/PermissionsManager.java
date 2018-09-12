@@ -318,7 +318,7 @@ public class PermissionsManager {
   }
 
   /**
-   * When request permissions on devices before Android M (Android 6.0, API Level 23)
+   * When request permissions on devices before Android M (Android 6.0, HttpUtils Level 23)
    * Do the granted or denied work directly according to the permission status
    *
    * @param activity    the activity to check permissions

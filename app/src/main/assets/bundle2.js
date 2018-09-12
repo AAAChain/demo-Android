@@ -1,30 +1,90 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 var Eos = require('eosjs');
+var ecc = require('eosjs-ecc')
 
 config = {
-  // chainId: 'cf057bbfb72640471fd910bcb67639c22df9f92470936cddc1ade0e2f2e7dc4f', // 32 byte (64 char) hex string
-  // keyProvider: ['5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3'], // WIF string or array of keys..
-  // httpEndpoint: 'http://47.98.107.96:8888',
+  keyProvider: ['5JobQnxtEvshVRZW6berfYvzaUMZq2A8Ax5eZhuZqdTCqT19iLV','5J4a77MxGSDnASAZHAV7gThSeoenvLB4nb8wFPkepXoiLyesuf5'], // WIF string or array of keys..
   chainId: '038f4b0fc8ff18a4f0842a8f0564611f6e96e8535901dd45e43ac8691a1c4dca',
-  // keyProvider: ['5JohomNquqUiX6Ue6qqXevy3u3qSLXX8KokicBNFdSMNdG9Aepi', '5HtN3Vy2gfmebN7uCU9mcN3VPNNNTE28vinUP11wR93T8S5Kn7j'], // WIF string or array of keys..
-  httpEndpoint: 'http://193.93.219.219:8888', // jungle testnet
+  httpEndpoint: 'http://jungle.cryptolions.io:18888', // jungle testnet
   expireInSeconds: 60,
   broadcast: true,
   verbose: false, // API activity
   sign: true
 }
 
-eos = Eos(config)
-console.log("eos-----"+config)
-accountName = 'aaauser1'
 
-eos.getCurrencyBalance('eosio.token', accountName, 'EOS')
-  .then(result => {
-  console.log(result)
-  window.aaa.getEosBalance(result)
+eos = Eos(config)
+
+
+getBalance = function(accountName){
+console.log("acount:"+accountName)
+  eos.getCurrencyBalance('eosio.token', accountName, 'EOS',function(error,result){
+
+   window.aaa.getEosBalance(error,result)
   })
-  .catch(error => console.error(error))
-},{"eosjs":138}],2:[function(require,module,exports){
+}
+
+getSignature = function(json,privateKey){
+  console.log("getSignature--------------"+privateKey)
+  var key = ecc.sign(json,privateKey)
+  console.log("key----"+key)
+  window.aaa.getSignature(key)
+}
+
+//转账到中间账号
+prepay= function(id,account1,account2,price){
+  const options = { authorization: [ account1+`@active` ] };
+  console.log("repay id:"+id+"--account1:"+account1+"--account2:"+account2+"--price:"+price);
+   eos.contract('aaatrust1111').then(contract => {
+      //contract.prepay(111, "aaauser1", "aaauser2", "2.0000 EOS" , options).
+      contract.prepay(id, account1, account2, price , options).
+        then(value => {
+        console.log('prepay OK')
+        window.aaa.prepay(JSON.stringify(value))
+        }).
+        catch(e => {
+        console.log("prepay failed: " + e)
+        window.aaa.prepayError(e)
+        })
+    })
+}
+
+
+getPrepayStatus = function(id) {
+  // json, code, scope, table, table_key
+  contract = 'aaatrust1111';
+  scope = 'aaatrust1111';
+  table = 'records';
+  table_key = 'id';
+  lower_bound = id;
+  upper_bound = id + 1;
+  eos.getTableRows(true, contract, scope, table, table_key, lower_bound, upper_bound).
+    then(result => {
+    console.log(result.rows);
+    window.aaa.paySuccess(result.rows)
+     }).
+    catch(e => {
+    console.log("print_row failed: " + e)
+    window.aaa.payFailure(e)
+    });
+}
+
+
+
+confirmOrder = function(accountName,orderid) {
+  const options = { authorization: [ accountName + `@active` ] };
+  eos.contract('aaatrust1111',function (error, result) {
+      result.confirm(orderid,options,function (error, result) {
+      if(error == null){
+      console.log("result:"+JSON.stringify(result))
+      }else{
+      console.log("error:"+error)
+      }
+      })
+
+  })
+}
+},{"eosjs":138,"eosjs-ecc":130}],2:[function(require,module,exports){
 module.exports = { "default": require("core-js/library/fn/get-iterator"), __esModule: true };
 },{"core-js/library/fn/get-iterator":37}],3:[function(require,module,exports){
 module.exports = { "default": require("core-js/library/fn/is-iterable"), __esModule: true };

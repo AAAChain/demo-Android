@@ -2,9 +2,7 @@ package org.aaa.chain.utils;
 
 import android.app.DatePickerDialog;
 import android.content.Context;
-import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.RequiresApi;
 import android.view.ContextThemeWrapper;
 import android.view.View;
 import android.widget.DatePicker;

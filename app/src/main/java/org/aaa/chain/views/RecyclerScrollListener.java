@@ -8,14 +8,14 @@ import java.util.List;
 import org.aaa.chain.adapter.BaseRecyclerViewAdapter;
 import org.aaa.chain.entities.DataEntity;
 
-public class RecyclerScrollListener extends RecyclerView.OnScrollListener {
+public class RecyclerScrollListener<T> extends RecyclerView.OnScrollListener {
 
     private int lastVisibleItem = 0;
-    private final int PAGE_COUNT = 10;
+    private final int PAGE_COUNT = 20;
     private BaseRecyclerViewAdapter adapter;
-    private List<DataEntity> dataEntityList;
+    private List<T> dataEntityList;
 
-    public RecyclerScrollListener(List<DataEntity> dataEntities) {
+    public RecyclerScrollListener(List<T> dataEntities) {
         this.dataEntityList = dataEntities;
     }
 
@@ -30,8 +30,8 @@ public class RecyclerScrollListener extends RecyclerView.OnScrollListener {
                 }, 500);
             }
 
-            // 如果隐藏了提示条，上拉加载时，那么最后一个条目就要比getItemCount要少2
-            if (adapter.isFadeTips() && lastVisibleItem + 2 == adapter.getItemCount()) {
+            // 如果隐藏了提示条，上拉加载时，那么最后一个条目就要比getItemCount要少1
+            if (adapter.isFadeTips() && lastVisibleItem + 1 == adapter.getItemCount()) {
                 new Handler().postDelayed(new Runnable() {
                     @Override public void run() {
                         updateRecyclerView(adapter.getRealLastPosition(), adapter.getRealLastPosition() + PAGE_COUNT);
@@ -47,8 +47,8 @@ public class RecyclerScrollListener extends RecyclerView.OnScrollListener {
         lastVisibleItem = layoutManager.findLastVisibleItemPosition();
     }
 
-    private List<DataEntity> getDatas(final int firstIndex, final int lastIndex) {
-        List<DataEntity> resList = new ArrayList<>();
+    private List<T> getDatas(final int firstIndex, final int lastIndex) {
+        List<T> resList = new ArrayList<>();
         for (int i = firstIndex; i < lastIndex; i++) {
             if (i < dataEntityList.size()) {
                 resList.add(dataEntityList.get(i));
@@ -58,7 +58,7 @@ public class RecyclerScrollListener extends RecyclerView.OnScrollListener {
     }
 
     private void updateRecyclerView(int fromIndex, int toIndex) {
-        List<DataEntity> dataEntities = getDatas(fromIndex, toIndex);
+        List<T> dataEntities = getDatas(fromIndex, toIndex);
         if (dataEntities.size() > 0) {
             adapter.updateList(dataEntities, true);
         } else {

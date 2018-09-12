@@ -9,7 +9,7 @@
   <TextView
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
-      android:text="链聘"
+      android:text="@string/app_main_name"
       android:textColor="@color/color_1FCA23"
       android:textSize="25sp"
       app:layout_constraintBottom_toTopOf="@+id/textView"
@@ -25,9 +25,7 @@
       android:layout_marginBottom="50dp"
       android:layout_marginEnd="16dp"
       android:layout_marginStart="16dp"
-      android:text="基于AAAChain公链的去中心化的区块链招聘平台
-隐私信息加密上链，求职者拥有简历的绝对资产权；
-招聘方直接对接求职者，简历下载token费用归求职者"
+      android:text="@string/app_introduction"
 
       android:textSize="18sp"
       app:layout_constraintBottom_toTopOf="@id/layout"
@@ -53,7 +51,7 @@
 
     <TextView
         android:id="@+id/tv_key"
-        android:layout_width="70dp"
+        android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:drawableRight="@mipmap/ic_arrow_down"
         android:gravity="center_vertical"
@@ -70,7 +68,7 @@
         android:layout_height="match_parent"
         android:layout_weight="1"
         android:background="@null"
-        android:hint="请输入秘钥"
+        android:hint="@string/input_secret_key"
         android:inputType="text"
         android:lines="1"
         android:paddingLeft="10dp"

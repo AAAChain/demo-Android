@@ -2,7 +2,7 @@
 <android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
     >
 
   <ImageView
@@ -19,17 +19,36 @@
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
       android:layout_marginLeft="10dp"
-      android:text="新浪科技java职位需要您，请授权您的简历"
       app:layout_constraintBottom_toBottomOf="@id/iv_company_avatar"
       app:layout_constraintLeft_toRightOf="@id/iv_company_avatar"
       app:layout_constraintTop_toTopOf="@id/iv_company_avatar"
       />
   <TextView
+      android:id="@+id/tv_notice_time"
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
       android:layout_marginRight="20dp"
-      android:text="15:50"
+      app:layout_constraintBottom_toBottomOf="@id/tv_company_notice"
       app:layout_constraintEnd_toEndOf="parent"
-      app:layout_constraintTop_toTopOf="@id/iv_company_avatar"
+      app:layout_constraintTop_toTopOf="@id/tv_company_notice"
+      />
+
+  <TextView
+      android:id="@+id/tv_resume_price"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      app:layout_constraintStart_toStartOf="@id/tv_company_notice"
+      app:layout_constraintTop_toBottomOf="@id/tv_company_notice"
+      />
+  <TextView
+      android:id="@+id/tv_resume_status"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginRight="20dp"
+      android:background="@drawable/shape_green_bg"
+      android:padding="5dp"
+      android:textColor="@color/white_color"
+      app:layout_constraintEnd_toEndOf="parent"
+      app:layout_constraintTop_toBottomOf="@id/tv_notice_time"
       />
 </android.support.constraint.ConstraintLayout>

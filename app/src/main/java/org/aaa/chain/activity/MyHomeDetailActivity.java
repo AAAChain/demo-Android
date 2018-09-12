@@ -1,5 +1,6 @@
 package org.aaa.chain.activity;
 
+import android.app.ProgressDialog;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
@@ -7,6 +8,7 @@ import com.squareup.leakcanary.RefWatcher;
 import java.util.ArrayList;
 import java.util.List;
 import org.aaa.chain.ChainApplication;
+import org.aaa.chain.Constant;
 import org.aaa.chain.JSInteraction;
 import org.aaa.chain.R;
 import org.aaa.chain.entities.DataEntity;
@@ -16,6 +18,7 @@ public class MyHomeDetailActivity extends BaseActivity {
 
     private List<DataEntity> dataEntities = new ArrayList<>();
     private TextView tvBalance;
+    ProgressDialog dialog = null;
 
     @Override public int initLayout() {
         return R.layout.activity_my_home_detail;
@@ -33,10 +36,27 @@ public class MyHomeDetailActivity extends BaseActivity {
             $(R.id.cl_my_home_detail_account).setVisibility(View.VISIBLE);
             $(R.id.tv_change_phone_number).setOnClickListener(this);
         } else if (getResources().getString(R.string.myWallet).equals(title)) {
-            JSInteraction.getInstance().getBalance();
             $(R.id.cl_my_home_detail_wallet).setVisibility(View.VISIBLE);
             tvBalance = $(R.id.tv_available_balance);
-            tvBalance.setText(ChainApplication.getInstance().balance);
+            JSInteraction.getInstance().getBalance(Constant.getAccount(), new JSInteraction.JSCallBack() {
+                @Override public void onSuccess(String content) {
+                    runOnUiThread(new Runnable() {
+                        @Override public void run() {
+                            dialog.dismiss();
+                            tvBalance.setText(String.valueOf(content));
+                        }
+                    });
+                }
+
+                @Override public void onProgress() {
+                    dialog = ProgressDialog.show(MyHomeDetailActivity.this, "waiting...", "loading...");
+                }
+
+                @Override public void onError(String error) {
+
+                }
+            });
+
             $(R.id.rl_transaction_history).setOnClickListener(this);
             $(R.id.tv_transfer_accounts).setOnClickListener(this);
         } else {
@@ -72,5 +92,6 @@ public class MyHomeDetailActivity extends BaseActivity {
         super.onDestroy();
         RefWatcher refWatcher = ChainApplication.getRefWatcher(this);
         refWatcher.watch(this);
+        JSInteraction.getInstance().removeListener();
     }
 }

@@ -15,6 +15,7 @@ import android.widget.Toast;
 import com.squareup.leakcanary.RefWatcher;
 import org.aaa.chain.ChainApplication;
 import org.aaa.chain.R;
+import org.aaa.chain.utils.FileUtils;
 
 public class LoginActivity extends BaseActivity {
 
@@ -23,37 +24,15 @@ public class LoginActivity extends BaseActivity {
     private Button btnLogin;
     private ListPopupWindow listPopupWindow;
 
-    /**
-     * aaauser1
-     *
-     * Owner key:
-     * Private key: 5Jtsaf2tyLGBTJER4bCBV5pvKiAE4v3v3G4agfQ91DkfLHRSLzX
-     * Public key: EOS5odhW8Tw51UetwxnjVMRKv6Eq4SPn6UqidCt57HYN5KjymsA2v
-     *
-     * Active Key
-     * Private key: 5JobQnxtEvshVRZW6berfYvzaUMZq2A8Ax5eZhuZqdTCqT19iLV
-     * Public key: EOS5YQkZpsD8xzmguAGL88r2b4RBXxKbV3QGjS8Vg1maBzd8Df9zX
-     *
-     * ################################################################################
-     * aaauser2
-     *
-     * Owner key:
-     * Private key: 5KejiFM4Qq1kshgtShE5n9bVLf63AmVhkReMYjhJPChcoKAog1c
-     * Public key: EOS7gqLCvRQFxLfbT2LMbzQQwAngToB3YApob74zgsZ7VN7vUBUtX
-     *
-     * Active Key
-     * Private key: 5J4a77MxGSDnASAZHAV7gThSeoenvLB4nb8wFPkepXoiLyesuf5
-     * Public key: EOS5SW9SkzUuTwhbJMsFDRge7cgKoTABiQ6ac3DrDux2UjjpKbm1h
-     **/
-
-    private String[] keysName = { "key1", "key2" };
-    private String[] keys = { "5Jtsaf2tyLGBTJER4bCBV5pvKiAE4v3v3G4agfQ91DkfLHRSLzX", "5KejiFM4Qq1kshgtShE5n9bVLf63AmVhkReMYjhJPChcoKAog1c" };
+    private String[] keysName = { ChainApplication.account1, ChainApplication.account2 };
+    private String[] keys = { ChainApplication.publicKey1, ChainApplication.publicKey2 };
 
     @Override public int initLayout() {
         return R.layout.activity_login;
     }
 
     @Override public void getViewById() {
+        FileUtils fileUtils = new FileUtils();
 
         tvKey = $(R.id.tv_key);
         etKey = $(R.id.et_key);
@@ -71,6 +50,11 @@ public class LoginActivity extends BaseActivity {
             @Override public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 tvKey.setText(keysName[position]);
                 etKey.setText(keys[position]);
+                if (position == 0) {
+                    ChainApplication.getInstance().isAccount1 = true;
+                } else {
+                    ChainApplication.getInstance().isAccount1 = false;
+                }
                 listPopupWindow.dismiss();
             }
         });
@@ -91,7 +75,7 @@ public class LoginActivity extends BaseActivity {
                 if (!TextUtils.isEmpty(etKey.getText())) {
                     startActivity(MainActivity.class, null);
                 } else {
-                    Toast.makeText(LoginActivity.this, "请输入秘钥", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(LoginActivity.this, getResources().getString(R.string.input_secret_key), Toast.LENGTH_SHORT).show();
                 }
                 break;
         }

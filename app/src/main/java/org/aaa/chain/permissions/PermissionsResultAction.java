@@ -89,7 +89,7 @@ public abstract class PermissionsResultAction {
    * @return return true if the PermissionsResultAction should
    * ignore the lack of the permission and proceed with exection
    * or false if the PermissionsResultAction should treat the
-   * absence of the permission on the API level as a denial.
+   * absence of the permission on the HttpUtils level as a denial.
    */
   @SuppressWarnings({"WeakerAccess", "SameReturnValue"})
   public synchronized boolean shouldIgnorePermissionNotFound(String permission) {

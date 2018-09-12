@@ -23,13 +23,14 @@
       android:name=".ChainApplication"
       android:allowBackup="true"
       android:icon="${APP_ICON_VALUE}"
-      android:label="${APP_LABLE_VALUE}"
+      android:label="${APP_LABEL_VALUE}"
       android:roundIcon="@mipmap/ic_launcher_round"
       android:supportsRtl="true"
       android:theme="@style/AppTheme">
     <activity android:name=".activity.MainActivity">
     </activity>
-    <activity android:name=".activity.LoginActivity">
+    <activity android:name=".activity.LoginActivity"
+        android:label="链聘">
       <intent-filter>
         <action android:name="android.intent.action.MAIN"/>
 
@@ -43,8 +44,6 @@
         android:name=".activity.MyHomeDetailActivity"
         android:windowSoftInputMode="adjustResize"
         android:theme="@style/swipeBackTheme"/>
-    <activity android:name=".activity.JSActivity"/>
-    <activity android:name=".activity.TransferActivity"/>
     <activity android:name=".activity.UpdateInfoActivity"/>
     <activity android:name=".activity.UploadResumeActivity"/>
     <activity android:name=".activity.ResumeDetailsActivity"/>

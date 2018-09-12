@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     >
@@ -9,6 +10,8 @@
       android:layout_width="match_parent"
       android:layout_height="match_parent"
       android:visibility="visible"
+      tools:layout_editor_absoluteX="153dp"
+      tools:layout_editor_absoluteY="381dp"
       >
     <include
         layout="@layout/view_title_bar"
@@ -20,7 +23,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="30dp"
-        android:text="完整简历上传"
+        android:text="@string/upload_resume"
         android:textColor="#000"
         android:textSize="20sp"
         android:textStyle="bold"
@@ -36,9 +39,7 @@
         android:layout_marginLeft="10dp"
         android:layout_marginRight="10dp"
         android:layout_marginTop="30dp"
-        android:text="请在简历里面包含姓名、电话等联系信息
-这个文件我们将用您的公钥加密存贮，只有您授权，别人才能下载和使用。
-您可以收取授权费用，费用AAA结算。"
+        android:text="@string/upload_resume_introduction"
         android:textSize="16sp"
         app:layout_constraintTop_toBottomOf="@id/tv_resume_title"
         />
@@ -51,22 +52,42 @@
         android:layout_marginLeft="10dp"
         android:layout_marginRight="10dp"
         android:layout_marginTop="30dp"
-        android:text="附件格式应为doc,docx,pdf,jpg,png,大小不超过10M"
+        android:text="@string/upload_resume_format"
         android:textSize="15sp"
         app:layout_constraintTop_toBottomOf="@id/tv_resume_introduction"
         />
 
+    <EditText
+        android:id="@+id/et_resume_price"
+        android:layout_width="100dp"
+        android:layout_height="50dp"
+        android:layout_marginLeft="20dp"
+        android:layout_marginTop="10dp"
+        android:gravity="center_horizontal"
+        android:text="2"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_resume_prompt"
+        />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="AAA"
+        android:textSize="18sp"
+        app:layout_constraintBottom_toBottomOf="@id/et_resume_price"
+        app:layout_constraintStart_toEndOf="@id/et_resume_price"
+        app:layout_constraintTop_toTopOf="@id/et_resume_price"
+        />
     <Button
         android:id="@+id/btn_resume_upload"
         android:layout_width="match_parent"
         android:layout_height="50dp"
         android:layout_marginLeft="20dp"
         android:layout_marginRight="20dp"
-        android:layout_marginTop="30dp"
+        android:layout_marginTop="10dp"
         android:background="@color/popup_item_text_color"
-        android:text="完整简历文件加密上传"
+        android:text="@string/upload_secret_resume"
         android:textColor="@color/white_color"
-        app:layout_constraintTop_toBottomOf="@id/tv_resume_prompt"
+        app:layout_constraintTop_toBottomOf="@id/et_resume_price"
         />
 
   </android.support.constraint.ConstraintLayout>
@@ -95,6 +116,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginRight="25dp"
+        android:text="0%"
         android:textColor="@android:color/holo_red_dark"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@id/progress"
@@ -108,7 +130,7 @@
         android:layout_marginRight="20dp"
         android:layout_marginTop="30dp"
         android:background="@color/view_title_bar_bg"
-        android:text="完成"
+        android:text="@string/done"
         android:textColor="@color/white_color"
         app:layout_constraintBottom_toBottomOf="parent"
         />

@@ -2,15 +2,10 @@ package org.aaa.chain;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.Intent;
-import android.os.Bundle;
-import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import java.util.ArrayList;
-import java.util.List;
 
 @SuppressLint("JavascriptInterface") public class JSInteraction {
 
@@ -25,12 +20,11 @@ import java.util.List;
     }
 
     @SuppressLint("SetJavaScriptEnabled") public void initWebKit(Context context) {
-        webView = new WebView(context);
+        webView = new WebView(context.getApplicationContext());
         webView.getSettings().setJavaScriptEnabled(true);
         webView.setWebViewClient(new WebViewClient() {
             @Override public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
-                //getBalance("0x5f26bd03d606bb433aa034cadee91fdc913ee391");
             }
         });
 
@@ -39,65 +33,84 @@ import java.util.List;
         webView.addJavascriptInterface(new JsInteraction(), "aaa");
     }
 
-    public void createAccount(String password) {
-        webView.loadUrl("javascript:createAccount(" + password + ")");
+    public void getBalance(String account, JSCallBack callBack) {
+        this.listener = callBack;
+        listener.onProgress();
+        String content = "javascript:getBalance(" + "'" + account + "'" + ")";
+        webView.loadUrl(content);
     }
 
-    public void getCoinbase() {
-        webView.loadUrl("javascript:getCoinbase()");
+    public void getSignature(String json, String privateKey, JSCallBack callback) {
+        this.listener = callback;
+        listener.onProgress();
+        String content = "javascript:getSignature(" + "'" + json + "'" + "," + "'" + privateKey + "'" + ")";
+        webView.loadUrl(content);
     }
 
-    public void getAccounts() {
-        webView.loadUrl("javascript:getAccounts()");
+    public void prepay(long id, String buyer, String seller, String price, JSCallBack callback) {
+        this.listener = callback;
+        listener.onProgress();
+        String content = "javascript:prepay(" + "'" + id + "'" + "," + "'" + buyer + "'" + "," + "'" + seller + "'" + "," + "'" + price + "'" + ")";
+        webView.loadUrl(content);
     }
 
-    public void getBalance() {
-        //webView.loadUrl("javascript:getBalance(" + "\"" + address + "\"" + ")");
-        webView.loadUrl("javascript:getBalance()");
+    public void confirmOrder(String account, long id, JSCallBack callback) {
+        this.listener = callback;
+        listener.onProgress();
+        String content = "javascript:confirmOrder(" + "'" + account + "'" + "," + "'" + id + "'" + ")";
+        webView.loadUrl(content);
     }
 
-    //0x62cfe930f03b6ebe751d8531d087cda9df15888aa65e11eccff3fda93889de3e
-    public void getTransaction(String txHash) {
-        webView.loadUrl("javascript:getTransaction(" + txHash + ")");
+    public void checkPayStatus(int id, JSCallBack callBack) {
+        this.listener = callBack;
+        String content = "javascript:getPrepayStatus(" + id + ")";
+        webView.loadUrl(content);
     }
 
     public class JsInteraction {
 
-        @JavascriptInterface public void getCoinbase(String error, String address) {
-            Log.i("info", "coinbase:" + address);
-            Bundle bundle = new Bundle();
-            bundle.putString("index", "coin");
-            bundle.putString("error", error);
-            bundle.putString("result", address);
-        }
-
-        @JavascriptInterface public void getAccounts(String error, List<String> accounts) {
-            Log.i("info", "account:" + accounts.size());
-            Bundle bundle = new Bundle();
-            bundle.putString("index", "account");
-            bundle.putString("error", error);
-            bundle.putStringArrayList("results", (ArrayList<String>) accounts);
-        }
-
-        @JavascriptInterface public void getBalance1(String error, String balance) {
-            Log.i("info", "android balance:" + balance);
-            Bundle bundle = new Bundle();
-            bundle.putString("index", "balance");
-            bundle.putString("error", error);
-            bundle.putString("result", balance);
-        }
-
-        @JavascriptInterface public void getTransaction(String error, String transaction) {
-            Log.i("info", "transaction:" + transaction);
-            Bundle bundle = new Bundle();
-            bundle.putString("index", "transaction");
-            bundle.putString("error", error);
-            bundle.putString("result", transaction);
-        }
-
-        @JavascriptInterface public void getEosBalance(String[] balance) {
+        @JavascriptInterface public void getEosBalance(String error, String[] balance) {
             Log.i("info", "balance:" + balance[0]);
-            ChainApplication.getInstance().setBalance(balance[0]);
+            listener.onSuccess(balance[0]);
         }
+
+        @JavascriptInterface public void getSignature(String signature) {
+            Log.i("info", "signature:" + signature);
+            listener.onSuccess(signature);
+        }
+
+        @JavascriptInterface public void prepay(String value) {
+            Log.i("info", "prepay:" + value);
+            listener.onSuccess(value);
+        }
+
+        @JavascriptInterface public void prepayError(String error) {
+            Log.i("info", "prepay error:" + error);
+            listener.onError(error);
+        }
+
+        @JavascriptInterface public void paySuccess(String value) {
+            Log.i("info", "paySuccess:" + value);
+            listener.onSuccess(value);
+        }
+
+        @JavascriptInterface public void payFailure(String error) {
+            Log.i("info", "payFailure:" + error);
+            listener.onError(error);
+        }
+    }
+
+    private JSCallBack listener;
+
+    public interface JSCallBack {
+        void onSuccess(String content);
+
+        void onProgress();
+
+        void onError(String error);
+    }
+
+    public void removeListener() {
+        listener = null;
     }
 }

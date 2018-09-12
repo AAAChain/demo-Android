@@ -52,7 +52,7 @@
           android:layout_width="wrap_content"
           android:layout_height="wrap_content"
           android:layout_marginLeft="5dp"
-          android:text="本科"
+          android:text="@string/applicant_education"
           app:layout_constraintLeft_toRightOf="@id/tv_applicant_work_hours"
           />
       <TextView
@@ -67,31 +67,47 @@
           android:id="@+id/tv_applicant_company"
           android:layout_width="wrap_content"
           android:layout_height="wrap_content"
-          android:text="雷尚科技"
-          app:layout_constraintTop_toBottomOf="@id/tv_applicant_name"
-          app:layout_constraintLeft_toRightOf="@id/iv_applicant_avatar"
           android:layout_marginLeft="10dp"
           android:layout_marginTop="5dp"
+          android:text="@string/applicant_work_company"
+          app:layout_constraintLeft_toRightOf="@id/iv_applicant_avatar"
+          app:layout_constraintTop_toBottomOf="@id/tv_applicant_name"
           />
       <TextView
           android:id="@+id/tv_applicant_position"
           android:layout_width="wrap_content"
           android:layout_height="wrap_content"
-          android:text="游戏ui设计"
-          app:layout_constraintTop_toBottomOf="@id/tv_applicant_name"
-          app:layout_constraintLeft_toRightOf="@id/tv_applicant_company"
           android:layout_marginLeft="5dp"
           android:layout_marginTop="5dp"
+          android:text="@string/applicant_work_position"
+          app:layout_constraintLeft_toRightOf="@id/tv_applicant_company"
+          app:layout_constraintTop_toBottomOf="@id/tv_applicant_name"
           />
+
       <TextView
+          android:id="@+id/tv_applicant_work_range"
           android:layout_width="wrap_content"
           android:layout_height="wrap_content"
-          android:ellipsize="end"
-          android:maxLines="2"
-          app:layout_constraintTop_toBottomOf="@id/iv_applicant_avatar"
           android:layout_marginTop="5dp"
-          android:text="4年ui设计经验，擅长欧美风，日韩风 熟悉界面操作规范。学习能力和色彩感觉好。"
+          app:layout_constrainedWidth="true"
+          app:layout_constraintHorizontal_bias="0"
+          app:layout_constraintHorizontal_chainStyle="packed"
+          app:layout_constraintLeft_toLeftOf="parent"
+          app:layout_constraintRight_toLeftOf="@+id/tv_publish_time"
+          app:layout_constraintTop_toBottomOf="@id/iv_applicant_avatar"
+          android:layout_marginRight="10dp"
           />
+
+      <TextView
+          android:id="@+id/tv_publish_time"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_marginTop="5dp"
+          app:layout_constrainedWidth="true"
+          app:layout_constraintRight_toRightOf="parent"
+          app:layout_constraintTop_toBottomOf="@id/iv_applicant_avatar"
+          />
+
     </android.support.constraint.ConstraintLayout>
   </android.support.v7.widget.CardView>
 </LinearLayout>

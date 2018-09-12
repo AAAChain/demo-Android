@@ -1,6 +1,7 @@
 package org.aaa.chain.activity;
 
 import android.content.Intent;
+import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.RelativeLayout;
@@ -9,6 +10,8 @@ import com.squareup.leakcanary.RefWatcher;
 import org.aaa.chain.ChainApplication;
 import org.aaa.chain.R;
 import org.aaa.chain.utils.CommonUtils;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class CreateSmallResumeActivity extends BaseActivity {
 
@@ -21,6 +24,8 @@ public class CreateSmallResumeActivity extends BaseActivity {
     private TextView tvTimeRange;
     private TextView tvJobType;
     private TextView tvSkillLabel;
+    private String personalinfo;
+    private JSONObject object;
 
     @Override public int initLayout() {
         return R.layout.activity_create_small_resume;
@@ -29,6 +34,13 @@ public class CreateSmallResumeActivity extends BaseActivity {
     @Override public void getViewById() {
 
         initSlideBackLayout(this);
+
+        personalinfo = getIntent().getStringExtra("personalinfo");
+        try {
+            object = new JSONObject(personalinfo);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
 
         rlCompany = $(R.id.rl_company);
         rlTimeRange = $(R.id.rl_time_range);
@@ -46,7 +58,7 @@ public class CreateSmallResumeActivity extends BaseActivity {
         tvJobType = $(R.id.tv_job_type);
         tvSkillLabel = $(R.id.tv_skill_label);
 
-        setTitleName("创建微简历");
+        setTitleName(getResources().getString(R.string.create_a_resume));
     }
 
     @Override public void onClick(View v) {
@@ -66,7 +78,15 @@ public class CreateSmallResumeActivity extends BaseActivity {
 
                 break;
             case R.id.btn_next:
-                startActivity(UploadResumeActivity.class, null);
+                try {
+                    object.put("latestWorkHours", tvTimeRange.getText().toString());
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+                Bundle bundle = new Bundle();
+                bundle.putString("metadata", object.toString());
+                startActivity(UploadResumeActivity.class, bundle);
+                finish();
                 break;
         }
     }
@@ -75,6 +95,11 @@ public class CreateSmallResumeActivity extends BaseActivity {
         super.onActivityResult(requestCode, resultCode, data);
         if (RESULT_OK == resultCode && 1000 == requestCode) {
             tvCompany.setText(data.getExtras().getString("updateinfo"));
+            try {
+                object.put("latestCompany", data.getExtras().getString("updateinfo"));
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
         }
     }
 
