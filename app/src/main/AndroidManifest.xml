@@ -47,7 +47,6 @@
     <activity android:name=".activity.UpdateInfoActivity"/>
     <activity android:name=".activity.UploadResumeActivity"/>
     <activity android:name=".activity.ResumeDetailsActivity"/>
-    <activity android:name=".activity.FileExploreActivity"/>
 
   </application>
 
