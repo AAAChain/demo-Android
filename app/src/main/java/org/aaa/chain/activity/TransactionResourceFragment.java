@@ -33,14 +33,14 @@ import org.aaa.chain.adapter.RecyclerViewAdapter;
 import org.aaa.chain.entities.OrderResponseEntity;
 import org.aaa.chain.utils.HttpUtils;
 
-public class MsgNotificationFragment extends BaseFragment {
+public class TransactionResourceFragment extends BaseFragment {
 
     private RecyclerView recyclerView;
 
     private SwipeRefreshLayout swipeRefreshLayout;
 
     @Override public int initLayout() {
-        return R.layout.fragment_tablayout_content;
+        return R.layout.fragment_search_trans_item;
     }
 
     @Override public void getViewById() {

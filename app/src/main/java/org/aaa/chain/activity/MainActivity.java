@@ -40,12 +40,9 @@ public class MainActivity extends BaseActivity {
 
     private void initTab() {
         tabItemList = new ArrayList<>();
-        tabItemList.add(
-                new TabItem(this, R.drawable.ic_launcher_background, R.drawable.ic_launcher_background, R.string.task_hall, TaskHallFragment.class));
-        tabItemList.add(
-                new TabItem(this, R.drawable.ic_launcher_background, R.drawable.ic_launcher_background, R.string.my_task, MyTaskFragment.class));
-        tabItemList.add(
-                new TabItem(this, R.drawable.ic_launcher_background, R.drawable.ic_launcher_background, R.string.my_home, MyHomeFragment.class));
+        tabItemList.add(new TabItem(this, R.mipmap.tab_upload, R.mipmap.tab_upload, R.string.upload_home, UploadHomeFragment.class));
+        tabItemList.add(new TabItem(this, R.mipmap.tab_search_and_trans, R.mipmap.tab_search_and_trans, R.string.search_trans, SearchAndTransFragment.class));
+        tabItemList.add(new TabItem(this, R.mipmap.tab_my, R.mipmap.tab_my, R.string.my_home, MyHomeFragment.class));
 
         for (int i = 0; i < tabItemList.size(); i++) {
             TabItem tabItem = tabItemList.get(i);
@@ -57,7 +54,7 @@ public class MainActivity extends BaseActivity {
             tabHost.getTabWidget().setDividerDrawable(null);
 
             //给Tab按钮设置背景
-            tabHost.getTabWidget().getChildAt(i).setBackgroundColor(getResources().getColor(R.color.main_bottom_bg));
+            tabHost.getTabWidget().getChildAt(i).setBackgroundColor(getResources().getColor(R.color.color_bg));
 
             //默认选中第一个tab
             if (i == 0) {

@@ -7,15 +7,15 @@ import android.support.v4.app.FragmentPagerAdapter;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MyTaskPagerAdapter extends FragmentPagerAdapter {
+public class SearchTransAdapter extends FragmentPagerAdapter {
     private List<String> titles;
     private List<Fragment> fragments = new ArrayList<>();
 
-    public MyTaskPagerAdapter(FragmentManager fm, List<String> titles) {
+    public SearchTransAdapter(FragmentManager fm, List<String> titles) {
         super(fm);
         this.titles = titles;
-        fragments.add(new MyTaskContentFragment());
-        fragments.add(new MsgNotificationFragment());
+        fragments.add(new SearchResourceFragment());
+        fragments.add(new TransactionResourceFragment());
     }
 
     @Override public Fragment getItem(int position) {

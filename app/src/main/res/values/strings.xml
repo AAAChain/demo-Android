@@ -6,8 +6,8 @@
 招聘方直接对接求职者，简历下载token费用归求职者</string>
 
   <string name="login">登录</string>
-  <string name="task_hall">简历上传</string>
-  <string name="my_task">查询与交易</string>
+  <string name="upload_home">简历上传</string>
+  <string name="search_trans">查询与交易</string>
   <string name="my_home">个人中心</string>
 
   <string name="myAccount">我的账户</string>
@@ -15,7 +15,7 @@
   <string name="setting">设置</string>
 
 
-  <array name="my_task_tab">
+  <array name="search_trans_tab">
     <item>查询</item>
     <item>通知</item>
   </array>
@@ -27,7 +27,7 @@
   <string name="skill_label">技能标签</string>
   <string name="last_job">工作内容</string>
   <string name="next">下一步</string>
-  <string name="last_job_details">1.主要负责新员工入职培训 2.分析制定员工每月个人销售业绩 3.帮助员工提高每日客单价，整体店面管理等工作。</string>
+  <string name="last_job_details">1.主要负责新员工入职培训\n2.分析制定员工每月个人销售业绩\n3.帮助员工提高每日客单价，整体店面管理等工作。</string>
 
   <string name="loading_more">正在加载更多</string>
   <string name="no_more">没有更多数据</string>
@@ -56,7 +56,7 @@
   <string name="upload_secret_resume">完整简历加密上传</string>
   <string name="upload_resume">完整简历上传</string>
   <string name="done">完成</string>
-  <string name="upload_resume_format">附件格式应为doc,docx,pdf,jpg,png,大小不超过10M</string>
+  <string name="upload_resume_format">附件格式应为doc/docx/pdf/jpg/png,大小不超过10M</string>
   <string name="upload_resume_introduction">请在简历里面包含姓名、电话等联系信息
 这个文件我们将用您的公钥加密存贮，只有您授权，别人才能下载和使用。
 您可以收取授权费用，费用AAA结算。</string>

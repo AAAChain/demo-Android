@@ -8,10 +8,9 @@
     >
   <TextView
       android:id="@+id/tv_title_bar_back"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:text="@string/back"
-      android:textColor="@color/white_color"
+      android:layout_width="15dp"
+      android:layout_height="25dp"
+      android:background="@mipmap/back_icon"
       app:layout_constraintBottom_toBottomOf="parent"
       app:layout_constraintEnd_toStartOf="@+id/tv_title_bar_title"
       app:layout_constraintHorizontal_bias="0.097"
@@ -37,6 +36,7 @@
       android:layout_marginRight="10dp"
       android:text="@string/done"
       android:textColor="@color/white_color"
+      android:textSize="18sp"
       android:visibility="gone"
       app:layout_constraintBottom_toBottomOf="parent"
       app:layout_constraintRight_toRightOf="parent"

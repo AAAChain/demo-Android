@@ -22,7 +22,7 @@ import org.aaa.chain.adapter.RecyclerViewAdapter;
 import org.aaa.chain.entities.SearchResponseEntity;
 import org.aaa.chain.utils.HttpUtils;
 
-public class MyTaskContentFragment extends BaseFragment {
+public class SearchResourceFragment extends BaseFragment {
 
     private RecyclerView recyclerView;
     private SwipeRefreshLayout swipeRefreshLayout;
@@ -30,7 +30,7 @@ public class MyTaskContentFragment extends BaseFragment {
     private int page = 1;
 
     @Override public int initLayout() {
-        return R.layout.fragment_tablayout_content;
+        return R.layout.fragment_search_trans_item;
     }
 
     @Override public void getViewById() {
@@ -87,6 +87,7 @@ public class MyTaskContentFragment extends BaseFragment {
                                                                         startActivity(new Intent(getActivity(), ResumeDetailsActivity.class).putExtra(
                                                                                 "type", 0)
                                                                                 .putExtra("price", dataEntity.getExtra().getPrice())
+                                                                                .putExtra("name", dataEntity.getAccount())
                                                                                 .putExtra("hashId", dataEntity.getHashId()));
                                                                     }
                                                                 });

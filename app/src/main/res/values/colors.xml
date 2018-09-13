@@ -15,7 +15,8 @@
   <color name="popup_item_text_color">#0076FF</color>
 
   <color name="popup_outside_bg">#BBBBBB</color>
-  <color name="view_title_bar_bg">#58C8C1</color>
+  <color name="view_title_bar_bg">#72AAF9</color>
+  <color name="view_button_bg">#3D85E9</color>
 
 
   <color name="white_color">#ffffff</color>
@@ -23,6 +24,8 @@
   <color name="color_333333">#333333</color>
   <color name="color_999999">#999999</color>
   <color name="color_1FCA23">#1FCA23</color>
-  <color name="color_bg">#F5F5F5</color>
+  <color name="color_bg">#F9F9F9</color>
+  <color name="app_title_bg">#3880ec</color>
+  <color name="tab_color">#9D9D9D</color>
 
 </resources>

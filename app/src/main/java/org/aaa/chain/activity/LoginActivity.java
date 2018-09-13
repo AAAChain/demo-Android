@@ -15,7 +15,6 @@ import android.widget.Toast;
 import com.squareup.leakcanary.RefWatcher;
 import org.aaa.chain.ChainApplication;
 import org.aaa.chain.R;
-import org.aaa.chain.utils.FileUtils;
 
 public class LoginActivity extends BaseActivity {
 
@@ -32,8 +31,6 @@ public class LoginActivity extends BaseActivity {
     }
 
     @Override public void getViewById() {
-        FileUtils fileUtils = new FileUtils();
-
         tvKey = $(R.id.tv_key);
         etKey = $(R.id.et_key);
         btnLogin = $(R.id.btn_login);

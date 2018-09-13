@@ -1,15 +1,13 @@
 package org.aaa.chain.activity;
 
 import android.app.ProgressDialog;
-import android.content.Context;
 import android.content.Intent;
-import android.database.Cursor;
-import android.net.Uri;
-import android.provider.MediaStore;
+import android.graphics.Color;
 import android.support.constraint.ConstraintLayout;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -42,6 +40,7 @@ public class UploadResumeActivity extends BaseActivity implements ProgressRespon
     TextView tvPercent;
     EditText inputPrice;
     ProgressDialog dialog;
+    Button btnUploadDone;
 
     private JSONObject object;
     private ResumeRequestEntity requestEntity = new ResumeRequestEntity();
@@ -57,8 +56,9 @@ public class UploadResumeActivity extends BaseActivity implements ProgressRespon
         progressBar = $(R.id.progress);
         tvPercent = $(R.id.tv_percent);
         inputPrice = $(R.id.et_resume_price);
+        btnUploadDone = $(R.id.btn_upload_done);
         $(R.id.btn_resume_upload).setOnClickListener(this);
-        $(R.id.btn_upload_done).setOnClickListener(this);
+        btnUploadDone.setOnClickListener(this);
     }
 
     @Override public void onClick(View v) {
@@ -105,7 +105,8 @@ public class UploadResumeActivity extends BaseActivity implements ProgressRespon
             List<String> list = data.getStringArrayListExtra(Constant.RESULT_INFO);
             try {
                 File file = PBEUtils.getInstance()
-                        .encryptFile(UploadResumeActivity.this, list.get(0), org.aaa.chain.Constant.getPrivateKey(), org.aaa.chain.Constant.getPublicKey());
+                        .encryptFile(UploadResumeActivity.this, list.get(0), org.aaa.chain.Constant.getPrivateKey(),
+                                org.aaa.chain.Constant.getPublicKey());
                 Log.i("info", "file path:" + file.getAbsolutePath());
                 requestEntity.setFilepath(file.getAbsolutePath());
                 requestEntity.setFilename(file.getName());
@@ -145,14 +146,24 @@ public class UploadResumeActivity extends BaseActivity implements ProgressRespon
                         dialog.dismiss();
                         layout1.setVisibility(View.GONE);
                         layout2.setVisibility(View.VISIBLE);
+                        btnUploadDone.setClickable(false);
+                        btnUploadDone.setBackgroundColor(Color.GRAY);
                         HttpUtils.getInstance().addFileResource(UploadResumeActivity.this, requestEntity, new HttpUtils.ServerCallBack() {
                             @Override public void onFailure(Call call, IOException e) {
                                 Log.d("info", "onFailure: " + e.getMessage());
+                                runOnUiThread(new Runnable() {
+                                    @Override public void run() {
+                                        Toast.makeText(UploadResumeActivity.this, "time out,please retry", Toast.LENGTH_SHORT).show();
+                                    }
+                                });
+                                finish();
                             }
 
                             @Override public void onResponse(Call call, Response response) {
                                 ResponseBody body = response.body();
                                 if (response.code() == 200) {
+                                    btnUploadDone.setClickable(true);
+                                    btnUploadDone.setBackgroundColor(getResources().getColor(R.color.view_button_bg));
                                     try {
                                         ResumeResponseEntity responseEntity = new Gson().fromJson(body.string(), ResumeResponseEntity.class);
                                         DBManager.getInstance().saveResumeResponse(responseEntity);
@@ -170,9 +181,14 @@ public class UploadResumeActivity extends BaseActivity implements ProgressRespon
                                 } else {
                                     runOnUiThread(new Runnable() {
                                         @Override public void run() {
-                                            Toast.makeText(UploadResumeActivity.this, response.code() + "", Toast.LENGTH_SHORT).show();
+                                            try {
+                                                Toast.makeText(UploadResumeActivity.this, body.string(), Toast.LENGTH_SHORT).show();
+                                            } catch (IOException e) {
+                                                e.printStackTrace();
+                                            }
                                         }
                                     });
+                                    finish();
                                 }
                             }
                         });
@@ -188,27 +204,6 @@ public class UploadResumeActivity extends BaseActivity implements ProgressRespon
 
             }
         });
-    }
-
-    private String getImagePath(Context context, Uri uri, String selection) {
-        String path = null;
-        Cursor cursor = context.getContentResolver().query(uri, null, selection, null, null);
-        if (cursor != null) {
-            if (cursor.moveToFirst()) {
-                path = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA));
-            }
-            cursor.close();
-        }
-        return path;
-    }
-
-    public String getNameFromPath(String picturePath) {
-        String temp[] = picturePath.replaceAll("\\\\", "/").split("/");
-        String fileName = "";
-        if (temp.length > 1) {
-            fileName = temp[temp.length - 1];
-        }
-        return fileName;
     }
 
     @Override public void update(long bytesRead, long contentLength, boolean done) {

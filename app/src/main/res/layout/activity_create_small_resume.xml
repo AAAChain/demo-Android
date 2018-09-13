@@ -36,7 +36,7 @@
             />
 
         <RelativeLayout
-            android:id="@+id/rl_company"
+            android:id="@+id/rl_last_company"
             android:layout_width="match_parent"
             android:layout_height="50dp"
             android:layout_marginTop="10dp"
@@ -53,7 +53,7 @@
               />
 
           <TextView
-              android:id="@+id/tv_company"
+              android:id="@+id/tv_last_company"
               android:layout_width="wrap_content"
               android:layout_height="wrap_content"
               android:layout_alignParentRight="true"
@@ -75,7 +75,7 @@
             android:background="@color/main_bottom_bg"
             />
         <RelativeLayout
-            android:id="@+id/rl_time_range"
+            android:id="@+id/rl_last_working_hour"
             android:layout_width="match_parent"
             android:layout_height="50dp"
             android:background="@color/white_color"
@@ -90,7 +90,7 @@
               android:textSize="18sp"
               />
           <TextView
-              android:id="@+id/tv_time_range"
+              android:id="@+id/tv_last_working_hour"
               android:layout_width="wrap_content"
               android:layout_height="wrap_content"
               android:layout_alignParentRight="true"
@@ -199,10 +199,10 @@
           android:id="@+id/btn_next"
           android:layout_width="0dp"
           android:layout_height="50dp"
-          android:layout_marginEnd="8dp"
-          android:layout_marginStart="8dp"
+          android:layout_marginEnd="20dp"
+          android:layout_marginStart="20dp"
           android:layout_marginTop="68dp"
-          android:background="@color/view_title_bar_bg"
+          android:background="@color/view_button_bg"
           android:text="@string/next"
           android:textColor="@color/white_color"
           app:layout_constraintEnd_toEndOf="parent"

@@ -1,7 +1,10 @@
 package org.aaa.chain.entities;
 
 import android.content.Context;
+import android.graphics.drawable.Drawable;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.ContextCompat;
+import android.support.v4.graphics.drawable.DrawableCompat;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -80,7 +83,12 @@ public class TabItem {
     public void setChecked(boolean isChecked) {
         if (imageView != null) {
             if (isChecked) {
-                imageView.setImageResource(imagePress);
+                Drawable drawable = ContextCompat.getDrawable(context, imagePress);
+                //Drawable wrappedDrawable =
+                //        DrawableCompat.wrap(drawable.getConstantState() == null ? drawable : drawable.getConstantState().newDrawable().mutate());
+                Drawable wrappedDrawable = DrawableCompat.wrap(drawable).mutate();
+                DrawableCompat.setTint(wrappedDrawable, context.getResources().getColor(R.color.main_bottom_text_select));
+                imageView.setImageDrawable(wrappedDrawable);
             } else {
                 imageView.setImageResource(imageNormal);
             }
@@ -89,7 +97,7 @@ public class TabItem {
             if (isChecked) {
                 textView.setTextColor(context.getResources().getColor(R.color.main_bottom_text_select));
             } else {
-                textView.setTextColor(context.getResources().getColor(R.color.main_bottom_text_normal));
+                textView.setTextColor(context.getResources().getColor(R.color.tab_color));
             }
         }
     }

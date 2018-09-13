@@ -26,8 +26,6 @@ public class MyHomeDetailActivity extends BaseActivity {
 
     @Override public void getViewById() {
 
-        initSlideBackLayout(this);
-
         Bundle bundle = getIntent().getExtras();
         assert bundle != null;
         String title = bundle.getString("title");

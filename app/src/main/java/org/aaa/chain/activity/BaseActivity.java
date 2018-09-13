@@ -1,6 +1,5 @@
 package org.aaa.chain.activity;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.drawable.Drawable;
@@ -15,17 +14,15 @@ import android.widget.TextView;
 import android.widget.Toast;
 import com.jaeger.library.StatusBarUtil;
 import org.aaa.chain.R;
-import org.aaa.chain.views.SlideBackLayout;
 
 public abstract class BaseActivity extends AppCompatActivity implements View.OnClickListener {
 
     protected TextView back;
-    private SlideBackLayout slideBackLayout;
 
     @Override protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(initLayout());
-        StatusBarUtil.setColor(this, getResources().getColor(R.color.colorPrimary), 0);
+        StatusBarUtil.setColor(this, getResources().getColor(R.color.view_title_bar_bg), 0);
         getViewById();
         back = $(R.id.tv_title_bar_back);
         if (back != null) {
@@ -67,11 +64,6 @@ public abstract class BaseActivity extends AppCompatActivity implements View.OnC
             intent.putExtras(bundle);
         }
         startActivityForResult(intent, requestCode);
-    }
-
-    protected void initSlideBackLayout(Activity activity){
-        slideBackLayout = new SlideBackLayout(activity);
-        slideBackLayout.bind();
     }
 
     protected void showToast(Context context, String info) {

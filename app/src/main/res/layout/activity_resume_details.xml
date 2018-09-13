@@ -17,6 +17,7 @@
       android:layout_marginLeft="20dp"
       android:layout_marginTop="20dp"
       android:text="test"
+      android:textSize="18sp"
       app:layout_constraintStart_toStartOf="parent"
       app:layout_constraintTop_toBottomOf="@id/layout_title_bar"
       />
@@ -27,16 +28,18 @@
       android:layout_marginLeft="20dp"
       android:layout_marginTop="10dp"
       android:text="@string/position_and_company"
+      android:textSize="16sp"
       app:layout_constraintStart_toStartOf="parent"
       app:layout_constraintTop_toBottomOf="@id/tv_resume_name"
       />
 
   <ImageView
-      android:layout_width="40dp"
-      android:layout_height="40dp"
+      android:layout_width="50dp"
+      android:layout_height="50dp"
       android:layout_marginRight="20dp"
       android:layout_marginTop="20dp"
       android:src="@mipmap/ic_launcher"
+      android:tint="@color/view_button_bg"
       app:layout_constraintEnd_toEndOf="parent"
       app:layout_constraintTop_toBottomOf="@id/layout_title_bar"
       />
@@ -58,6 +61,8 @@
       android:layout_marginLeft="20dp"
       android:layout_marginTop="20dp"
       android:text="@string/on_the_job"
+      android:textColor="@color/popup_outside_bg"
+      android:textSize="16sp"
       app:layout_constraintLeft_toLeftOf="parent"
       app:layout_constraintTop_toBottomOf="@id/view_divider"
       />
@@ -68,6 +73,7 @@
       android:layout_marginRight="20dp"
       android:layout_marginTop="20dp"
       android:text="@string/active"
+      android:textColor="@color/popup_outside_bg"
       app:layout_constraintEnd_toEndOf="parent"
       app:layout_constraintTop_toBottomOf="@id/view_divider"
       />
@@ -78,6 +84,7 @@
       android:layout_marginLeft="20dp"
       android:layout_marginTop="20dp"
       android:text="@string/applicant_base_info"
+      android:textSize="14sp"
       app:layout_constraintStart_toStartOf="parent"
       app:layout_constraintTop_toBottomOf="@id/tv_in_service"
       />
@@ -90,6 +97,8 @@
       android:layout_marginRight="20dp"
       android:layout_marginTop="20dp"
       android:text="@string/applicant_work_experience"
+      android:textColor="@color/popup_outside_bg"
+      android:textSize="14sp"
       app:layout_constraintTop_toBottomOf="@id/tv_applicant_education"
       />
   <View
@@ -110,6 +119,8 @@
       android:layout_marginLeft="20dp"
       android:layout_marginTop="20dp"
       android:text="@string/job_expectation"
+      android:textColor="@color/popup_outside_bg"
+      android:textSize="16sp"
       app:layout_constraintStart_toStartOf="parent"
       app:layout_constraintTop_toBottomOf="@id/view_divider1"
       />
@@ -141,6 +152,8 @@
       android:layout_marginLeft="20dp"
       android:layout_marginTop="20dp"
       android:text="@string/work_experience"
+      android:textColor="@color/popup_outside_bg"
+      android:textSize="16sp"
       app:layout_constraintStart_toStartOf="parent"
       app:layout_constraintTop_toBottomOf="@id/view_divider2"
       />
@@ -151,6 +164,7 @@
       android:layout_marginLeft="20dp"
       android:layout_marginTop="20dp"
       android:text="@string/applicant_work_company"
+      android:textSize="14sp"
       app:layout_constraintStart_toStartOf="parent"
       app:layout_constraintTop_toBottomOf="@id/tv_work_experience"
       />
@@ -159,6 +173,7 @@
       android:layout_height="wrap_content"
       android:layout_marginRight="20dp"
       android:text="@string/work_range"
+      android:textSize="14sp"
       app:layout_constraintEnd_toEndOf="parent"
       app:layout_constraintTop_toTopOf="@id/tv_applicant_company_name"
       />
@@ -172,6 +187,7 @@
       android:background="@color/popup_item_text_color"
       android:text="@string/buy_a_resume"
       android:textColor="@color/white_color"
+      android:textSize="18sp"
       app:layout_constraintTop_toBottomOf="@id/tv_applicant_company_name"
       />
 </android.support.constraint.ConstraintLayout>

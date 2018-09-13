@@ -6,31 +6,28 @@
     android:layout_height="match_parent"
     >
 
-  <TextView
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:text="@string/app_main_name"
-      android:textColor="@color/color_1FCA23"
-      android:textSize="25sp"
-      app:layout_constraintBottom_toTopOf="@+id/textView"
+  <ImageView
+      android:id="@+id/iv_app_title"
+      android:layout_width="80dp"
+      android:layout_height="80dp"
+      android:layout_marginTop="50dp"
+      android:background="@drawable/shape_blue_bg"
+      android:src="@mipmap/app_title_icon"
       app:layout_constraintEnd_toEndOf="parent"
       app:layout_constraintStart_toStartOf="parent"
       app:layout_constraintTop_toTopOf="parent"
       />
 
   <TextView
-      android:id="@+id/textView"
-      android:layout_width="331dp"
-      android:layout_height="0dp"
-      android:layout_marginBottom="50dp"
-      android:layout_marginEnd="16dp"
-      android:layout_marginStart="16dp"
+      android:id="@+id/tv_app_introduction"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginLeft="20dp"
+      android:layout_marginRight="20dp"
+      android:layout_marginTop="50dp"
       android:text="@string/app_introduction"
-
-      android:textSize="18sp"
-      app:layout_constraintBottom_toTopOf="@id/layout"
-      app:layout_constraintEnd_toEndOf="parent"
-      app:layout_constraintStart_toStartOf="parent"
+      android:textSize="16sp"
+      app:layout_constraintTop_toBottomOf="@id/iv_app_title"
       />
 
 
@@ -40,24 +37,24 @@
       android:layout_height="45dp"
       android:layout_marginLeft="10dp"
       android:layout_marginRight="10dp"
+      android:layout_marginTop="50dp"
       android:background="@drawable/shape_white_bg"
       android:focusable="true"
       android:focusableInTouchMode="true"
       android:gravity="center_vertical"
       android:orientation="horizontal"
-      app:layout_constraintBottom_toBottomOf="parent"
-      app:layout_constraintTop_toTopOf="parent"
+      app:layout_constraintTop_toBottomOf="@id/tv_app_introduction"
       >
 
     <TextView
         android:id="@+id/tv_key"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
+        android:paddingLeft="10dp"
+        android:drawablePadding="10dp"
         android:drawableRight="@mipmap/ic_arrow_down"
         android:gravity="center_vertical"
-        android:paddingLeft="15dp"
-        android:paddingRight="5dp"
-        android:text="key1"
+        android:text="aaauser"
         android:textColor="@color/color_333333"
         />
 
@@ -81,8 +78,8 @@
     <Button
         android:id="@+id/btn_login"
         android:layout_width="30dp"
-        android:layout_height="20dp"
-        android:layout_marginRight="15dp"
+        android:layout_height="30dp"
+        android:layout_marginRight="10dp"
         android:background="@mipmap/ic_arrow_right"
         />
   </LinearLayout>

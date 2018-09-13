@@ -26,7 +26,6 @@
         android:text="@string/upload_resume"
         android:textColor="#000"
         android:textSize="20sp"
-        android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/layout_title_bar"
@@ -36,26 +35,14 @@
         android:id="@+id/tv_resume_introduction"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="10dp"
-        android:layout_marginRight="10dp"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp"
         android:layout_marginTop="30dp"
         android:text="@string/upload_resume_introduction"
         android:textSize="16sp"
         app:layout_constraintTop_toBottomOf="@id/tv_resume_title"
         />
 
-
-    <TextView
-        android:id="@+id/tv_resume_prompt"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="10dp"
-        android:layout_marginRight="10dp"
-        android:layout_marginTop="30dp"
-        android:text="@string/upload_resume_format"
-        android:textSize="15sp"
-        app:layout_constraintTop_toBottomOf="@id/tv_resume_introduction"
-        />
 
     <EditText
         android:id="@+id/et_resume_price"
@@ -66,7 +53,7 @@
         android:gravity="center_horizontal"
         android:text="2"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tv_resume_prompt"
+        app:layout_constraintTop_toBottomOf="@id/tv_resume_introduction"
         />
     <TextView
         android:layout_width="wrap_content"
@@ -83,11 +70,23 @@
         android:layout_height="50dp"
         android:layout_marginLeft="20dp"
         android:layout_marginRight="20dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="30dp"
         android:background="@color/popup_item_text_color"
         android:text="@string/upload_secret_resume"
         android:textColor="@color/white_color"
         app:layout_constraintTop_toBottomOf="@id/et_resume_price"
+        />
+
+    <TextView
+        android:id="@+id/tv_resume_prompt"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp"
+        android:layout_marginTop="10dp"
+        android:text="@string/upload_resume_format"
+        android:textSize="14sp"
+        app:layout_constraintTop_toBottomOf="@id/btn_resume_upload"
         />
 
   </android.support.constraint.ConstraintLayout>

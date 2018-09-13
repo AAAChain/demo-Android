@@ -45,11 +45,11 @@ public class DBManager {
             try {
                 jsonObject.put("name:", entity.getExtra().getName());
                 jsonObject.put("desc:", entity.getExtra().getDesc());
-                jsonObject.put("workours:", entity.getExtra().getWorkours());
+                jsonObject.put("startTime:", entity.getExtra().getStartTime());
                 jsonObject.put("company:", entity.getExtra().getCompany());
                 jsonObject.put("birthday:", entity.getExtra().getBirthday());
-                jsonObject.put("latestWorkHours:", entity.getExtra().getLatestWorkHours());
-                jsonObject.put("latestCompany:", entity.getExtra().getLatestCompany());
+                jsonObject.put("latWorkingHour:", entity.getExtra().getLastWorkingHour());
+                jsonObject.put("lastCompany:", entity.getExtra().getLastCompany());
             } catch (JSONException e) {
                 e.printStackTrace();
             }
@@ -122,11 +122,11 @@ public class DBManager {
             try {
                 jsonObject.put("name:", resumeResponseEntity.getExtra().getName());
                 jsonObject.put("desc:", resumeResponseEntity.getExtra().getDesc());
-                jsonObject.put("workours:", resumeResponseEntity.getExtra().getWorkours());
+                jsonObject.put("startTime:", resumeResponseEntity.getExtra().getStartTime());
                 jsonObject.put("company:", resumeResponseEntity.getExtra().getCompany());
                 jsonObject.put("birthday:", resumeResponseEntity.getExtra().getBirthday());
-                jsonObject.put("latestWorkHours:", resumeResponseEntity.getExtra().getLatestWorkHours());
-                jsonObject.put("latestCompany:", resumeResponseEntity.getExtra().getLatestCompany());
+                jsonObject.put("latWorkingHour:", resumeResponseEntity.getExtra().getLastWorkingHour());
+                jsonObject.put("lastCompany:", resumeResponseEntity.getExtra().getLastCompany());
             } catch (JSONException e) {
                 e.printStackTrace();
             }

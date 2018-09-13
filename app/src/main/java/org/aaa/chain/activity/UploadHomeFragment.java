@@ -1,6 +1,7 @@
 package org.aaa.chain.activity;
 
 import android.content.Intent;
+import android.graphics.drawable.Drawable;
 import android.view.View;
 import android.widget.Button;
 import android.widget.RadioButton;
@@ -17,7 +18,7 @@ import org.json.JSONObject;
 
 import static android.app.Activity.RESULT_OK;
 
-public class TaskHallFragment extends BaseFragment {
+public class UploadHomeFragment extends BaseFragment {
 
     private RelativeLayout rlBirthday;
     private RelativeLayout rlCompany;
@@ -25,7 +26,7 @@ public class TaskHallFragment extends BaseFragment {
     private RadioGroup rgSex;
     private RadioButton rbFemale;
     private RadioButton rbMale;
-    private RelativeLayout rlWorkTime;
+    private RelativeLayout rlStartTime;
     private Button btnNext;
 
     private TextView tvDate;
@@ -34,11 +35,12 @@ public class TaskHallFragment extends BaseFragment {
     private JSONObject object = new JSONObject();
 
     @Override public int initLayout() {
-        return R.layout.fragment_task_hall;
+        return R.layout.fragment_upload_home;
     }
 
     @Override public void getViewById() {
 
+        ((BaseActivity) Objects.requireNonNull(getActivity())).setTitleName(getResources().getString(R.string.upload_home));
         rgSex = $(R.id.rg_sex);
         rbFemale = $(R.id.rb_female);
         rbMale = $(R.id.rb_male);
@@ -47,6 +49,13 @@ public class TaskHallFragment extends BaseFragment {
         tvCompany = $(R.id.tv_company);
 
         rbMale.setChecked(true);
+        Drawable drawableMale = getResources().getDrawable(R.drawable.radio_button_bg);
+        drawableMale.setBounds(0, 0, 70, 70);
+        rbMale.setCompoundDrawables(drawableMale, null, null, null);
+
+        Drawable drawableFemale = getResources().getDrawable(R.drawable.radio_button_bg);
+        drawableFemale.setBounds(0, 0, 70, 70);
+        rbFemale.setCompoundDrawables(drawableFemale, null, null, null);
 
         rgSex.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
             @Override public void onCheckedChanged(RadioGroup group, int checkedId) {
@@ -71,10 +80,10 @@ public class TaskHallFragment extends BaseFragment {
             }
         });
 
-        rlWorkTime = $(R.id.rl_work_time);
+        rlStartTime = $(R.id.rl_start_time);
         rlBirthday = $(R.id.rl_birthday);
         rlCompany = $(R.id.rl_company);
-        rlWorkTime.setOnClickListener(this);
+        rlStartTime.setOnClickListener(this);
         rlBirthday.setOnClickListener(this);
         rlCompany.setOnClickListener(this);
         btnNext = $(R.id.btn_next);
@@ -84,32 +93,20 @@ public class TaskHallFragment extends BaseFragment {
     @Override public void onClick(View v) {
 
         switch (v.getId()) {
-            case R.id.rl_work_time:
+            case R.id.rl_start_time:
                 CommonUtils.getInstance().initDate(getActivity(), tvDate);
                 break;
             case R.id.rl_birthday:
                 CommonUtils.getInstance().initDate(getActivity(), tvBirthday);
                 break;
             case R.id.rl_company:
-                startActivityForResult(new Intent(getActivity(), UpdateInfoActivity.class).putExtra("title", getResources().getString(R.string.company_name)), 1000);
+                startActivityForResult(
+                        new Intent(getActivity(), UpdateInfoActivity.class).putExtra("title", getResources().getString(R.string.company_name)), 1000);
                 break;
 
             case R.id.btn_next:
-                //if (TextUtils.isEmpty(tvDate.getText())) {
-                //    Toast.makeText(getActivity(), "请选择参加工作时间", Toast.LENGTH_SHORT).show();
-                //    return;
-                //}
-                //if (TextUtils.isEmpty(tvBirthday.getText())) {
-                //    Toast.makeText(getActivity(), "请选择出生年月", Toast.LENGTH_SHORT).show();
-                //    return;
-                //}
-                //if (TextUtils.isEmpty(tvCompany.getText())) {
-                //    Toast.makeText(getActivity(), "请设置公司名称", Toast.LENGTH_SHORT).show();
-                //    return;
-                //}
-
                 try {
-                    object.put("workours", tvDate.getText().toString());
+                    object.put("startTime", tvDate.getText().toString());
                     object.put("birthday", tvBirthday.getText().toString());
                     object.put("company", tvCompany.getText().toString());
                 } catch (JSONException e) {

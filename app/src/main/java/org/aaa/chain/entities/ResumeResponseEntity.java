@@ -77,12 +77,12 @@ public class ResumeResponseEntity {
 
     public class ExtraEntity {
         private String desc;
-        private String workours;
+        private String startTime;
         private String company;
         private String birthday;
-        private String latestWorkHours;
+        private String lastWorkingHour;
         private String name;
-        private String latestCompany;
+        private String lastCompany;
 
         public String getDesc() {
             return desc;
@@ -92,12 +92,12 @@ public class ResumeResponseEntity {
             this.desc = desc;
         }
 
-        public String getWorkours() {
-            return workours;
+        public String getStartTime() {
+            return startTime;
         }
 
-        public void setWorkours(String workours) {
-            this.workours = workours;
+        public void setStartTime(String startTime) {
+            this.startTime = startTime;
         }
 
         public String getCompany() {
@@ -116,12 +116,12 @@ public class ResumeResponseEntity {
             this.birthday = birthday;
         }
 
-        public String getLatestWorkHours() {
-            return latestWorkHours;
+        public String getLastWorkingHour() {
+            return lastWorkingHour;
         }
 
-        public void setLatestWorkHours(String latestWorkHours) {
-            this.latestWorkHours = latestWorkHours;
+        public void setLastWorkingHour(String lastWorkingHour) {
+            this.lastWorkingHour = lastWorkingHour;
         }
 
         public String getName() {
@@ -132,12 +132,12 @@ public class ResumeResponseEntity {
             this.name = name;
         }
 
-        public String getLatestCompany() {
-            return latestCompany;
+        public String getLastCompany() {
+            return lastCompany;
         }
 
-        public void setLatestCompany(String latestCompany) {
-            this.latestCompany = latestCompany;
+        public void setLastCompany(String lastCompany) {
+            this.lastCompany = lastCompany;
         }
     }
 }

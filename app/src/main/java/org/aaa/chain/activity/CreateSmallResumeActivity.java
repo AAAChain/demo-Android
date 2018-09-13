@@ -15,13 +15,13 @@ import org.json.JSONObject;
 
 public class CreateSmallResumeActivity extends BaseActivity {
 
-    private RelativeLayout rlCompany;
-    private RelativeLayout rlTimeRange;
+    private RelativeLayout rlLastCompany;
+    private RelativeLayout rlLastWorkingHour;
     private RelativeLayout rlJobType;
     private RelativeLayout rlSkillLabel;
 
-    private TextView tvCompany;
-    private TextView tvTimeRange;
+    private TextView tvLastCompany;
+    private TextView tvLastWorkingHour;
     private TextView tvJobType;
     private TextView tvSkillLabel;
     private String personalinfo;
@@ -33,8 +33,6 @@ public class CreateSmallResumeActivity extends BaseActivity {
 
     @Override public void getViewById() {
 
-        initSlideBackLayout(this);
-
         personalinfo = getIntent().getStringExtra("personalinfo");
         try {
             object = new JSONObject(personalinfo);
@@ -42,19 +40,19 @@ public class CreateSmallResumeActivity extends BaseActivity {
             e.printStackTrace();
         }
 
-        rlCompany = $(R.id.rl_company);
-        rlTimeRange = $(R.id.rl_time_range);
+        rlLastCompany = $(R.id.rl_last_company);
+        rlLastWorkingHour = $(R.id.rl_last_working_hour);
         rlJobType = $(R.id.rl_job_type);
         rlSkillLabel = $(R.id.rl_skill_label);
         Button btnGet = $(R.id.btn_next);
         btnGet.setOnClickListener(this);
-        rlCompany.setOnClickListener(this);
-        rlTimeRange.setOnClickListener(this);
+        rlLastCompany.setOnClickListener(this);
+        rlLastWorkingHour.setOnClickListener(this);
         rlJobType.setOnClickListener(this);
         rlSkillLabel.setOnClickListener(this);
 
-        tvCompany = $(R.id.tv_company);
-        tvTimeRange = $(R.id.tv_time_range);
+        tvLastCompany = $(R.id.tv_last_company);
+        tvLastWorkingHour = $(R.id.tv_last_working_hour);
         tvJobType = $(R.id.tv_job_type);
         tvSkillLabel = $(R.id.tv_skill_label);
 
@@ -64,12 +62,12 @@ public class CreateSmallResumeActivity extends BaseActivity {
     @Override public void onClick(View v) {
 
         switch (v.getId()) {
-            case R.id.rl_company:
+            case R.id.rl_last_company:
                 startActivityForResult(new Intent(CreateSmallResumeActivity.this, UpdateInfoActivity.class).putExtra("title", "公司名称"), 1000);
                 break;
-            case R.id.rl_time_range:
+            case R.id.rl_last_working_hour:
 
-                CommonUtils.getInstance().initDate(CreateSmallResumeActivity.this, tvTimeRange);
+                CommonUtils.getInstance().initDate(CreateSmallResumeActivity.this, tvLastWorkingHour);
                 break;
             case R.id.rl_job_type:
 
@@ -79,7 +77,7 @@ public class CreateSmallResumeActivity extends BaseActivity {
                 break;
             case R.id.btn_next:
                 try {
-                    object.put("latestWorkHours", tvTimeRange.getText().toString());
+                    object.put("latWorkingHour", tvLastWorkingHour.getText().toString());
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -94,9 +92,9 @@ public class CreateSmallResumeActivity extends BaseActivity {
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (RESULT_OK == resultCode && 1000 == requestCode) {
-            tvCompany.setText(data.getExtras().getString("updateinfo"));
+            tvLastCompany.setText(data.getExtras().getString("updateinfo"));
             try {
-                object.put("latestCompany", data.getExtras().getString("updateinfo"));
+                object.put("latCompany", data.getExtras().getString("updateinfo"));
             } catch (JSONException e) {
                 e.printStackTrace();
             }
