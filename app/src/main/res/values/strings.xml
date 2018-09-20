@@ -1,6 +1,6 @@
 <resources>
   <string name="app_name">链聘</string>
-  <string name="app_main_name">链聘</string>
+  <string name="app_name1">链聘</string>
   <string name="app_introduction">基于AAAChain公链的去中心化的区块链招聘平台
 隐私信息加密上链，求职者拥有简历的绝对资产权；
 招聘方直接对接求职者，简历下载token费用归求职者</string>
@@ -25,6 +25,8 @@
   <string name="recent_work_experience">最近一份工作</string>
   <string name="position_type">职位类型</string>
   <string name="skill_label">技能标签</string>
+  <string name="year">%s 年</string>
+  <string name="present">至今</string>
   <string name="last_job">工作内容</string>
   <string name="next">下一步</string>
   <string name="last_job_details">1.主要负责新员工入职培训\n2.分析制定员工每月个人销售业绩\n3.帮助员工提高每日客单价，整体店面管理等工作。</string>
@@ -54,8 +56,10 @@
   <string name="upload_successful">上传成功</string>
   <string name="setting_price">设置简历价格</string>
   <string name="upload_secret_resume">完整简历加密上传</string>
+  <string name="confirm_modify">确认修改信息</string>
   <string name="upload_resume">完整简历上传</string>
   <string name="done">完成</string>
+  <string name="last_job_time">时间段</string>
   <string name="upload_resume_format">附件格式应为doc/docx/pdf/jpg/png,大小不超过10M</string>
   <string name="upload_resume_introduction">请在简历里面包含姓名、电话等联系信息
 这个文件我们将用您的公钥加密存贮，只有您授权，别人才能下载和使用。
@@ -79,10 +83,10 @@
   <string name="active">刚刚活跃</string>
   <string name="on_the_job">在职-考虑机会</string>
   <string name="position_and_company">游戏设计 雷尚科技</string>
+  <string name="my_resume_title">链聘：%s工程师简历</string>
 
 
-
-  <string name="java_engineer">java 高级工程师</string>
+  <string name="java_engineer">%s 高级工程师</string>
   <string name="applicant_name">刘钢锋</string>
   <string name="interviewer_info">北京软交所 招聘者</string>
   <string name="position_detail">职位详情</string>

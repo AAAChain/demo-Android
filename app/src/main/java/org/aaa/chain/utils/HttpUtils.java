@@ -74,15 +74,12 @@ public class HttpUtils {
         });
     }
 
-    public void modifyCustomInfo(ServerCallBack callBack) {
-        String url = "http://47.99.61.209:9527/dbnode/QmScY4bbiGDWNKMkyCai8kQ7mDUspaoPAErpsDfz5nVrpm?chain=eos";
+    public void modifyCustomInfo(String hashId, String signature, String modifyContent, ServerCallBack callBack) {
+        String url = "http://47.99.61.209:9527/dbnode/" + hashId + "?chain=eos";
         JSONObject object = new JSONObject();
         try {
-            object.put("signature", "SIG_K1_KiFVVEbjFQGUJK5bW4MZirfrHptqwSkPKFWxUZVknmNv6UPBYwQtbLtMgbGr1ZSA47nBnZLFKGG6ZiaGxVuLfck1krgFUx");
-
-            JSONObject object1 = new JSONObject();
-            object1.put("desc", "i don't want you");
-            object.put("extra", object1);
+            object.put("signature", signature);
+            object.put("extra", modifyContent);
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -90,7 +87,18 @@ public class HttpUtils {
         httpRequest(object.toString(), null, METHOD_POST, url, callBack);
     }
 
-    public void searchResource(int page, ServerCallBack callBack) {
+    public void getBaseInfo(ServerCallBack callBack) {
+        String url = "http://47.99.61.209:9527/dbnode/find?page=1&pageSize=1&order=-1";
+        JSONObject object = new JSONObject();
+        try {
+            object.put("account", Constant.getAccount());
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        httpRequest(object.toString(), null, METHOD_POST, url, callBack);
+    }
+
+    public void searchResource(int page, String content, ServerCallBack callBack) {
         String url = "http://47.99.61.209:9527/dbnode/find?page=" + page + "&pageSize=20&sortBy=timestamp&order=-1";
         JSONObject object = new JSONObject();
         try {
@@ -100,6 +108,11 @@ public class HttpUtils {
             JSONObject object2 = new JSONObject();
             object2.put("$ne", Constant.getAccount());
             object.put("account", object2);
+            if (content != null) {
+                JSONObject object3 = new JSONObject();
+                object3.put("extra.company", content);
+                object.put("stringMatch", object3);
+            }
         } catch (JSONException e) {
             e.printStackTrace();
         }

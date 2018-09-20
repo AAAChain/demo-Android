@@ -133,6 +133,7 @@
         android:layout_height="50dp"
         android:layout_marginTop="40dp"
         android:text="@string/transfer_accounts"
+        android:textAllCaps="false"
         app:layout_constraintEnd_toEndOf="@+id/et_account_password"
         app:layout_constraintHorizontal_bias="0.586"
         app:layout_constraintStart_toStartOf="@+id/tv_account_password_label"

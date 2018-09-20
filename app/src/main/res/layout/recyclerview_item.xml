@@ -39,6 +39,7 @@
           android:layout_marginLeft="10dp"
           android:maxLength="20"
           android:text="test"
+          android:textSize="@dimen/text_data_size"
           app:layout_constraintLeft_toRightOf="@id/iv_applicant_avatar"
           />
       <TextView
@@ -55,6 +56,7 @@
           android:layout_height="wrap_content"
           android:layout_marginLeft="5dp"
           android:text="@string/applicant_education"
+          android:textSize="@dimen/text_data_size"
           app:layout_constraintLeft_toRightOf="@id/tv_applicant_work_hours"
           app:layout_constraintTop_toBottomOf="@id/tv_applicant_name"
           />
@@ -64,6 +66,7 @@
           android:layout_height="wrap_content"
           android:layout_marginLeft="5dp"
           android:text="14K"
+          android:textSize="@dimen/text_data_size"
           app:layout_constraintLeft_toRightOf="@id/tv_applicant_education"
           app:layout_constraintTop_toBottomOf="@id/tv_applicant_name"
           />
@@ -74,6 +77,7 @@
           android:layout_marginLeft="10dp"
           android:layout_marginTop="5dp"
           android:text="@string/applicant_work_company"
+          android:textSize="@dimen/text_data_size"
           app:layout_constraintLeft_toRightOf="@id/iv_applicant_avatar"
           app:layout_constraintTop_toBottomOf="@id/tv_applicant_work_hours"
           />
@@ -84,15 +88,17 @@
           android:layout_marginLeft="5dp"
           android:layout_marginTop="5dp"
           android:text="@string/applicant_work_position"
+          android:textSize="@dimen/text_data_size"
           app:layout_constraintLeft_toRightOf="@id/tv_applicant_name"
           />
 
       <TextView
-          android:id="@+id/tv_applicant_work_range"
+          android:id="@+id/tv_applicant_resume_attachment"
           android:layout_width="wrap_content"
           android:layout_height="wrap_content"
           android:layout_marginRight="10dp"
           android:layout_marginTop="5dp"
+          android:textSize="@dimen/text_data_size"
           app:layout_constrainedWidth="true"
           app:layout_constraintHorizontal_bias="0"
           app:layout_constraintHorizontal_chainStyle="packed"
@@ -106,6 +112,7 @@
           android:layout_width="wrap_content"
           android:layout_height="wrap_content"
           android:layout_marginTop="5dp"
+          android:textSize="@dimen/text_data_size"
           app:layout_constrainedWidth="true"
           app:layout_constraintRight_toRightOf="parent"
           app:layout_constraintTop_toBottomOf="@id/iv_applicant_avatar"

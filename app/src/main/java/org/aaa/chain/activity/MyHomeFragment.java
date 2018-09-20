@@ -19,6 +19,7 @@ public class MyHomeFragment extends BaseFragment {
         $(R.id.rl_my_account).setOnClickListener(this);
         $(R.id.rl_my_wallet).setOnClickListener(this);
         $(R.id.rl_my_setting).setOnClickListener(this);
+
     }
 
     @Override public void onClick(View v) {

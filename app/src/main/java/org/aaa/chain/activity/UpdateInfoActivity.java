@@ -13,6 +13,7 @@ public class UpdateInfoActivity extends BaseActivity {
     private EditText updateInfo;
     private TextView done;
     private String title;
+    private String name;
 
     @Override public int initLayout() {
         return R.layout.activity_update_info;
@@ -20,8 +21,10 @@ public class UpdateInfoActivity extends BaseActivity {
 
     @Override public void getViewById() {
         title = getIntent().getStringExtra("title");
+        name = getIntent().getStringExtra("name");
         setTitleName(title);
         updateInfo = $(R.id.et_update_info);
+        updateInfo.setText(name);
         done = $(R.id.tv_title_bar_done);
         done.setVisibility(View.VISIBLE);
         done.setOnClickListener(this);

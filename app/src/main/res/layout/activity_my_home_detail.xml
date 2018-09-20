@@ -92,7 +92,7 @@
       android:layout_width="match_parent"
       android:layout_height="0dp"
       android:padding="20dp"
-      android:visibility="gone"
+      android:visibility="visible"
       app:layout_constraintBottom_toBottomOf="parent"
       app:layout_constraintTop_toBottomOf="@+id/layout_title_bar"
       >
@@ -184,6 +184,45 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/rl_transaction_history"
         />
+    <RelativeLayout
+        android:id="@+id/rl_my_resume"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:paddingBottom="10dp"
+        android:paddingTop="10dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/rl_transaction_history"
+        >
+
+      <ImageView
+          android:id="@+id/iv_resume_icon"
+          android:layout_width="40dp"
+          android:layout_height="40dp"
+          android:background="@color/view_button_bg"
+          android:layout_centerVertical="true"
+          />
+      <TextView
+          android:id="@+id/tv_my_resume_title"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_centerVertical="true"
+          android:layout_toRightOf="@id/iv_resume_icon"
+          android:layout_marginLeft="20dp"
+          android:textSize="@dimen/text_tile_size"
+          />
+    </RelativeLayout>
+
+    <View
+        android:layout_width="0dp"
+        android:layout_height="1dp"
+        android:background="@android:color/darker_gray"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/rl_my_resume"
+        />
+
 
   </android.support.constraint.ConstraintLayout>
 
@@ -242,6 +281,7 @@
         android:layout_marginBottom="8dp"
         android:layout_marginTop="8dp"
         android:text="@string/logout"
+        android:textAllCaps="false"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

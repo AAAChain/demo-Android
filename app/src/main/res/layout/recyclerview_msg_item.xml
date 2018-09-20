@@ -7,12 +7,13 @@
 
   <ImageView
       android:id="@+id/iv_company_avatar"
-      android:layout_width="40dp"
-      android:layout_height="40dp"
+      android:layout_width="50dp"
+      android:layout_height="50dp"
       android:layout_margin="10dp"
       android:src="@mipmap/ic_launcher"
       app:layout_constraintStart_toStartOf="parent"
       app:layout_constraintTop_toTopOf="parent"
+      android:tint="@color/view_button_bg"
       />
   <TextView
       android:id="@+id/tv_company_notice"

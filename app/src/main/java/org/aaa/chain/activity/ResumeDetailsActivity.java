@@ -2,6 +2,7 @@ package org.aaa.chain.activity;
 
 import android.app.ProgressDialog;
 import android.graphics.Color;
+import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -14,12 +15,15 @@ import java.text.DecimalFormat;
 import okhttp3.Call;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
+import org.aaa.chain.ChainApplication;
 import org.aaa.chain.Constant;
 import org.aaa.chain.JSInteraction;
 import org.aaa.chain.R;
 import org.aaa.chain.db.DBManager;
+import org.aaa.chain.entities.OrderDataEntity;
 import org.aaa.chain.entities.ResumeRequestEntity;
 import org.aaa.chain.entities.ResumeResponseEntity;
+import org.aaa.chain.entities.SearchResponseEntity;
 import org.aaa.chain.utils.FileUtils;
 import org.aaa.chain.utils.HttpUtils;
 import org.aaa.chain.utils.PBEUtils;
@@ -42,22 +46,28 @@ public class ResumeDetailsActivity extends BaseActivity {
     private ProgressDialog dialog;
     private String pMessage;
     private TextView tvName;
+    private Bundle bundle;
+    private OrderDataEntity entity;
 
     @Override public int initLayout() {
-        type = getIntent().getIntExtra("type", 0);
-        int layoutId;
+        bundle = getIntent().getExtras();
+        type = bundle.getInt("type", 0);
+        int layoutId = 0;
         if (type == 0) {
             layoutId = R.layout.activity_resume_details;
             goodId = getIntent().getStringExtra("hashId");
             price = getIntent().getStringExtra("price");
             pMessage = getResources().getString(R.string.order_generation);
-        } else {
+        } else if (type == 1) {
             pMessage = getResources().getString(R.string.order_authorization);
             layoutId = R.layout.activity_postion_info;
-            orderId = getIntent().getLongExtra("id", -1);
-            hashId = getIntent().getStringExtra("goodId");
-            status = getIntent().getIntExtra("status", -1);
-            buyer = getIntent().getStringExtra("buyer");
+            entity = getIntent().getParcelableExtra("dataEntity");
+            orderId = entity.getId();
+            hashId = entity.getGoodId();
+            status = entity.getStatus();
+            buyer = entity.getBuyer();
+        } else {
+            layoutId = R.layout.activity_postion_info;
         }
         return layoutId;
     }
@@ -66,6 +76,7 @@ public class ResumeDetailsActivity extends BaseActivity {
         if (type == 0) {
             buy = $(R.id.btn_resume_buy);
             if (price == null) {
+                price = "1";
                 buy.setText(String.format(getResources().getString(R.string.buy_a_resume), "1"));
             } else {
                 buy.setText(String.format(getResources().getString(R.string.buy_a_resume), price));
@@ -73,10 +84,11 @@ public class ResumeDetailsActivity extends BaseActivity {
             tvName = $(R.id.tv_resume_name);
             tvName.setText(getIntent().getStringExtra("name"));
             buy.setOnClickListener(this);
-        } else {
+        } else if (type == 1) {
             ProgressDialog dialog = ProgressDialog.show(ResumeDetailsActivity.this, "waiting...", "loading...");
             authorization = $(R.id.btn_authorization);
             authorization.setOnClickListener(this);
+            ((TextView) $(R.id.tv_position_name)).setText(String.format(getResources().getString(R.string.java_engineer), "java"));
             if (Constant.getAccount().equals(buyer)) {
                 if (status == 0 || status == 1) {
                     authorization.setClickable(false);
@@ -87,56 +99,61 @@ public class ResumeDetailsActivity extends BaseActivity {
                     authorization.setText(getResources().getString(R.string.waiting_receive));
                     authorization.setBackgroundColor(getResources().getColor(R.color.popup_item_text_color));
                 } else if (status == 3) {
-                    authorization.setClickable(false);
-                    authorization.setText(getResources().getString(R.string.transaction_done));
-                    authorization.setBackgroundColor(Color.GRAY);
+                    authorization.setClickable(true);
+                    authorization.setText(getResources().getString(R.string.resume_received));
+                    authorization.setBackgroundColor(getResources().getColor(R.color.popup_item_text_color));
                 }
             } else {
-                if (status == 0 || status == 1) {
+                if (status == 0) {
                     authorization.setClickable(false);
                     authorization.setText(getResources().getString(R.string.waiting_buyer_authorization));
                     authorization.setBackgroundColor(Color.GRAY);
-                } else if (status == 2) {
+                } else if (status == 1) {
                     authorization.setClickable(true);
                     authorization.setText(getResources().getString(R.string.waiting_buyer_authorization));
                     authorization.setBackgroundColor(getResources().getColor(R.color.popup_item_text_color));
+                } else if (status == 2) {
+                    authorization.setClickable(false);
+                    authorization.setText(getResources().getString(R.string.authorization_successful));
+                    authorization.setBackgroundColor(Color.GRAY);
                 } else {
                     authorization.setClickable(false);
                     authorization.setText(getResources().getString(R.string.transaction_done));
                     authorization.setBackgroundColor(Color.GRAY);
                 }
             }
-            new Thread(new Runnable() {
-                @Override public void run() {
-                    HttpUtils.getInstance().getAppointResource(hashId, new HttpUtils.ServerCallBack() {
-                        @Override public void onFailure(Call call, IOException e) {
+            HttpUtils.getInstance().getAppointResource(hashId, new HttpUtils.ServerCallBack() {
+                @Override public void onFailure(Call call, IOException e) {
 
-                            runOnUiThread(new Runnable() {
-                                @Override public void run() {
-                                    dialog.dismiss();
-                                }
-                            });
-                        }
-
-                        @Override public void onResponse(Call call, Response response) {
-
-                            if (response.code() == 200) {
-                                ResponseBody body = response.body();
-                                try {
-                                    resumeResponseEntity = new Gson().fromJson(body.string(), ResumeResponseEntity.class);
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                            runOnUiThread(new Runnable() {
-                                @Override public void run() {
-                                    dialog.dismiss();
-                                }
-                            });
+                    runOnUiThread(new Runnable() {
+                        @Override public void run() {
+                            dialog.dismiss();
                         }
                     });
                 }
-            }).start();
+
+                @Override public void onResponse(Call call, Response response) {
+
+                    if (response.code() == 200) {
+                        ResponseBody body = response.body();
+                        try {
+                            resumeResponseEntity = new Gson().fromJson(body.string(), ResumeResponseEntity.class);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    runOnUiThread(new Runnable() {
+                        @Override public void run() {
+                            dialog.dismiss();
+                        }
+                    });
+                }
+            });
+        } else {
+            $(R.id.btn_authorization).setVisibility(View.GONE);
+            SearchResponseEntity entity = ChainApplication.getInstance().getBaseInfo();
+            TextView name = $(R.id.tv_position_name);
+            name.setText(String.format(getResources().getString(R.string.java_engineer), entity.getDocs().get(0).getExtra().getJobType()));
         }
     }
 
@@ -176,9 +193,9 @@ public class ResumeDetailsActivity extends BaseActivity {
 
             case R.id.btn_authorization:
                 dialog.setTitle("waiting...");
-                if (status == 2 && Constant.getAccount().equals(buyer)) {
+                if ((status == 2 || status == 3) && Constant.getAccount().equals(buyer)) {
 
-                    downloadFile(2);
+                    downloadFile(status);
                     dialog.setMessage(getResources().getString(R.string.waiting_receive));
                 } else {
 
@@ -277,9 +294,10 @@ public class ResumeDetailsActivity extends BaseActivity {
                         File file = FileUtils.getInstance()
                                 .getFile(body.bytes(), getExternalCacheDir().getAbsolutePath(), resumeResponseEntity.getExtra().getName());
 
-                        File defile = PBEUtils.getInstance()
-                                .decryptFile(ResumeDetailsActivity.this, file.getAbsolutePath(), Constant.getPrivateKey(), Constant.getPublicKey());
                         if (status == 0) {
+                            File defile = PBEUtils.getInstance()
+                                    .decryptFile(ResumeDetailsActivity.this, file.getAbsolutePath(), Constant.getPrivateKey(),
+                                            Constant.getPublicKey());
                             File enfile = PBEUtils.getInstance()
                                     .encryptFile(ResumeDetailsActivity.this, defile.getAbsolutePath(), Constant.getPrivateKey(),
                                             Constant.getAnotherPublicKey());
@@ -294,7 +312,10 @@ public class ResumeDetailsActivity extends BaseActivity {
                             });
                             //2.upload file
                             addEncryptFile(requestEntity);
-                        } else {
+                        } else if (status == 2) {
+                            File defile = PBEUtils.getInstance()
+                                    .decryptFile(ResumeDetailsActivity.this, file.getAbsolutePath(), Constant.getAnotherPrivateKey(),
+                                            Constant.getPublicKey());
                             HttpUtils.getInstance().updateOrderStatus(orderId, "final", HttpUtils.FINAL_PAYED, new HttpUtils.ServerCallBack() {
 
                                 @Override public void onFailure(Call call, IOException e) {
@@ -313,9 +334,9 @@ public class ResumeDetailsActivity extends BaseActivity {
                                                     message = jsonObject.getString("message");
                                                     if (isSuccess) {
                                                         dialog.dismiss();
-                                                        authorization.setClickable(false);
-                                                        authorization.setText(getResources().getString(R.string.resume_received));
-                                                        authorization.setBackgroundColor(Color.GRAY);
+                                                        //authorization.setClickable(false);
+                                                        //authorization.setText(getResources().getString(R.string.resume_received));
+                                                        //authorization.setBackgroundColor(Color.GRAY);
                                                         Toast.makeText(ResumeDetailsActivity.this, "path:" + defile.getAbsolutePath(),
                                                                 Toast.LENGTH_SHORT).show();
                                                     } else {
@@ -333,6 +354,16 @@ public class ResumeDetailsActivity extends BaseActivity {
                                     } catch (JSONException | IOException e) {
                                         e.printStackTrace();
                                     }
+                                }
+                            });
+                        } else {
+                            File defile = PBEUtils.getInstance()
+                                    .decryptFile(ResumeDetailsActivity.this, file.getAbsolutePath(), Constant.getAnotherPrivateKey(),
+                                            Constant.getPublicKey());
+                            runOnUiThread(new Runnable() {
+                                @Override public void run() {
+                                    dialog.dismiss();
+                                    Toast.makeText(ResumeDetailsActivity.this, "path:" + defile.getAbsolutePath(), Toast.LENGTH_SHORT).show();
                                 }
                             });
                         }
@@ -419,6 +450,7 @@ public class ResumeDetailsActivity extends BaseActivity {
                                     buy.setText(getResources().getString(R.string.already_ordered));
                                     buy.setEnabled(false);
                                     buy.setClickable(false);
+                                    buy.setBackgroundColor(Color.GRAY);
                                     Toast.makeText(ResumeDetailsActivity.this,
                                             getResources().getString(R.string.waiting_transaction_done) + response.code(), Toast.LENGTH_SHORT).show();
                                 } else {
@@ -458,7 +490,7 @@ public class ResumeDetailsActivity extends BaseActivity {
                         @Override public void run() {
                             dialog.dismiss();
                             authorization.setClickable(false);
-                            authorization.setText(getResources().getString(R.string.resume_received));
+                            authorization.setText(getResources().getString(R.string.authorization_successful));
                             authorization.setBackgroundColor(Color.GRAY);
                             Toast.makeText(ResumeDetailsActivity.this, getResources().getString(R.string.authorization_successful),
                                     Toast.LENGTH_SHORT).show();

@@ -10,6 +10,7 @@ import android.widget.LinearLayout;
 import android.widget.NumberPicker;
 import android.widget.TextView;
 import java.util.Calendar;
+import org.aaa.chain.R;
 
 public class CommonUtils {
 
@@ -22,7 +23,7 @@ public class CommonUtils {
         return instance;
     }
 
-    public void initDate(Context context, TextView tvDate) {
+    public void initDate(Context context, TextView tvDate, boolean isLastJob) {
         Calendar calendar = Calendar.getInstance();
 
         int year = calendar.get(Calendar.YEAR);
@@ -33,7 +34,12 @@ public class CommonUtils {
                 new DatePickerDialog(new ContextThemeWrapper(context, android.R.style.Theme_Holo_Light_Dialog_NoActionBar),
                         new DatePickerDialog.OnDateSetListener() {
                             @Override public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
-                                tvDate.setText(year + "--" + Integer.valueOf(month + 1));
+                                if (isLastJob) {
+                                    tvDate.setText(
+                                            year + "-" + Integer.valueOf(month + 1) + "-" + context.getResources().getString(R.string.present));
+                                } else {
+                                    tvDate.setText(year + "-" + Integer.valueOf(month + 1));
+                                }
                             }
                         }, year, month, day) {
                     @Override protected void onCreate(Bundle savedInstanceState) {

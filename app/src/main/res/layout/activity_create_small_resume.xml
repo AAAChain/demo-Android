@@ -32,7 +32,7 @@
             android:layout_marginLeft="10dp"
             android:layout_marginTop="10dp"
             android:text="@string/recent_work_experience"
-            android:textSize="18sp"
+            android:textSize="@dimen/text_tile_size"
             />
 
         <RelativeLayout
@@ -49,7 +49,7 @@
               android:layout_height="wrap_content"
               android:layout_centerVertical="true"
               android:text="@string/company_name"
-              android:textSize="18sp"
+              android:textSize="@dimen/text_content_size"
               />
 
           <TextView
@@ -59,6 +59,7 @@
               android:layout_alignParentRight="true"
               android:layout_centerVertical="true"
               android:layout_marginRight="20dp"
+              android:textSize="@dimen/text_content_size"
               />
           <ImageView
               android:layout_width="25dp"
@@ -86,8 +87,8 @@
               android:layout_width="wrap_content"
               android:layout_height="wrap_content"
               android:layout_centerVertical="true"
-              android:text="时间段"
-              android:textSize="18sp"
+              android:text="@string/last_job_time"
+              android:textSize="@dimen/text_content_size"
               />
           <TextView
               android:id="@+id/tv_last_working_hour"
@@ -96,6 +97,7 @@
               android:layout_alignParentRight="true"
               android:layout_centerVertical="true"
               android:layout_marginRight="20dp"
+              android:textSize="@dimen/text_content_size"
               />
           <ImageView
               android:layout_width="25dp"
@@ -123,7 +125,7 @@
               android:layout_height="wrap_content"
               android:layout_centerVertical="true"
               android:text="@string/position_type"
-              android:textSize="18sp"
+              android:textSize="@dimen/text_content_size"
               />
           <TextView
               android:id="@+id/tv_job_type"
@@ -132,6 +134,7 @@
               android:layout_alignParentRight="true"
               android:layout_centerVertical="true"
               android:layout_marginRight="20dp"
+              android:textSize="@dimen/text_content_size"
               />
           <ImageView
               android:layout_width="25dp"
@@ -159,7 +162,7 @@
               android:layout_height="wrap_content"
               android:layout_centerVertical="true"
               android:text="@string/skill_label"
-              android:textSize="18sp"
+              android:textSize="@dimen/text_content_size"
               />
           <TextView
               android:id="@+id/tv_skill_label"
@@ -168,6 +171,7 @@
               android:layout_alignParentRight="true"
               android:layout_centerVertical="true"
               android:layout_marginRight="20dp"
+              android:textSize="@dimen/text_content_size"
               />
           <ImageView
               android:layout_width="25dp"
@@ -183,15 +187,18 @@
             android:layout_marginLeft="10dp"
             android:layout_marginTop="10dp"
             android:text="@string/last_job"
-            android:textSize="18sp"
+            android:textSize="@dimen/text_content_size"
             />
-        <TextView
-            android:layout_width="wrap_content"
+        <EditText
+            android:id="@+id/et_last_job_content_info"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:background="@drawable/shape_white_bg"
             android:padding="10dp"
             android:text="@string/last_job_details"
+            android:textColor="@color/popup_outside_bg"
+            android:textSize="@dimen/text_content_size"
             />
       </LinearLayout>
 
@@ -204,7 +211,9 @@
           android:layout_marginTop="68dp"
           android:background="@color/view_button_bg"
           android:text="@string/next"
+          android:textAllCaps="false"
           android:textColor="@color/white_color"
+          android:textSize="@dimen/text_content_size"
           app:layout_constraintEnd_toEndOf="parent"
           app:layout_constraintHorizontal_bias="0.0"
           app:layout_constraintStart_toStartOf="parent"

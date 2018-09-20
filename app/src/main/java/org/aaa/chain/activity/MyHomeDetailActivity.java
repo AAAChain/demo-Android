@@ -11,14 +11,15 @@ import org.aaa.chain.ChainApplication;
 import org.aaa.chain.Constant;
 import org.aaa.chain.JSInteraction;
 import org.aaa.chain.R;
-import org.aaa.chain.entities.DataEntity;
+import org.aaa.chain.entities.ResumeRequestEntity;
 import org.aaa.chain.views.CommonPopupWindow;
 
 public class MyHomeDetailActivity extends BaseActivity {
 
-    private List<DataEntity> dataEntities = new ArrayList<>();
+    private List<ResumeRequestEntity> dataEntities = new ArrayList<>();
     private TextView tvBalance;
     ProgressDialog dialog = null;
+    private TextView tvMyResumeTitle;
 
     @Override public int initLayout() {
         return R.layout.activity_my_home_detail;
@@ -55,7 +56,12 @@ public class MyHomeDetailActivity extends BaseActivity {
                 }
             });
 
+            tvMyResumeTitle = $(R.id.tv_my_resume_title);
+            tvMyResumeTitle.setText(String.format(getResources().getString(R.string.my_resume_title),
+                    ChainApplication.getInstance().getBaseInfo().getDocs().get(0).getExtra().getJobType()));
+
             $(R.id.rl_transaction_history).setOnClickListener(this);
+            $(R.id.rl_my_resume).setOnClickListener(this);
             $(R.id.tv_transfer_accounts).setOnClickListener(this);
         } else {
             $(R.id.cl_my_home_detail_setting).setVisibility(View.VISIBLE);
@@ -63,9 +69,9 @@ public class MyHomeDetailActivity extends BaseActivity {
 
         dataEntities.clear();
         for (int i = 0; i < 10; i++) {
-            DataEntity entity = new DataEntity();
-            entity.setDescription("test" + i);
-            entity.setTitle("hello" + i);
+            ResumeRequestEntity entity = new ResumeRequestEntity();
+            entity.setAccount("test" + i);
+            entity.set_id("hello" + i);
             dataEntities.add(entity);
         }
     }
@@ -79,6 +85,12 @@ public class MyHomeDetailActivity extends BaseActivity {
 
             case R.id.tv_transfer_accounts:
                 new CommonPopupWindow(MyHomeDetailActivity.this).pupupWindowTransferAccounts();
+                break;
+            case R.id.rl_my_resume:
+
+                Bundle bundle = new Bundle();
+                bundle.putInt("type", 3);
+                startActivity(ResumeDetailsActivity.class, bundle);
                 break;
             case R.id.tv_change_phone_number:
                 new CommonPopupWindow(MyHomeDetailActivity.this).pupupWindowChangePhoneNumber();

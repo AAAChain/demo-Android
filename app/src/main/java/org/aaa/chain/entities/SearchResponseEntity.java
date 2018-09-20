@@ -127,13 +127,67 @@ public class SearchResponseEntity {
 
     public class ExtraEntity {
 
-        private String latestWorkHours;
-        private String workours;
+        private String startTime;
         private String company;
         private String birthday;
         private String name;
+        private String lastWorkingHour;
+        private String lastCompany;
+        private String lastJobContentInfo;
         private String desc;
         private String price;
+        private String jobType;
+
+        private String sex;
+        private String jobContentInfo;
+
+        public String getLastJobContentInfo() {
+            return lastJobContentInfo;
+        }
+
+        public void setLastJobContentInfo(String lastJobContentInfo) {
+            this.lastJobContentInfo = lastJobContentInfo;
+        }
+
+        public String getLastWorkingHour() {
+            return lastWorkingHour;
+        }
+
+        public void setLastWorkingHour(String lastWorkingHour) {
+            this.lastWorkingHour = lastWorkingHour;
+        }
+
+        public String getLastCompany() {
+            return lastCompany;
+        }
+
+        public void setLastCompany(String lastCompany) {
+            this.lastCompany = lastCompany;
+        }
+
+        public String getJobContentInfo() {
+            return jobContentInfo;
+        }
+
+        public void setJobContentInfo(String jobContentInfo) {
+            this.jobContentInfo = jobContentInfo;
+        }
+
+        public String getSex() {
+            return sex;
+        }
+
+        public void setSex(String sex) {
+            this.sex = sex;
+        }
+
+        public String getJobType() {
+            return jobType;
+        }
+
+        public void setJobType(String jobType) {
+            this.jobType = jobType;
+        }
 
         public String getPrice() {
             return price;
@@ -143,20 +197,12 @@ public class SearchResponseEntity {
             this.price = price;
         }
 
-        public String getLatestWorkHours() {
-            return latestWorkHours;
+        public String getStartTime() {
+            return startTime;
         }
 
-        public void setLatestWorkHours(String latestWorkHours) {
-            this.latestWorkHours = latestWorkHours;
-        }
-
-        public String getWorkours() {
-            return workours;
-        }
-
-        public void setWorkours(String workours) {
-            this.workours = workours;
+        public void setStartTime(String startTime) {
+            this.startTime = startTime;
         }
 
         public String getCompany() {

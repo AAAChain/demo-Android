@@ -83,6 +83,24 @@ public class ResumeResponseEntity {
         private String lastWorkingHour;
         private String name;
         private String lastCompany;
+        private String sex;
+        private String jobContentInfo;
+
+        public String getJobContentInfo() {
+            return jobContentInfo;
+        }
+
+        public void setJobContentInfo(String jobContentInfo) {
+            this.jobContentInfo = jobContentInfo;
+        }
+
+        public String getSex() {
+            return sex;
+        }
+
+        public void setSex(String sex) {
+            this.sex = sex;
+        }
 
         public String getDesc() {
             return desc;

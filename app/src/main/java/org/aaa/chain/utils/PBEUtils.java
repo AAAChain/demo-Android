@@ -164,9 +164,9 @@ public class PBEUtils {
         // 加密前的原文
         String str = "hello world !!!";
         // 口令
-        String key = "qwert";
+        String key = "qwertyuiop";
         // 初始化盐
-        byte[] salt = key.getBytes();
+        byte[] salt = "hahahaha".getBytes();
         // 采用PBE算法加密
         byte[] encData = encryptPBE(str.getBytes(), key, salt);
         // 采用PBE算法解密

@@ -4,6 +4,7 @@ import android.app.Application;
 import android.content.Context;
 import com.squareup.leakcanary.LeakCanary;
 import com.squareup.leakcanary.RefWatcher;
+import org.aaa.chain.entities.SearchResponseEntity;
 
 public class ChainApplication extends Application {
 
@@ -56,7 +57,6 @@ public class ChainApplication extends Application {
         return balance;
     }
 
-
     public boolean isAccount1 = false;
 
     public void setBalance(String balance) {
@@ -73,6 +73,16 @@ public class ChainApplication extends Application {
         instance = this;
 
         refWatcher = setupLeakCanary();
+    }
+
+    private SearchResponseEntity searchResponseEntity;
+
+    public SearchResponseEntity getBaseInfo() {
+        return searchResponseEntity;
+    }
+
+    public void setBaseInfo(SearchResponseEntity entity) {
+        searchResponseEntity = entity;
     }
 
     private RefWatcher setupLeakCanary() {

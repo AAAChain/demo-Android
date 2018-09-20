@@ -22,7 +22,7 @@ import org.aaa.chain.R;
 import org.aaa.chain.adapter.BaseViewHolder;
 import org.aaa.chain.adapter.BindViewHolderInterface;
 import org.aaa.chain.adapter.RecyclerViewAdapter;
-import org.aaa.chain.entities.DataEntity;
+import org.aaa.chain.entities.ResumeRequestEntity;
 import org.aaa.chain.utils.ImageUtils;
 
 public class CommonPopupWindow implements View.OnClickListener {
@@ -76,7 +76,7 @@ public class CommonPopupWindow implements View.OnClickListener {
         dimOrRecoverBehind(true);
     }
 
-    public void pupupWindowTransactionHistory(List<DataEntity> dataEntities) {
+    public void pupupWindowTransactionHistory(List<ResumeRequestEntity> dataEntities) {
         DisplayMetrics metrics = new DisplayMetrics();
         ((Activity) context).getWindowManager().getDefaultDisplay().getMetrics(metrics);
         int screenHeight = metrics.heightPixels;
@@ -90,14 +90,14 @@ public class CommonPopupWindow implements View.OnClickListener {
         manager.setOrientation(LinearLayoutManager.VERTICAL);
         recyclerView.setLayoutManager(manager);
 
-        RecyclerViewAdapter adapter =
-                new RecyclerViewAdapter<>(context, dataEntities, R.layout.transaction_history_item, new BindViewHolderInterface<DataEntity>() {
+        RecyclerViewAdapter adapter = new RecyclerViewAdapter<>(context, dataEntities, R.layout.transaction_history_item,
+                new BindViewHolderInterface<ResumeRequestEntity>() {
 
-                    @Override public void bindViewHolder(BaseViewHolder holder, DataEntity dataEntity) {
-                        ((TextView) holder.getView(R.id.tv_transaction_history_content)).setText(dataEntity.getDescription());
-                        ((TextView) holder.getView(R.id.tv_transaction_history_type)).setText(dataEntity.getTitle());
-                        ((TextView) holder.getView(R.id.tv_transaction_history_date)).setText(dataEntity.getDescription());
-                        ((TextView) holder.getView(R.id.tv_transaction_history_money)).setText(dataEntity.getTitle());
+                    @Override public void bindViewHolder(BaseViewHolder holder, ResumeRequestEntity dataEntity) {
+                        ((TextView) holder.getView(R.id.tv_transaction_history_content)).setText(dataEntity.getAccount());
+                        ((TextView) holder.getView(R.id.tv_transaction_history_type)).setText(dataEntity.get_id());
+                        ((TextView) holder.getView(R.id.tv_transaction_history_date)).setText(dataEntity.getAccount());
+                        ((TextView) holder.getView(R.id.tv_transaction_history_money)).setText(dataEntity.get_id());
                     }
                 });
 

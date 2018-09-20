@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Blochchain recruitment</string>
+  <string name="app_name1">Blochchain recruitment</string>
+  <string name="app_introduction">Decentralized blockchain recruitment platform based on AAAChain public chain
+The privacy information is encrypted and the job seeker has the absolute asset right of the resume;
+The recruiter directly docks the job seeker, and the resume downloads the token fee to the job seeker </string>
+  <string name="login">Login </string>
+  <string name="upload_home"> Resume upload </string>
+  <string name="search_trans">Query and transaction </string>
+  <string name="my_home">Personal Center</string>
+  <string name="myAccount">My account</string>
+  <string name="myWallet">My wallet </string>
+  <string name="setting">Settings </string>
+  <array name="search_trans_tab">
+    <item>Query</item>
+    <item>Notification</item>
+  </array>
+  <string name="company_name">Company name </string>
+  <string name="recent_work_experience"> Recent job </string>
+  <string name="position_type">Position type </string>
+  <string name="skill_label">Skill tag </string>
+  <string name="last_job">Work content </string>
+  <string name="year">%s year</string>
+  <string name="present">present</string>
+  <string name="next">Next </string>
+  <string name="last_job_details">1. Mainly responsible for new employee on-the-job training 2. Analyze and formulate monthly personal sales performance of employees 3. Help employees improve daily customer price and overall store management. </string>
+  <string name="loading_more">Loading more </string>
+  <string name="no_more"> No more data </string>
+  <string name="create_a_resume">Create a micro resume</string>
+  <string name="buy_a_resume">Purchase full resume (%s) AAA</string>
+  <string name="order_generation">Order generation...</string>
+  <string name="already_ordered"> Has placed an order </string>
+  <string name="resume_authorization"> Resume authorization </string>
+  <string name="last_job_time">time</string>
+  <string name="waiting_transaction_done">The order is successful, waiting for the transaction to complete </string>
+  <string name="order_failure">Order failed </string>
+  <string name="input_secret_key">Please enter the secret key </string>
+  <string name="waiting_seller_authorization">Waiting for authorization from the other party</string>
+  <string name="waiting_buyer_authorization">Waiting for authorization</string>
+  <string name="order_authorization">The order is being authorized...</string>
+  <string name="waiting_receive">Waiting to receive </string>
+  <string name="download_failure">Download failed </string>
+  <string name="authorization_failure"> Authorization failed </string>
+  <string name="authorization_successful">Authorization success </string>
+  <string name="resume_received">Received </string>
+  <string name="transaction_done">Transaction completed </string>
+  <string name="get_resource_failure">Get failed</string>
+  <string name="upload_successful">Upload success</string>
+  <string name="setting_price">Set the resume price </string>
+  <string name="upload_secret_resume">Full resume encryption upload </string>
+  <string name="confirm_modify">confirm modify</string>
+  <string name="upload_resume">Full resume upload </string>
+  <string name="done">Complete </string>
+  <string name="upload_resume_format">The attachment format should be doc, docx, pdf, jpg, png, the size does not exceed 10M</string>
+  <string name="upload_resume_introduction">Please include your name, phone number and other contact information in your resume.
+This file will be encrypted and stored with your public key, and only if you authorize it, others can download and use it.
+You can charge an authorization fee and the fee is AAA. </string>
+  <string name="applicant_work_experience"> 4 years ui design experience, good at European and American style, Japanese and Korean style familiar with interface operation specifications. Learning ability and color feel good. </string>
+  <string name="applicant_work_position">Game ui design</string>
+  <string name="applicant_work_company">Leishang tech company</string>
+  <string name="applicant_education">Undergraduate </string>
+  <string name="back">Return </string>
+  <string name="input_phone_number">Enter the phone number </string>
+  <string name="send_verification_code">send verification code </string>
+  <string name="input_verification_code">Enter the verification code </string>
+  <string name="resume_info_description"> only basic description information is required for query and preview;
+Personal information such as name, phone number, and email address should be submitted in the resume of the resume and stored in asymmetric encryption. </string>
+  <string name="my_resume_title">Blochchain recruitment：%s engineer</string>
+
+  <string name="sex">Gender </string>
+  <string name="male">Male </string>
+  <string name="female">Female </string>
+  <string name="workours">Participation in working hours</string>
+  <string name="choose">Please select </string>
+  <string name="birthday">Year of birth </string>
+  <string name="active"> Just active </string>
+  <string name="on_the_job">On-the-job opportunity </string>
+  <string name="position_and_company"> Game Design Lei Shang Technology </string>
+  <string name="java_engineer">%s senior engineer </string>
+  <string name="applicant_name">Liu Gangfeng</string>
+  <string name="interviewer_info">Beijing Soft Exchange Recruiter </string>
+  <string name="position_detail"> Job details </string>
+  <string name="position_introduction"> Job description </string>
+  <string name="applicant_base_info">Beijing Zhongguancun 2--5 years Undergraduate </string>
+  <string name="work_experience">Job experience </string>
+  <string name="work_range">017.03-present </string>
+  <string name="job_expectation"> Job search expectations </string>
+  <string name="string_album">Album </string>
+  <string name="string_take_a_picture">Photograph </string>
+  <string name="string_cancel"> Cancel </string>
+  <string name="account_name">Account name </string>
+  <string name="phone_number">Phone number </string>
+  <string name="change_phone_number">Change phone number </string>
+  <string name="commit">Submit </string>
+  <string name="wallet_address">Wallet address </string>
+  <string name="available_balance">Available balance </string>
+  <string name="transfer_accounts">Transfer </string>
+  <string name="transfer_amount">Transfer amount </string>
+  <string name="account_password"> Account password </string>
+  <string name="transaction_history">Transaction history </string>
+  <string name="user_agreement">User agreement</string>
+  <string name="about_us">About us</string>
+  <string name="logout">Exit login </string>
+</resources>

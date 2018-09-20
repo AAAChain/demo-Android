@@ -65,6 +65,7 @@
         app:layout_constraintTop_toTopOf="@id/et_resume_price"
         />
     <Button
+        android:textAllCaps="false"
         android:id="@+id/btn_resume_upload"
         android:layout_width="match_parent"
         android:layout_height="50dp"
@@ -121,6 +122,7 @@
         app:layout_constraintTop_toBottomOf="@id/progress"
         />
     <Button
+        android:textAllCaps="false"
         android:id="@+id/btn_upload_done"
         android:layout_width="match_parent"
         android:layout_height="50dp"

@@ -16,22 +16,28 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.Security;
+import java.security.Signature;
 import java.security.spec.ECGenParameterSpec;
 import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
-import org.bouncycastle.jce.ECNamedCurveTable;
-import org.bouncycastle.jce.interfaces.ECPrivateKey;
-import org.bouncycastle.jce.interfaces.ECPublicKey;
-import org.bouncycastle.jce.spec.ECNamedCurveParameterSpec;
-import org.bouncycastle.jce.spec.ECPrivateKeySpec;
-import org.bouncycastle.jce.spec.ECPublicKeySpec;
-import org.bouncycastle.math.ec.ECCurve;
-import org.bouncycastle.math.ec.ECPoint;
+import org.spongycastle.jce.ECNamedCurveTable;
+import org.spongycastle.jce.interfaces.ECPrivateKey;
+import org.spongycastle.jce.interfaces.ECPublicKey;
+import org.spongycastle.jce.provider.BouncyCastleProvider;
+import org.spongycastle.jce.spec.ECNamedCurveParameterSpec;
+import org.spongycastle.jce.spec.ECPrivateKeySpec;
+import org.spongycastle.jce.spec.ECPublicKeySpec;
+import org.spongycastle.math.ec.ECCurve;
+import org.spongycastle.math.ec.ECPoint;
 
 public class FileUtils {
 
@@ -48,7 +54,30 @@ public class FileUtils {
     }
 
     static {
-        Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
+        BouncyCastleProvider bouncyCastleProvider = new org.spongycastle.jce.provider.BouncyCastleProvider();
+        Security.insertProviderAt(bouncyCastleProvider, 1);
+    }
+
+    public static KeyPair genKeyPair() throws NoSuchAlgorithmException, NoSuchProviderException {
+        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("ECIES", "SC");
+        ECGenParameterSpec ecGenParameterSpec = new ECGenParameterSpec("secp256k1");
+        try {
+            keyPairGenerator.initialize(ecGenParameterSpec, new SecureRandom());
+        } catch (InvalidAlgorithmParameterException e) {
+            e.printStackTrace();
+        }
+        return keyPairGenerator.generateKeyPair();
+    }
+
+    public void testECC() {
+
+        //for (Provider provider : Security.getProviders()) {
+        //    System.out.println("Provider: " + provider.getName() + " version: " + provider.getVersion());
+        //    for (Provider.Service service : provider.getServices()) {
+        //        System.out.printf("  Type : %-30s  Algorithm: %-30s\n", service.getType(), service.getAlgorithm());
+        //    }
+        //}
+        //System.out.println("------------------------------------------------------------------------------------------\n\n");
 
         try {
             KeyPair keyPair = genKeyPair();
@@ -69,24 +98,6 @@ public class FileUtils {
             System.out.println("公钥横坐标              " + publicKey.getQ().getAffineXCoord().toBigInteger());
             System.out.println("公钥纵坐标              " + publicKey.getQ().getAffineYCoord().toBigInteger());
             System.out.println("私钥                   " + privateKey.getD());
-        } catch (Exception e) {
-            System.out.println("无法初始化算法" + e);
-        }
-    }
-
-    public static KeyPair genKeyPair() throws NoSuchAlgorithmException, NoSuchProviderException {
-        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("ECIES", "BC");
-        ECGenParameterSpec ecGenParameterSpec = new ECGenParameterSpec("secp256k1");
-        try {
-            keyPairGenerator.initialize(ecGenParameterSpec, new SecureRandom());
-        } catch (InvalidAlgorithmParameterException e) {
-            e.printStackTrace();
-        }
-        return keyPairGenerator.generateKeyPair();
-    }
-
-    public static void main(String[] args) {
-        try {
 
             ECPrivateKey ecPrivateKey = decodePrivateKey("5JtXJkmDcMhKAXSB3YonH4jCtNbSELUAPGpExZhn8upLs54oej7");
             ECPublicKey ecPublicKey = decodePublicKey(ecPrivateKey);
@@ -109,6 +120,7 @@ public class FileUtils {
         } catch (BadPaddingException e) {
             e.printStackTrace();
         }
+
     }
 
     public File encryptFile(Context context, String filePath, String privateKey)
@@ -137,20 +149,19 @@ public class FileUtils {
         return getFile(deBytes, context.getExternalFilesDir("").getAbsolutePath(), "test." + suffix);
     }
 
-    private static ECPublicKey decodePublicKey(ECPrivateKey ecPrivateKey) throws NoSuchProviderException, NoSuchAlgorithmException {
+    public static ECPublicKey decodePublicKey(ECPrivateKey ecPrivateKey) throws NoSuchProviderException, NoSuchAlgorithmException {
         ECNamedCurveParameterSpec ecNamedCurveParameterSpec = ECNamedCurveTable.getParameterSpec("secp256k1");
-        ECPublicKeySpec ecPublicKeySpec = new ECPublicKeySpec(ecPrivateKey.getParameters().getG(), ecNamedCurveParameterSpec);
+        ECPublicKeySpec ecPublicKeySpec = new ECPublicKeySpec(ecPrivateKey.getParameters().getG(), ecPrivateKey.getParameters());
         ECPublicKey ecPublicKey = null;
         try {
-            ecPublicKey = (ECPublicKey) KeyFactory.getInstance("EC", "BC").generatePublic(ecPublicKeySpec);
+            ecPublicKey = (ECPublicKey) KeyFactory.getInstance("EC", "SC").generatePublic(ecPublicKeySpec);
         } catch (InvalidKeySpecException e) {
             e.printStackTrace();
         }
-        System.out.println("ecPublicKey:" + ecPublicKey);
         return ecPublicKey;
     }
 
-    private static ECPrivateKey decodePrivateKey(String keyStr) throws NoSuchProviderException, NoSuchAlgorithmException {
+    public static ECPrivateKey decodePrivateKey(String keyStr) throws NoSuchProviderException, NoSuchAlgorithmException {
 
         ECNamedCurveParameterSpec ecNamedCurveParameterSpec = ECNamedCurveTable.getParameterSpec("secp256k1");
         BigInteger bigInteger = new BigInteger(1, Base58.decode(keyStr));
@@ -158,18 +169,17 @@ public class FileUtils {
 
         ECPrivateKey ecPrivateKey = null;
         try {
-            ecPrivateKey = (ECPrivateKey) KeyFactory.getInstance("EC", "BC").generatePrivate(ecPrivateKeySpec);
+            ecPrivateKey = (ECPrivateKey) KeyFactory.getInstance("EC", "SC").generatePrivate(ecPrivateKeySpec);
         } catch (InvalidKeySpecException e) {
             e.printStackTrace();
         }
-        System.out.println("ecPrivateKey:" + ecPrivateKey);
         return ecPrivateKey;
     }
 
     private byte[] encryptFileBytes(byte[] fileBytes, ECPublicKey ecPublicKey)
             throws NoSuchPaddingException, NoSuchAlgorithmException, NoSuchProviderException, InvalidKeyException, BadPaddingException,
             IllegalBlockSizeException {
-        Cipher cipher = Cipher.getInstance("ECIESwithDESede/NONE/PKCS7Padding", "BC");
+        Cipher cipher = Cipher.getInstance("ECIESwithDESede/NONE/PKCS7Padding", "SC");
         cipher.init(Cipher.ENCRYPT_MODE, ecPublicKey);
 
         return cipher.doFinal(fileBytes);
@@ -179,16 +189,16 @@ public class FileUtils {
             throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException,
             NoSuchProviderException {
 
-        Cipher cipher = Cipher.getInstance("ECIESwithDESede/NONE/PKCS7Padding", "BC");
+        Cipher cipher = Cipher.getInstance("ECIESwithDESede/NONE/PKCS7Padding", "SC");
         cipher.init(Cipher.DECRYPT_MODE, ecPrivateKey);
 
         return cipher.doFinal(fileBytes);
     }
 
-    private static byte[] encrypt(byte[] content, ECPublicKey ecPublicKey)
+    public static byte[] encrypt(byte[] content, ECPublicKey ecPublicKey)
             throws NoSuchPaddingException, NoSuchAlgorithmException, NoSuchProviderException, InvalidKeyException, BadPaddingException,
             IllegalBlockSizeException {
-        Cipher cipher = Cipher.getInstance("ECIESwithDESede/NONE/PKCS7Padding", "BC");
+        Cipher cipher = Cipher.getInstance("ECIES", "SC");
         cipher.init(Cipher.ENCRYPT_MODE, ecPublicKey);
         byte[] cipherText = cipher.doFinal(content);
         System.out.println("密文: " + cipherText);
@@ -196,11 +206,11 @@ public class FileUtils {
         return cipherText;
     }
 
-    private static byte[] decrypt(byte[] content, ECPrivateKey ecPrivateKey)
+    public static byte[] decrypt(byte[] content, ECPrivateKey ecPrivateKey)
             throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException,
             NoSuchProviderException {
 
-        Cipher cipher = Cipher.getInstance("ECIESwithDESede/NONE/PKCS7Padding", "BC");
+        Cipher cipher = Cipher.getInstance("ECIES", "SC");
         cipher.init(Cipher.DECRYPT_MODE, ecPrivateKey);
         byte[] plainText = cipher.doFinal(content);
         // 打印解密后的明文
@@ -246,7 +256,7 @@ public class FileUtils {
                 dir.mkdirs();
             }
             file = new File(filePath + "/" + fileName);
-            if (!file.exists()){
+            if (!file.exists()) {
                 file.createNewFile();
             }
             fos = new FileOutputStream(file);
@@ -272,5 +282,46 @@ public class FileUtils {
         }
 
         return file;
+    }
+
+
+    public static void main(String[] args ){
+        jdkECDSA();
+    }
+
+
+    public static void jdkECDSA(){
+        //1、初始化密钥
+        try {
+            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EC");
+            keyPairGenerator.initialize(256);
+            KeyPair keyPair = keyPairGenerator.generateKeyPair();
+            ECPublicKey ecPublicKey = (ECPublicKey) keyPair.getPublic();
+            ECPrivateKey ecPrivateKey = (ECPrivateKey) keyPair.getPrivate();
+
+            //2、执行签名
+            PKCS8EncodedKeySpec pkcs8EncodedKeySpec = new PKCS8EncodedKeySpec(ecPrivateKey.getEncoded());
+            KeyFactory keyFactory = KeyFactory.getInstance("EC");
+            PrivateKey privateKey = keyFactory.generatePrivate(pkcs8EncodedKeySpec);
+            Signature signature = Signature.getInstance("SHA1withECDSA");
+            signature.initSign(privateKey);
+            signature.update("securtity ECDSA".getBytes());
+            byte[] result = signature.sign();
+            System.out.println("jdk ecdsa sign:" + new String(result));
+
+            //3、验证签名
+            X509EncodedKeySpec x509EncodedKeySpec = new X509EncodedKeySpec(ecPublicKey.getEncoded());
+            keyFactory = KeyFactory.getInstance("EC");
+            PublicKey publicKey = keyFactory.generatePublic(x509EncodedKeySpec);
+            signature = Signature.getInstance("SHA1withECDSA");
+            signature.initVerify(publicKey);
+            signature.update("securtity ECDSA".getBytes());
+            boolean bool = signature.verify(result);
+            System.out.println(bool);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
     }
 }

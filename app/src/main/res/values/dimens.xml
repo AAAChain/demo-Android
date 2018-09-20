@@ -4,4 +4,7 @@
 
   <dimen name="layout_title_bar_height">50dp</dimen>
 
+  <dimen name="text_tile_size">18sp</dimen>
+  <dimen name="text_content_size">16sp</dimen>
+  <dimen name="text_data_size">14sp</dimen>
 </resources>

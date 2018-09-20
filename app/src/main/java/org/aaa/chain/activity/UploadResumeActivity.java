@@ -34,13 +34,18 @@ import org.json.JSONObject;
 
 public class UploadResumeActivity extends BaseActivity implements ProgressResponseBody.ProgressListener {
 
-    ConstraintLayout layout1;
-    ConstraintLayout layout2;
-    ProgressBar progressBar;
-    TextView tvPercent;
-    EditText inputPrice;
-    ProgressDialog dialog;
-    Button btnUploadDone;
+    private ConstraintLayout layout1;
+    private ConstraintLayout layout2;
+    private ProgressBar progressBar;
+    private TextView tvPercent;
+    private EditText inputPrice;
+    private ProgressDialog dialog;
+    private Button btnResumeUpload;
+    private Button btnUploadDone;
+    private String fileName;
+    private boolean onlyModifyInfo = false;
+    private String hashId;
+    private String price;
 
     private JSONObject object;
     private ResumeRequestEntity requestEntity = new ResumeRequestEntity();
@@ -57,8 +62,23 @@ public class UploadResumeActivity extends BaseActivity implements ProgressRespon
         tvPercent = $(R.id.tv_percent);
         inputPrice = $(R.id.et_resume_price);
         btnUploadDone = $(R.id.btn_upload_done);
+        btnResumeUpload = $(R.id.btn_resume_upload);
         $(R.id.btn_resume_upload).setOnClickListener(this);
         btnUploadDone.setOnClickListener(this);
+
+        try {
+            object = new JSONObject(getIntent().getExtras().getString("metadata"));
+            fileName = object.getString("name");
+            hashId = object.getString("hashId");
+            price = object.getString("price");
+            //if (fileName != null && hashId != null) {
+            //    onlyModifyInfo = true;
+            //    btnResumeUpload.setText(getResources().getString(R.string.confirm_modify));
+            //    inputPrice.setText(price);
+            //}
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override public void onClick(View v) {
@@ -66,12 +86,15 @@ public class UploadResumeActivity extends BaseActivity implements ProgressRespon
         switch (v.getId()) {
 
             case R.id.btn_resume_upload:
-                //Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-                //intent.setType("*/*");
-                //intent.addCategory(Intent.CATEGORY_OPENABLE);
-                //startActivityForResult(intent, 100);
-                new LFilePicker().withActivity(UploadResumeActivity.this).withRequestCode(100).start();
-
+                //if (onlyModifyInfo) {
+                //    modifyInfo(hashId, object.toString());
+                //} else {
+                    //Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                    //intent.setType("*/*");
+                    //intent.addCategory(Intent.CATEGORY_OPENABLE);
+                    //startActivityForResult(intent, 100);
+                    new LFilePicker().withActivity(UploadResumeActivity.this).withRequestCode(100).start();
+                //}
                 break;
 
             case R.id.btn_upload_done:
@@ -118,6 +141,63 @@ public class UploadResumeActivity extends BaseActivity implements ProgressRespon
         }
     }
 
+    private void modifyInfo(String hashId, String modifyContent) {
+        ProgressDialog dialog = ProgressDialog.show(UploadResumeActivity.this, "waiting...", "modifying...");
+        JSInteraction.getInstance().getSignature(modifyContent, org.aaa.chain.Constant.getPrivateKey(), new JSInteraction.JSCallBack() {
+            @Override public void onSuccess(String content) {
+                HttpUtils.getInstance().modifyCustomInfo(hashId, content, modifyContent, new HttpUtils.ServerCallBack() {
+                    @Override public void onFailure(Call call, IOException e) {
+                        runOnUiThread(new Runnable() {
+                            @Override public void run() {
+                                dialog.dismiss();
+                                Toast.makeText(UploadResumeActivity.this, "modify failure", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
+
+                    @Override public void onResponse(Call call, Response response) {
+
+                        ResponseBody body = response.body();
+                        if (response.code() == 200) {
+                            runOnUiThread(new Runnable() {
+                                @Override public void run() {
+                                    dialog.dismiss();
+                                    Toast.makeText(UploadResumeActivity.this, "modify successful", Toast.LENGTH_SHORT).show();
+                                    finish();
+                                }
+                            });
+                        } else {
+                            try {
+                                Log.i("info", "modify error:" + body.string());
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                            runOnUiThread(new Runnable() {
+                                @Override public void run() {
+                                    dialog.dismiss();
+                                    Toast.makeText(UploadResumeActivity.this, "modify failure", Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                        }
+                    }
+                });
+            }
+
+            @Override public void onProgress() {
+
+            }
+
+            @Override public void onError(String error) {
+                runOnUiThread(new Runnable() {
+                    @Override public void run() {
+                        dialog.dismiss();
+                        Toast.makeText(UploadResumeActivity.this, "modify failure", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+        });
+    }
+
     private void uploadFile() {
         dialog = ProgressDialog.show(UploadResumeActivity.this, "waiting....", "loading...");
         if (TextUtils.isEmpty(inputPrice.getText().toString())) {
@@ -128,7 +208,6 @@ public class UploadResumeActivity extends BaseActivity implements ProgressRespon
             object1.put("onlyHash", false);
             requestEntity.setOptions(object1.toString());
 
-            object = new JSONObject(getIntent().getExtras().getString("metadata"));
             object.put("name", requestEntity.getFilename());
             object.put("desc", "space");
             object.put("price", inputPrice.getText().toString());
@@ -162,8 +241,12 @@ public class UploadResumeActivity extends BaseActivity implements ProgressRespon
                             @Override public void onResponse(Call call, Response response) {
                                 ResponseBody body = response.body();
                                 if (response.code() == 200) {
-                                    btnUploadDone.setClickable(true);
-                                    btnUploadDone.setBackgroundColor(getResources().getColor(R.color.view_button_bg));
+                                    runOnUiThread(new Runnable() {
+                                        @Override public void run() {
+                                            btnUploadDone.setClickable(true);
+                                            btnUploadDone.setBackgroundColor(getResources().getColor(R.color.view_button_bg));
+                                        }
+                                    });
                                     try {
                                         ResumeResponseEntity responseEntity = new Gson().fromJson(body.string(), ResumeResponseEntity.class);
                                         DBManager.getInstance().saveResumeResponse(responseEntity);
