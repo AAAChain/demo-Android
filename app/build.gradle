@@ -97,7 +97,6 @@ dependencies {
   releaseImplementation 'com.squareup.leakcanary:leakcanary-android-no-op:1.5.4'
   implementation 'com.jaeger.statusbaruitl:library:1.0.0'
   compile 'com.squareup.okhttp3:okhttp:3.1.2'
-  compile 'com.leon:lfilepickerlibrary:1.7.0'
   implementation 'com.google.code.gson:gson:2.8.5'
   compile 'org.bouncycastle:bcprov-jdk15on:1.50'
   compile "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"

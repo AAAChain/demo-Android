@@ -23,7 +23,6 @@ import org.aaa.chain.adapter.BaseViewHolder;
 import org.aaa.chain.adapter.BindViewHolderInterface;
 import org.aaa.chain.adapter.RecyclerViewAdapter;
 import org.aaa.chain.entities.ResumeRequestEntity;
-import org.aaa.chain.utils.ImageUtils;
 
 public class CommonPopupWindow implements View.OnClickListener {
 
@@ -66,14 +65,6 @@ public class CommonPopupWindow implements View.OnClickListener {
         popupWindow.getContentView().measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
         popupWindow.setAnimationStyle(R.style.animTranslate);
         popupWindow.showAtLocation(parent, location, 0, 0);
-    }
-
-    public void pupupWindowTakeAPhoto() {
-        initPopupWindow(R.layout.popup_take_a_photo, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM);
-        layoutView.findViewById(R.id.tv_popup_album).setOnClickListener(this);
-        layoutView.findViewById(R.id.tv_popup_take_a_picture).setOnClickListener(this);
-        layoutView.findViewById(R.id.tv_popup_cancel).setOnClickListener(this);
-        dimOrRecoverBehind(true);
     }
 
     public void pupupWindowTransactionHistory(List<ResumeRequestEntity> dataEntities) {
@@ -147,20 +138,6 @@ public class CommonPopupWindow implements View.OnClickListener {
 
     @Override public void onClick(View v) {
         switch (v.getId()) {
-            case R.id.tv_popup_album:
-                ImageUtils.getInstance().choosePhoto(context);
-                popupWindow.dismiss();
-                break;
-
-            case R.id.tv_popup_take_a_picture:
-                ImageUtils.getInstance().takePhoto(context);
-                popupWindow.dismiss();
-                break;
-
-            case R.id.tv_popup_cancel:
-                popupWindow.dismiss();
-                break;
-
             case R.id.btn_transfer_accounts:
 
                 break;

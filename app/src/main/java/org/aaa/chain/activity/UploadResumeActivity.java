@@ -1,8 +1,14 @@
 package org.aaa.chain.activity;
 
 import android.app.ProgressDialog;
+import android.content.ContentUris;
+import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.graphics.Color;
+import android.net.Uri;
+import android.provider.DocumentsContract;
+import android.provider.MediaStore;
 import android.support.constraint.ConstraintLayout;
 import android.text.TextUtils;
 import android.util.Log;
@@ -13,11 +19,8 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import com.google.gson.Gson;
-import com.leon.lfilepickerlibrary.LFilePicker;
-import com.leon.lfilepickerlibrary.utils.Constant;
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 import okhttp3.Call;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
@@ -95,11 +98,10 @@ public class UploadResumeActivity extends BaseActivity implements ProgressRespon
                 //    }
                 //    modifyInfo(hashId, object.toString());
                 //} else {
-                //    Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-                //    intent.setType("*/*");
-                //    intent.addCategory(Intent.CATEGORY_OPENABLE);
-                //    startActivityForResult(intent, 100);
-                    new LFilePicker().withActivity(UploadResumeActivity.this).withRequestCode(100).start();
+                    Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                    intent.setType("*/*");
+                    intent.addCategory(Intent.CATEGORY_OPENABLE);
+                    startActivityForResult(intent, 100);
                 //}
                 break;
 
@@ -112,29 +114,27 @@ public class UploadResumeActivity extends BaseActivity implements ProgressRespon
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == 100 && data != null) {
-            //Uri imageUri;
-            //if (data != null) {
-            //    String imagePath = null;
-            //    imageUri = data.getData();
-            //    if (DocumentsContract.isDocumentUri(UploadResumeActivity.this, imageUri)) {
-            //        String docId = DocumentsContract.getDocumentId(imageUri);
-            //        if ("com.android.providers.media.documents".equals(imageUri.getAuthority())) {
-            //            String id = docId.split(":")[1];
-            //            String selection = MediaStore.Images.Media._ID + "=" + id;
-            //            imagePath = getImagePath(UploadResumeActivity.this, MediaStore.Images.Media.EXTERNAL_CONTENT_URI, selection);
-            //        } else if ("com.android.downloads.documents".equals(imageUri.getAuthority())) {
-            //            Uri contentUri = ContentUris.withAppendedId(Uri.parse("content://downloads/public_downloads"), Long.valueOf(docId));
-            //            imagePath = getImagePath(UploadResumeActivity.this, contentUri, null);
-            //        }
-            //    } else if ("content".equalsIgnoreCase(imageUri.getScheme())) {
-            //        imagePath = getImagePath(UploadResumeActivity.this, imageUri, null);
-            //    } else if ("file".equalsIgnoreCase(imageUri.getScheme())) {
-            //        imagePath = imageUri.getPath();
-            //    }
-            List<String> list = data.getStringArrayListExtra(Constant.RESULT_INFO);
+            Uri imageUri;
+            String imagePath = null;
+            imageUri = data.getData();
+            if (DocumentsContract.isDocumentUri(UploadResumeActivity.this, imageUri)) {
+                String docId = DocumentsContract.getDocumentId(imageUri);
+                if ("com.android.providers.media.documents".equals(imageUri.getAuthority())) {
+                    String id = docId.split(":")[1];
+                    String selection = MediaStore.Images.Media._ID + "=" + id;
+                    imagePath = getImagePath(UploadResumeActivity.this, MediaStore.Images.Media.EXTERNAL_CONTENT_URI, selection);
+                } else if ("com.android.downloads.documents".equals(imageUri.getAuthority())) {
+                    Uri contentUri = ContentUris.withAppendedId(Uri.parse("content://downloads/public_downloads"), Long.valueOf(docId));
+                    imagePath = getImagePath(UploadResumeActivity.this, contentUri, null);
+                }
+            } else if ("content".equalsIgnoreCase(imageUri.getScheme())) {
+                imagePath = getImagePath(UploadResumeActivity.this, imageUri, null);
+            } else if ("file".equalsIgnoreCase(imageUri.getScheme())) {
+                imagePath = imageUri.getPath();
+            }
             try {
                 File file = PBEUtils.getInstance()
-                        .encryptFile(UploadResumeActivity.this, list.get(0), org.aaa.chain.Constant.getPrivateKey(),
+                        .encryptFile(UploadResumeActivity.this, imagePath, org.aaa.chain.Constant.getPrivateKey(),
                                 org.aaa.chain.Constant.getPublicKey());
                 Log.i("info", "file path:" + file.getAbsolutePath());
                 requestEntity.setFilepath(file.getAbsolutePath());
@@ -145,6 +145,18 @@ public class UploadResumeActivity extends BaseActivity implements ProgressRespon
 
             uploadFile();
         }
+    }
+
+    private String getImagePath(Context context, Uri uri, String selection) {
+        String path = null;
+        Cursor cursor = context.getContentResolver().query(uri, null, selection, null, null);
+        if (cursor != null) {
+            if (cursor.moveToFirst()) {
+                path = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA));
+            }
+            cursor.close();
+        }
+        return path;
     }
 
     private void modifyInfo(String hashId, String modifyContent) {
