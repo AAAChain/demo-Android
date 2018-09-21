@@ -1,4 +1,4 @@
-var Eos = require('eosjs');
+var Eos = require('eosjs')
 var ecc = require('eosjs-ecc')
 
 config = {
