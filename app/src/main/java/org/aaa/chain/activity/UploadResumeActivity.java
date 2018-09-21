@@ -21,6 +21,7 @@ import java.util.List;
 import okhttp3.Call;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
+import org.aaa.chain.ChainApplication;
 import org.aaa.chain.JSInteraction;
 import org.aaa.chain.R;
 import org.aaa.chain.db.DBManager;
@@ -87,12 +88,17 @@ public class UploadResumeActivity extends BaseActivity implements ProgressRespon
 
             case R.id.btn_resume_upload:
                 //if (onlyModifyInfo) {
+                //    try {
+                //        object.put("price", inputPrice.getText().toString());
+                //    } catch (JSONException e) {
+                //        e.printStackTrace();
+                //    }
                 //    modifyInfo(hashId, object.toString());
                 //} else {
-                    //Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-                    //intent.setType("*/*");
-                    //intent.addCategory(Intent.CATEGORY_OPENABLE);
-                    //startActivityForResult(intent, 100);
+                //    Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                //    intent.setType("*/*");
+                //    intent.addCategory(Intent.CATEGORY_OPENABLE);
+                //    startActivityForResult(intent, 100);
                     new LFilePicker().withActivity(UploadResumeActivity.this).withRequestCode(100).start();
                 //}
                 break;
@@ -162,6 +168,12 @@ public class UploadResumeActivity extends BaseActivity implements ProgressRespon
                             runOnUiThread(new Runnable() {
                                 @Override public void run() {
                                     dialog.dismiss();
+                                    try {
+                                        ResumeResponseEntity resumeResponseEntity = new Gson().fromJson(body.string(), ResumeResponseEntity.class);
+                                        ChainApplication.getInstance().getBaseInfo().getDocs().get(0).setExtra(resumeResponseEntity.getExtra());
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                    }
                                     Toast.makeText(UploadResumeActivity.this, "modify successful", Toast.LENGTH_SHORT).show();
                                     finish();
                                 }
@@ -262,16 +274,19 @@ public class UploadResumeActivity extends BaseActivity implements ProgressRespon
                                         e.printStackTrace();
                                     }
                                 } else {
-                                    runOnUiThread(new Runnable() {
-                                        @Override public void run() {
-                                            try {
-                                                Toast.makeText(UploadResumeActivity.this, body.string(), Toast.LENGTH_SHORT).show();
-                                            } catch (IOException e) {
-                                                e.printStackTrace();
+                                    try {
+                                        String error = body.string();
+                                        Log.i("info", "error:" + error);
+                                        runOnUiThread(new Runnable() {
+                                            @Override public void run() {
+                                                Toast.makeText(UploadResumeActivity.this, error, Toast.LENGTH_SHORT).show();
+                                                layout1.setVisibility(View.VISIBLE);
+                                                layout2.setVisibility(View.GONE);
                                             }
-                                        }
-                                    });
-                                    finish();
+                                        });
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                    }
                                 }
                             }
                         });

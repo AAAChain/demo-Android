@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.aaa.chain.ChainApplication;
 import org.aaa.chain.entities.DBColumn;
+import org.aaa.chain.entities.ExtraEntity;
 import org.aaa.chain.entities.ResumeRequestEntity;
 import org.aaa.chain.entities.ResumeResponseEntity;
 import org.json.JSONException;
@@ -44,7 +45,6 @@ public class DBManager {
             JSONObject jsonObject = new JSONObject();
             try {
                 jsonObject.put("name:", entity.getExtra().getName());
-                jsonObject.put("desc:", entity.getExtra().getDesc());
                 jsonObject.put("startTime:", entity.getExtra().getStartTime());
                 jsonObject.put("company:", entity.getExtra().getCompany());
                 jsonObject.put("birthday:", entity.getExtra().getBirthday());
@@ -121,7 +121,6 @@ public class DBManager {
             JSONObject jsonObject = new JSONObject();
             try {
                 jsonObject.put("name:", resumeResponseEntity.getExtra().getName());
-                jsonObject.put("desc:", resumeResponseEntity.getExtra().getDesc());
                 jsonObject.put("startTime:", resumeResponseEntity.getExtra().getStartTime());
                 jsonObject.put("company:", resumeResponseEntity.getExtra().getCompany());
                 jsonObject.put("birthday:", resumeResponseEntity.getExtra().getBirthday());
@@ -161,7 +160,7 @@ public class DBManager {
                 entity.setTimestamp(timestamp);
                 entity.setSize(size);
                 entity.setHashId(hashid);
-                entity.setExtra(new Gson().fromJson(extra, ResumeResponseEntity.ExtraEntity.class));
+                entity.setExtra(new Gson().fromJson(extra, ExtraEntity.class));
                 entity.setPublicKey(publickey);
                 entityList.add(entity);
             }

@@ -79,7 +79,8 @@ public class HttpUtils {
         JSONObject object = new JSONObject();
         try {
             object.put("signature", signature);
-            object.put("extra", modifyContent);
+            JSONObject object1 = new JSONObject(modifyContent);
+            object.put("extra", object1);
         } catch (JSONException e) {
             e.printStackTrace();
         }

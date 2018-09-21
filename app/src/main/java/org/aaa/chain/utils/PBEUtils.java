@@ -1,6 +1,7 @@
 package org.aaa.chain.utils;
 
 import android.content.Context;
+import android.util.Log;
 import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.security.InvalidAlgorithmParameterException;
@@ -39,7 +40,7 @@ public class PBEUtils {
      * PBEWithSHA1AndRC2_40
      * </pre>
      */
-    private final static String KEY_PBE = "PBEWITHMD5andDES";
+    private final static String KEY_PBE = "PBEWithMD5AndDES";
 
     private final static int SALT_COUNT = 100;
 
@@ -63,6 +64,7 @@ public class PBEUtils {
     }
 
     public File encryptFile(Context context, String filePath, String privateKey, String publicKey) {
+        Log.i("info","file encrypt:"+ privateKey+publicKey);
         byte[] bytes = FileUtils.getInstance().getBytes(filePath);
         byte[] enBytes = encryptPBE(bytes, privateKey, publicKey.getBytes());
         File file = new File(filePath);
@@ -73,6 +75,7 @@ public class PBEUtils {
     }
 
     public File decryptFile(Context context, String filePath, String privateKey, String publicKey) {
+        Log.i("info","file decrypt:"+ privateKey+publicKey);
         byte[] enbytes = FileUtils.getInstance().getBytes(filePath);
         byte[] deBytes = decryptPBE(enbytes, privateKey, publicKey.getBytes());
         File file = new File(filePath);

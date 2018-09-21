@@ -2,6 +2,7 @@ package org.aaa.chain.activity;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -63,7 +64,11 @@ public class CreateSmallResumeActivity extends BaseActivity {
             String lastJobContentInfo = object.getString("lastJobContentInfo");
             tvLastCompany.setText(lastCompany);
             tvLastWorkingHour.setText(lastWorkingHour);
-            etLastJobContentInfo.setText(lastJobContentInfo);
+            if (!TextUtils.isEmpty(lastJobContentInfo)) {
+                etLastJobContentInfo.setText(lastJobContentInfo);
+            } else {
+                etLastJobContentInfo.setText(getResources().getString(R.string.last_job_details));
+            }
         } catch (JSONException e) {
             e.printStackTrace();
         }

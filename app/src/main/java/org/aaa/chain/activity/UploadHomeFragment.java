@@ -21,6 +21,7 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 import org.aaa.chain.ChainApplication;
 import org.aaa.chain.R;
+import org.aaa.chain.entities.ExtraEntity;
 import org.aaa.chain.entities.SearchResponseEntity;
 import org.aaa.chain.utils.CommonUtils;
 import org.aaa.chain.utils.HttpUtils;
@@ -45,7 +46,7 @@ public class UploadHomeFragment extends BaseFragment {
     private TextView tvCompany;
     private EditText etJobContentInfo;
     private JSONObject object = new JSONObject();
-    private SearchResponseEntity.ExtraEntity extraEntity;
+    private ExtraEntity extraEntity;
     private SearchResponseEntity searchResponseEntity;
 
     @Override public int initLayout() {
@@ -64,26 +65,6 @@ public class UploadHomeFragment extends BaseFragment {
         etJobContentInfo = $(R.id.et_job_content_info);
         if (searchResponseEntity == null) {
             getBaseInfo();
-        } else {
-            extraEntity = searchResponseEntity.getDocs().get(0).getExtra();
-            String sex = extraEntity.getSex();
-            if ("male".equals(sex)) {
-                rbMale.setChecked(true);
-            } else {
-                rbFemale.setChecked(true);
-            }
-            String startTime = extraEntity.getStartTime();
-            tvStartTime.setText(startTime);
-            String birthday = extraEntity.getBirthday();
-            tvBirthday.setText(birthday);
-            String company = extraEntity.getCompany();
-            tvCompany.setText(company);
-            String jobContentInfo = extraEntity.getJobContentInfo();
-            if (!TextUtils.isEmpty(jobContentInfo)) {
-                etJobContentInfo.setText(jobContentInfo);
-            } else {
-                etJobContentInfo.setText(getResources().getString(R.string.last_job_details));
-            }
         }
 
         rbMale.setChecked(true);
@@ -126,6 +107,31 @@ public class UploadHomeFragment extends BaseFragment {
         rlCompany.setOnClickListener(this);
         btnNext = $(R.id.btn_next);
         btnNext.setOnClickListener(this);
+    }
+
+    @Override public void onResume() {
+        super.onResume();
+        if (searchResponseEntity != null) {
+            extraEntity = ChainApplication.getInstance().getBaseInfo().getDocs().get(0).getExtra();
+            String sex = extraEntity.getSex();
+            if ("male".equals(sex)) {
+                rbMale.setChecked(true);
+            } else {
+                rbFemale.setChecked(true);
+            }
+            String startTime = extraEntity.getStartTime();
+            tvStartTime.setText(startTime);
+            String birthday = extraEntity.getBirthday();
+            tvBirthday.setText(birthday);
+            String company = extraEntity.getCompany();
+            tvCompany.setText(company);
+            String jobContentInfo = extraEntity.getJobContentInfo();
+            if (!TextUtils.isEmpty(jobContentInfo)) {
+                etJobContentInfo.setText(jobContentInfo);
+            } else {
+                etJobContentInfo.setText(getResources().getString(R.string.last_job_details));
+            }
+        }
     }
 
     private void getBaseInfo() {
