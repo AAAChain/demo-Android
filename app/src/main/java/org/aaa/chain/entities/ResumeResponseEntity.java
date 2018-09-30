@@ -74,4 +74,5 @@ public class ResumeResponseEntity {
     public void setTimestamp(String timestamp) {
         this.timestamp = timestamp;
     }
+
 }

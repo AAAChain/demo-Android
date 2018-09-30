@@ -1,6 +1,9 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
-var Eos = require('eosjs');
+(function (Buffer){
+var Eos = require('eosjs')
 var ecc = require('eosjs-ecc')
+var ByteBuffer = require('bytebuffer')
+var AAA = require('aaajs')
 
 config = {
   keyProvider: ['5JobQnxtEvshVRZW6berfYvzaUMZq2A8Ax5eZhuZqdTCqT19iLV','5J4a77MxGSDnASAZHAV7gThSeoenvLB4nb8wFPkepXoiLyesuf5'], // WIF string or array of keys..
@@ -13,40 +16,52 @@ config = {
 }
 
 
-eos = Eos(config)
+//eos = Eos(config)
 
+aaa = AAA(config)
 
 getBalance = function(accountName){
-console.log("acount:"+accountName)
-  eos.getCurrencyBalance('eosio.token', accountName, 'EOS',function(error,result){
-
-   window.aaa.getEosBalance(error,result)
-  })
+  aaa.getCurrencyBalance('eosio.token', accountName, 'EOS',function(error,result){
+     window.aaaChain.getEosBalance(error,result)
+    })
 }
 
 getSignature = function(json,privateKey){
-  console.log("getSignature--------------"+privateKey)
   var key = ecc.sign(json,privateKey)
   console.log("key----"+key)
-  window.aaa.getSignature(key)
+  window.aaaChain.getSignature(key)
 }
 
-//转账到中间账号
-prepay= function(id,account1,account2,price){
-  const options = { authorization: [ account1+`@active` ] };
-  console.log("repay id:"+id+"--account1:"+account1+"--account2:"+account2+"--price:"+price);
-   eos.contract('aaatrust1111').then(contract => {
-      //contract.prepay(111, "aaauser1", "aaauser2", "2.0000 EOS" , options).
-      contract.prepay(id, account1, account2, price , options).
-        then(value => {
-        console.log('prepay OK')
-        window.aaa.prepay(JSON.stringify(value))
-        }).
-        catch(e => {
-        console.log("prepay failed: " + e)
-        window.aaa.prepayError(e)
-        })
-    })
+// 买家预付款
+prepay= function(id,buyer,seller,price){
+
+  aaa.payForGood(id, buyer, seller, price).
+    then(value => {
+      console.log('payForGood OK. txid: ' + value.transaction_id)
+      window.aaaChain.prepay(JSON.stringify(value))
+      }).catch(e => {
+        console.log("payForGood failed: " + e)
+         window.aaaChain.prepayError(e)
+        });
+}
+
+
+encryptKey = function(privateKey,anotherPublicKey,key){
+
+  var enKey  = ecc.Aes.encrypt(privateKey,anotherPublicKey,key)
+  console.log("enKey:"+JSON.stringify(enKey))
+
+  window.aaaChain.getEncryptKey(JSON.stringify(enKey))
+}
+
+decryptKey = function(privateKey,anotherPublicKey,enKey){
+  var obj = eval('(' + enKey + ')')
+  var nonce = ByteBuffer.Long.fromValue(obj.nonce)
+  var message = Buffer.from(obj.message)
+  var checksum = obj.checksum
+  var deKey  = ecc.Aes.decrypt(privateKey,anotherPublicKey,nonce,message,checksum)
+  console.log("deKey:"+deKey.toString())
+  window.aaaChain.getDecryptKey(deKey.toString())
 }
 
 
@@ -58,40 +73,5498 @@ getPrepayStatus = function(id) {
   table_key = 'id';
   lower_bound = id;
   upper_bound = id + 1;
-  eos.getTableRows(true, contract, scope, table, table_key, lower_bound, upper_bound).
+  aaa.getTableRows(true, contract, scope, table, table_key, lower_bound, upper_bound).
     then(result => {
     console.log(result.rows);
-    window.aaa.paySuccess(result.rows)
+    window.aaaChain.paySuccessStatus(result.rows)
      }).
     catch(e => {
     console.log("print_row failed: " + e)
-    window.aaa.payFailure(e)
+    window.aaaChain.payFailureStatus(e)
     });
 }
 
 
+// 买家确认付款
+confirmOrder = function(buyer,orderid) {
 
-confirmOrder = function(accountName,orderid) {
-  const options = { authorization: [ accountName + `@active` ] };
-  eos.contract('aaatrust1111',function (error, result) {
-      result.confirm(orderid,options,function (error, result) {
-      if(error == null){
-      console.log("result:"+JSON.stringify(result))
-      }else{
-      console.log("error:"+error)
-      }
-      })
-  })
+  aaa.confirmPayment(buyer, orderid).then(value => {
+    console.log('confirmPayment OK. txid: ' + value.transaction_id)
+    window.aaaChain.paySuccess(JSON.stringify(value))
+    }).catch(e => {
+      console.log("confirmPayment failed: " + e)
+       window.aaaChain.payFailure(e)
+    })
 }
-},{"eosjs":138,"eosjs-ecc":130}],2:[function(require,module,exports){
+}).call(this,require("buffer").Buffer)
+},{"aaajs":4,"buffer":194,"bytebuffer":48,"eosjs":152,"eosjs-ecc":144}],2:[function(require,module,exports){
+(function (Buffer){
+'use strict';
+
+var _typeof2 = require('babel-runtime/helpers/typeof');
+
+var _typeof3 = _interopRequireDefault(_typeof2);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var assert = require('assert');
+var Structs = require('./structs');
+
+module.exports = AbiCache;
+
+function AbiCache(network, config) {
+  config.abiCache = {
+    abiAsync: abiAsync,
+    abi: abi
+
+    // Help (or "usage") needs {defaults: true}
+  };var abiCacheConfig = Object.assign({}, { defaults: true }, config);
+
+  var cache = {};
+
+  /**
+    Asynchronously fetch and cache an ABI from the blockchain.
+     @arg {string} account - blockchain account with deployed contract
+    @arg {boolean} [force = true] false when ABI is immutable.
+  */
+  function abiAsync(account) {
+    var force = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+
+    assert.equal(typeof account === 'undefined' ? 'undefined' : (0, _typeof3.default)(account), 'string', 'account string required');
+
+    if (force == false && cache[account] != null) {
+      return Promise.resolve(cache[account]);
+    }
+
+    if (network == null) {
+      var _abi = cache[account];
+      assert(_abi, 'Missing ABI for account: ' + account + ', provide httpEndpoint or add to abiCache');
+      return Promise.resolve(_abi);
+    }
+
+    return network.getAbi(account).then(function (code) {
+      assert(code.abi, 'Missing ABI for account: ' + account);
+      return abi(account, code.abi);
+    });
+  }
+
+  /**
+    Synchronously set or fetch an ABI from local cache.
+     @arg {string} account - blockchain account with deployed contract
+    @arg {string} [abi] - blockchain ABI json data.  Null to fetch or non-null to cache
+  */
+  function abi(account, abi) {
+    assert.equal(typeof account === 'undefined' ? 'undefined' : (0, _typeof3.default)(account), 'string', 'account string required');
+    if (abi) {
+      assert.equal(typeof abi === 'undefined' ? 'undefined' : (0, _typeof3.default)(abi), 'object', 'abi');
+      if (Buffer.isBuffer(abi)) {
+        abi = JSON.parse(abi);
+      }
+      var fcSchema = abiToFcSchema(abi, account);
+      var structs = Structs(abiCacheConfig, fcSchema); // returns {structs, types}
+      return cache[account] = Object.assign({ abi: abi, schema: fcSchema }, structs);
+    }
+    var c = cache[account];
+    if (c == null) {
+      throw new Error('Abi \'' + account + '\' is not cached');
+    }
+    return c;
+  }
+
+  return config.abiCache;
+}
+
+function abiToFcSchema(abi, account) {
+  // customTypes
+  // For FcBuffer
+  var abiSchema = {};
+
+  // convert abi types to Fcbuffer schema
+  if (abi.types) {
+    // aliases
+    abi.types.forEach(function (e) {
+      // "account_name" = "name"
+      abiSchema[e.new_type_name] = e.type;
+    });
+  }
+
+  if (abi.structs) {
+    // transaction_header = fields[actor, permission] extends base "transaction"
+    abi.structs.forEach(function (e) {
+      var fields = {};
+      var _iteratorNormalCompletion = true;
+      var _didIteratorError = false;
+      var _iteratorError = undefined;
+
+      try {
+        for (var _iterator = e.fields[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+          var field = _step.value;
+
+          fields[field.name] = field.type;
+        }
+      } catch (err) {
+        _didIteratorError = true;
+        _iteratorError = err;
+      } finally {
+        try {
+          if (!_iteratorNormalCompletion && _iterator.return) {
+            _iterator.return();
+          }
+        } finally {
+          if (_didIteratorError) {
+            throw _iteratorError;
+          }
+        }
+      }
+
+      abiSchema[e.name] = { base: e.base, fields: fields };
+      if (e.base === '') {
+        delete abiSchema[e.name].base;
+      }
+    });
+  }
+
+  if (abi.actions) {
+    // setprods = set_producers
+    abi.actions.forEach(function (action) {
+      // @example action = {name: 'setprods', type: 'set_producers'}
+      var type = abiSchema[action.type];
+      if (!type) {
+        console.error('Missing abiSchema type', action.type, account); //, abi, abiSchema)
+      } else {
+        type.action = {
+          name: action.name,
+          account: account
+        };
+      }
+    });
+    // console.log('abiSchema', abiSchema);
+  }
+
+  return abiSchema;
+}
+}).call(this,{"isBuffer":require("../../../../../../../../../../../../../usr/local/lib/node_modules/browserify/node_modules/is-buffer/index.js")})
+},{"../../../../../../../../../../../../../usr/local/lib/node_modules/browserify/node_modules/is-buffer/index.js":199,"./structs":10,"assert":191,"babel-runtime/helpers/typeof":21}],3:[function(require,module,exports){
+'use strict';
+
+var _slicedToArray2 = require('babel-runtime/helpers/slicedToArray');
+
+var _slicedToArray3 = _interopRequireDefault(_slicedToArray2);
+
+var _typeof2 = require('babel-runtime/helpers/typeof');
+
+var _typeof3 = _interopRequireDefault(_typeof2);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var assert = require('assert');
+
+var _require = require('bytebuffer'),
+    Long = _require.Long;
+
+module.exports = {
+  ULong: ULong,
+  isName: isName,
+  encodeName: encodeName, // encode human readable name to uint64 (number string)
+  decodeName: decodeName, // decode from uint64 to human readable
+  encodeNameHex: function encodeNameHex(name) {
+    return Long.fromString(encodeName(name), true).toString(16);
+  },
+  decodeNameHex: function decodeNameHex(hex) {
+    var littleEndian = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+    return decodeName(Long.fromString(hex, true, 16).toString(), littleEndian);
+  },
+  DecimalString: DecimalString,
+  DecimalPad: DecimalPad,
+  DecimalImply: DecimalImply,
+  DecimalUnimply: DecimalUnimply,
+  printAsset: printAsset,
+  parseAsset: parseAsset
+
+  /** @private */
+};var signed = function signed(fn) {
+  return function () {};
+};
+
+function ULong(value) {
+  var unsigned = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+  var radix = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 10;
+
+  if (typeof value === 'number') {
+    // Some JSON libs use numbers for values under 53 bits or strings for larger.
+    // Accomidate but double-check it..
+    if (value > Number.MAX_SAFE_INTEGER) throw new TypeError('value parameter overflow');
+
+    value = Long.fromString(String(value), unsigned, radix);
+  } else if (typeof value === 'string') {
+    value = Long.fromString(value, unsigned, radix);
+  } else if (!Long.isLong(value)) {
+    throw new TypeError('value parameter is a requied Long, Number or String');
+  }
+  return value;
+}
+
+function isName(str, err) {
+  try {
+    encodeName(str);
+    return true;
+  } catch (error) {
+    if (err) {
+      err(error);
+    }
+    return false;
+  }
+}
+
+var charmap = '.12345abcdefghijklmnopqrstuvwxyz';
+var charidx = function charidx(ch) {
+  var idx = charmap.indexOf(ch);
+  if (idx === -1) throw new TypeError('Invalid character: \'' + ch + '\'');
+
+  return idx;
+};
+
+/** Original Name encode and decode logic is in github.com/eosio/eos  native.hpp */
+
+/**
+  Encode a name (a base32 string) to a number.
+
+  For performance reasons, the blockchain uses the numerical encoding of strings
+  for very common types like account names.
+
+  @see types.hpp string_to_name
+
+  @arg {string} name - A string to encode, up to 12 characters long.
+  @arg {string} [littleEndian = true] - Little or Bigendian encoding
+
+  @return {string<uint64>} - compressed string (from name arg).  A string is
+    always used because a number could exceed JavaScript's 52 bit limit.
+*/
+function encodeName(name) {
+  var littleEndian = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+
+  if (typeof name !== 'string') throw new TypeError('name parameter is a required string');
+
+  if (name.length > 12) throw new TypeError('A name can be up to 12 characters long');
+
+  var bitstr = '';
+  for (var i = 0; i <= 12; i++) {
+    // process all 64 bits (even if name is short)
+    var c = i < name.length ? charidx(name[i]) : 0;
+    var bitlen = i < 12 ? 5 : 4;
+    var bits = Number(c).toString(2);
+    if (bits.length > bitlen) {
+      throw new TypeError('Invalid name ' + name);
+    }
+    bits = '0'.repeat(bitlen - bits.length) + bits;
+    bitstr += bits;
+  }
+
+  var value = Long.fromString(bitstr, true, 2);
+
+  // convert to LITTLE_ENDIAN
+  var leHex = '';
+  var bytes = littleEndian ? value.toBytesLE() : value.toBytesBE();
+  var _iteratorNormalCompletion = true;
+  var _didIteratorError = false;
+  var _iteratorError = undefined;
+
+  try {
+    for (var _iterator = bytes[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+      var b = _step.value;
+
+      var n = Number(b).toString(16);
+      leHex += (n.length === 1 ? '0' : '') + n;
+    }
+  } catch (err) {
+    _didIteratorError = true;
+    _iteratorError = err;
+  } finally {
+    try {
+      if (!_iteratorNormalCompletion && _iterator.return) {
+        _iterator.return();
+      }
+    } finally {
+      if (_didIteratorError) {
+        throw _iteratorError;
+      }
+    }
+  }
+
+  var ulName = Long.fromString(leHex, true, 16).toString();
+
+  // console.log('encodeName', name, value.toString(), ulName.toString(), JSON.stringify(bitstr.split(/(.....)/).slice(1)))
+
+  return ulName.toString();
+}
+
+/**
+  @arg {Long|String|number} value uint64
+  @arg {string} [littleEndian = true] - Little or Bigendian encoding
+
+  @return {string}
+*/
+function decodeName(value) {
+  var littleEndian = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+
+  value = ULong(value);
+
+  // convert from LITTLE_ENDIAN
+  var beHex = '';
+  var bytes = littleEndian ? value.toBytesLE() : value.toBytesBE();
+  var _iteratorNormalCompletion2 = true;
+  var _didIteratorError2 = false;
+  var _iteratorError2 = undefined;
+
+  try {
+    for (var _iterator2 = bytes[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+      var b = _step2.value;
+
+      var n = Number(b).toString(16);
+      beHex += (n.length === 1 ? '0' : '') + n;
+    }
+  } catch (err) {
+    _didIteratorError2 = true;
+    _iteratorError2 = err;
+  } finally {
+    try {
+      if (!_iteratorNormalCompletion2 && _iterator2.return) {
+        _iterator2.return();
+      }
+    } finally {
+      if (_didIteratorError2) {
+        throw _iteratorError2;
+      }
+    }
+  }
+
+  beHex += '0'.repeat(16 - beHex.length);
+
+  var fiveBits = Long.fromNumber(0x1f, true);
+  var fourBits = Long.fromNumber(0x0f, true);
+  var beValue = Long.fromString(beHex, true, 16);
+
+  var str = '';
+  var tmp = beValue;
+
+  for (var i = 0; i <= 12; i++) {
+    var c = charmap[tmp.and(i === 0 ? fourBits : fiveBits)];
+    str = c + str;
+    tmp = tmp.shiftRight(i === 0 ? 4 : 5);
+  }
+  str = str.replace(/\.+$/, ''); // remove trailing dots (all of them)
+
+  // console.log('decodeName', str, beValue.toString(), value.toString(), JSON.stringify(beValue.toString(2).split(/(.....)/).slice(1)))
+
+  return str;
+}
+
+/**
+  Normalize and validate decimal string (potentially large values).  Should
+  avoid internationalization issues if possible but will be safe and
+  throw an error for an invalid number.
+
+  Normalization removes extra zeros or decimal.
+
+  @return {string} value
+*/
+function DecimalString(value) {
+  assert(value != null, 'value is required');
+  value = value === 'object' && value.toString ? value.toString() : String(value);
+
+  var neg = /^-/.test(value);
+  if (neg) {
+    value = value.substring(1);
+  }
+
+  if (value[0] === '.') {
+    value = '0' + value;
+  }
+
+  var part = value.split('.');
+  assert(part.length <= 2, 'invalid decimal ' + value);
+  assert(/^\d+(,?\d)*\d*$/.test(part[0]), 'invalid decimal ' + value);
+
+  if (part.length === 2) {
+    assert(/^\d*$/.test(part[1]), 'invalid decimal ' + value);
+    part[1] = part[1].replace(/0+$/, ''); // remove suffixing zeros
+    if (part[1] === '') {
+      part.pop();
+    }
+  }
+
+  part[0] = part[0].replace(/^0*/, ''); // remove leading zeros
+  if (part[0] === '') {
+    part[0] = '0';
+  }
+  return (neg ? '-' : '') + part.join('.');
+}
+
+/**
+  Ensure a fixed number of decimal places.  Safe for large numbers.
+
+  @see ./format.test.js
+
+  @example DecimalPad(10.2, 3) === '10.200'
+
+  @arg {number|string|object.toString} num
+  @arg {number} [precision = null] - number of decimal places.  Null skips
+    padding suffix but still applies number format normalization.
+  @return {string} decimal part is added and zero padded to match precision
+*/
+function DecimalPad(num, precision) {
+  var value = DecimalString(num);
+  if (precision == null) {
+    return value;
+  }
+
+  assert(precision >= 0 && precision <= 18, 'Precision should be 18 characters or less');
+
+  var part = value.split('.');
+
+  if (precision === 0 && part.length === 1) {
+    return part[0];
+  }
+
+  if (part.length === 1) {
+    return part[0] + '.' + '0'.repeat(precision);
+  } else {
+    var pad = precision - part[1].length;
+    assert(pad >= 0, 'decimal \'' + value + '\' exceeds precision ' + precision);
+    return part[0] + '.' + part[1] + '0'.repeat(pad);
+  }
+}
+
+/** Ensures proper trailing zeros then removes decimal place. */
+function DecimalImply(value, precision) {
+  return DecimalPad(value, precision).replace('.', '');
+}
+
+/**
+  Put the decimal place back in its position and return the normalized number
+  string (with any unnecessary zeros or an unnecessary decimal removed).
+
+  @arg {string|number|value.toString} value 10000
+  @arg {number} precision 4
+  @return {number} 1.0000
+*/
+function DecimalUnimply(value, precision) {
+  assert(value != null, 'value is required');
+  value = value === 'object' && value.toString ? value.toString() : String(value);
+  var neg = /^-/.test(value);
+  if (neg) {
+    value = value.substring(1);
+  }
+  assert(/^\d+$/.test(value), 'invalid whole number ' + value);
+  assert(precision != null, 'precision required');
+  assert(precision >= 0 && precision <= 18, 'Precision should be 18 characters or less');
+
+  // Ensure minimum length
+  var pad = precision - value.length;
+  if (pad > 0) {
+    value = '' + '0'.repeat(pad) + value;
+  }
+
+  var dotIdx = value.length - precision;
+  value = value.slice(0, dotIdx) + '.' + value.slice(dotIdx);
+  return (neg ? '-' : '') + DecimalPad(value, precision); // Normalize
+}
+
+/** @private for now, support for asset strings is limited
+*/
+function printAsset(_ref) {
+  var amount = _ref.amount,
+      precision = _ref.precision,
+      symbol = _ref.symbol,
+      contract = _ref.contract;
+
+  assert.equal(typeof symbol === 'undefined' ? 'undefined' : (0, _typeof3.default)(symbol), 'string', 'symbol is a required string');
+
+  if (amount != null && precision != null) {
+    amount = DecimalPad(amount, precision);
+  }
+
+  var join = function join(e1, e2) {
+    return e1 == null ? '' : e2 == null ? '' : e1 + e2;
+  };
+
+  if (amount != null) {
+    // the amount contains the precision
+    return join(amount, ' ') + symbol + join('@', contract);
+  }
+
+  return join(precision, ',') + symbol + join('@', contract);
+}
+
+/**
+  Attempts to parse all forms of the asset strings (symbol, asset, or extended
+  versions).  If the provided string contains any additional or appears to have
+  invalid information an error is thrown.
+
+  @return {object} {amount, precision, symbol, contract}
+  @throws AssertionError
+*/
+function parseAsset(str) {
+  var _str$split = str.split(' '),
+      _str$split2 = (0, _slicedToArray3.default)(_str$split, 1),
+      amountRaw = _str$split2[0];
+
+  var amountMatch = amountRaw.match(/^(-?[0-9]+(\.[0-9]+)?)( |$)/);
+  var amount = amountMatch ? amountMatch[1] : null;
+
+  var precisionMatch = str.match(/(^| )([0-9]+),([A-Z]+)(@|$)/);
+  var precisionSymbol = precisionMatch ? Number(precisionMatch[2]) : null;
+  var precisionAmount = amount ? (amount.split('.')[1] || '').length : null;
+  var precision = precisionSymbol != null ? precisionSymbol : precisionAmount;
+
+  var symbolMatch = str.match(/(^| |,)([A-Z]+)(@|$)/);
+  var symbol = symbolMatch ? symbolMatch[2] : null;
+
+  var _str$split3 = str.split('@'),
+      _str$split4 = (0, _slicedToArray3.default)(_str$split3, 2),
+      _str$split4$ = _str$split4[1],
+      contractRaw = _str$split4$ === undefined ? '' : _str$split4$;
+
+  var contract = /^[a-z0-5]+(\.[a-z0-5]+)*$/.test(contractRaw) ? contractRaw : null;
+
+  var check = printAsset({ amount: amount, precision: precision, symbol: symbol, contract: contract });
+
+  assert.equal(str, check, 'Invalid asset string: ' + str + ' !== ' + check);
+
+  if (precision != null) {
+    assert(precision >= 0 && precision <= 18, 'Precision should be 18 characters or less');
+  }
+  if (symbol != null) {
+    assert(symbol.length <= 7, 'Asset symbol is 7 characters or less');
+  }
+  if (contract != null) {
+    assert(contract.length <= 12, 'Contract is 12 characters or less');
+  }
+
+  return { amount: amount, precision: precision, symbol: symbol, contract: contract };
+}
+},{"assert":191,"babel-runtime/helpers/slicedToArray":20,"babel-runtime/helpers/typeof":21,"bytebuffer":48}],4:[function(require,module,exports){
+'use strict';
+
+var _typeof2 = require('babel-runtime/helpers/typeof');
+
+var _typeof3 = _interopRequireDefault(_typeof2);
+
+var _regenerator = require('babel-runtime/regenerator');
+
+var _regenerator2 = _interopRequireDefault(_regenerator);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var ecc = require('eosjs-ecc');
+var Fcbuffer = require('fcbuffer');
+var EosApi = require('eosjs-api');
+var assert = require('assert');
+
+var Structs = require('./structs');
+var AbiCache = require('./abi-cache');
+var writeApiGen = require('./write-api');
+var format = require('./format');
+var schema = require('./schema');
+
+var token = require('./schema/eosio.token.abi.json');
+var system = require('./schema/eosio.system.abi.json');
+var eosio_null = require('./schema/eosio.null.abi.json');
+
+var Eos = function Eos() {
+  var config = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+  var configDefaults = {
+    httpEndpoint: 'http://127.0.0.1:8888',
+    paymentUser: 'aaatrust1111',
+    debug: false,
+    verbose: false,
+    broadcast: true,
+    logger: {
+      log: function log() {
+        var _console;
+
+        return config.verbose ? (_console = console).log.apply(_console, arguments) : null;
+      },
+      error: function error() {
+        var _console2;
+
+        return config.verbose ? (_console2 = console).error.apply(_console2, arguments) : null;
+      }
+    },
+    sign: true
+  };
+
+  function applyDefaults(target, defaults) {
+    Object.keys(defaults).forEach(function (key) {
+      if (target[key] === undefined) {
+        target[key] = defaults[key];
+      }
+    });
+  }
+
+  applyDefaults(config, configDefaults);
+  applyDefaults(config.logger, configDefaults.logger);
+  return createEos(config);
+};
+
+module.exports = Eos;
+
+Object.assign(Eos, {
+  version: '16.0.0',
+  modules: {
+    format: format,
+    api: EosApi,
+    ecc: ecc,
+    json: {
+      api: EosApi.api,
+      schema: schema
+    },
+    Fcbuffer: Fcbuffer
+  },
+
+  /** @deprecated */
+  Testnet: function Testnet(config) {
+    console.error('deprecated, change Eos.Testnet(..) to just Eos(..)');
+    return Eos(config);
+  },
+
+  /** @deprecated */
+  Localnet: function Localnet(config) {
+    console.error('deprecated, change Eos.Localnet(..) to just Eos(..)');
+    return Eos(config);
+  }
+});
+
+// 这个函数的功能：授权合约从买家帐号扣款。
+//
+// 参数说明：
+// buyer: 买家账号
+//
+// 注：
+// 1. 调用函数payForGood前，必须先进行授权。
+// 2. 授权信息记录在链上，对于同一个买家来说，这个函数只需要调用一次。
+function authPermisson(buyer) {
+  var accountInfo, activeAuth, needAddPermission, _iteratorNormalCompletion, _didIteratorError, _iteratorError, _iterator, _step, perm, accounts, _iteratorNormalCompletion2, _didIteratorError2, _iteratorError2, _iterator2, _step2, account, op_data;
+
+  return _regenerator2.default.async(function authPermisson$(_context) {
+    while (1) {
+      switch (_context.prev = _context.next) {
+        case 0:
+          _context.next = 2;
+          return _regenerator2.default.awrap(this.getAccount(buyer));
+
+        case 2:
+          accountInfo = _context.sent;
+          activeAuth = {};
+          needAddPermission = true;
+          _iteratorNormalCompletion = true;
+          _didIteratorError = false;
+          _iteratorError = undefined;
+          _context.prev = 8;
+          _iterator = accountInfo.permissions[Symbol.iterator]();
+
+        case 10:
+          if (_iteratorNormalCompletion = (_step = _iterator.next()).done) {
+            _context.next = 46;
+            break;
+          }
+
+          perm = _step.value;
+
+          if (!(perm.perm_name === "active")) {
+            _context.next = 43;
+            break;
+          }
+
+          activeAuth = perm.required_auth;
+          accounts = activeAuth.accounts;
+          _iteratorNormalCompletion2 = true;
+          _didIteratorError2 = false;
+          _iteratorError2 = undefined;
+          _context.prev = 18;
+          _iterator2 = accounts[Symbol.iterator]();
+
+        case 20:
+          if (_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done) {
+            _context.next = 28;
+            break;
+          }
+
+          account = _step2.value;
+
+          if (!(account.permission.actor === this.config.paymentUser && account.permission.permission === "eosio.code")) {
+            _context.next = 25;
+            break;
+          }
+
+          // already add this permission, don't need add it again.
+          needAddPermission = false;
+          throw "the permission already existing, do nothing.";
+
+        case 25:
+          _iteratorNormalCompletion2 = true;
+          _context.next = 20;
+          break;
+
+        case 28:
+          _context.next = 34;
+          break;
+
+        case 30:
+          _context.prev = 30;
+          _context.t0 = _context['catch'](18);
+          _didIteratorError2 = true;
+          _iteratorError2 = _context.t0;
+
+        case 34:
+          _context.prev = 34;
+          _context.prev = 35;
+
+          if (!_iteratorNormalCompletion2 && _iterator2.return) {
+            _iterator2.return();
+          }
+
+        case 37:
+          _context.prev = 37;
+
+          if (!_didIteratorError2) {
+            _context.next = 40;
+            break;
+          }
+
+          throw _iteratorError2;
+
+        case 40:
+          return _context.finish(37);
+
+        case 41:
+          return _context.finish(34);
+
+        case 42:
+
+          if (needAddPermission === true) {
+            accounts.push({ permission: { actor: this.config.paymentUser,
+                permission: "eosio.code" },
+              weight: 1 });
+          }
+
+        case 43:
+          _iteratorNormalCompletion = true;
+          _context.next = 10;
+          break;
+
+        case 46:
+          _context.next = 52;
+          break;
+
+        case 48:
+          _context.prev = 48;
+          _context.t1 = _context['catch'](8);
+          _didIteratorError = true;
+          _iteratorError = _context.t1;
+
+        case 52:
+          _context.prev = 52;
+          _context.prev = 53;
+
+          if (!_iteratorNormalCompletion && _iterator.return) {
+            _iterator.return();
+          }
+
+        case 55:
+          _context.prev = 55;
+
+          if (!_didIteratorError) {
+            _context.next = 58;
+            break;
+          }
+
+          throw _iteratorError;
+
+        case 58:
+          return _context.finish(55);
+
+        case 59:
+          return _context.finish(52);
+
+        case 60:
+          op_data = {
+            account: buyer,
+            permission: 'active',
+            parent: 'owner',
+            auth: activeAuth
+          };
+          return _context.abrupt('return', this.updateauth(op_data));
+
+        case 62:
+        case 'end':
+          return _context.stop();
+      }
+    }
+  }, null, this, [[8, 48, 52, 60], [18, 30, 34, 42], [35,, 37, 41], [53,, 55, 59]]);
+}
+
+// 这个函数的功能为：买家预付款。
+//
+// 参数说明：
+// id: 用于唯一标识这笔预付款，它的类型必须为uint64，且不能重复
+// buyer: 买家账号，必须是链上存在的用户
+// seller: 卖家账号，必须是链上存在的用户
+// price: 商品价格，比如 "3.0000 EOS"
+//
+// 注：
+// 1. 它不会直接打钱给卖家，而是暂时打款到中间帐号，当买家确定收到商品后，
+// 应该调用 confirmPayment 来确认付款。
+// 2. 调用本函数前，请确保已授权合约从buyer扣款；如果没有，请调用authPermisson
+function payForGood(id, buyer, seller, price) {
+  var options, contract;
+  return _regenerator2.default.async(function payForGood$(_context2) {
+    while (1) {
+      switch (_context2.prev = _context2.next) {
+        case 0:
+          options = { authorization: [buyer + '@active'] };
+          _context2.next = 3;
+          return _regenerator2.default.awrap(this.contract(this.config.paymentUser));
+
+        case 3:
+          contract = _context2.sent;
+          return _context2.abrupt('return', contract.prepay(id, buyer, seller, price, options));
+
+        case 5:
+        case 'end':
+          return _context2.stop();
+      }
+    }
+  }, null, this);
+}
+
+// 这个函数的功能为：买家确认付款，预付款时的钱将打到卖家帐号。
+//
+// 参数说明：
+// id: 预付款id
+function confirmPayment(buyer, id) {
+  var options, contract;
+  return _regenerator2.default.async(function confirmPayment$(_context3) {
+    while (1) {
+      switch (_context3.prev = _context3.next) {
+        case 0:
+          options = { authorization: [buyer + '@active'] };
+          _context3.next = 3;
+          return _regenerator2.default.awrap(this.contract(this.config.paymentUser));
+
+        case 3:
+          contract = _context3.sent;
+          return _context3.abrupt('return', contract.confirm(id, options));
+
+        case 5:
+        case 'end':
+          return _context3.stop();
+      }
+    }
+  }, null, this);
+}
+
+function createEos(config) {
+  var network = config.httpEndpoint != null ? EosApi(config) : null;
+  config.network = network;
+
+  var abis = [];
+  var abiCache = AbiCache(network, config);
+  abis.push(abiCache.abi('eosio.null', eosio_null));
+  abis.push(abiCache.abi('eosio.token', token));
+  abis.push(abiCache.abi('eosio', system));
+
+  if (!config.chainId) {
+    config.chainId = 'cf057bbfb72640471fd910bcb67639c22df9f92470936cddc1ade0e2f2e7dc4f';
+  }
+
+  if (network) {
+    checkChainId(network, config.chainId, config.logger);
+  }
+
+  if (config.mockTransactions != null) {
+    if (typeof config.mockTransactions === 'string') {
+      var mock = config.mockTransactions;
+      config.mockTransactions = function () {
+        return mock;
+      };
+    }
+    assert.equal((0, _typeof3.default)(config.mockTransactions), 'function', 'config.mockTransactions');
+  }
+
+  var _Structs = Structs(config),
+      structs = _Structs.structs,
+      types = _Structs.types,
+      fromBuffer = _Structs.fromBuffer,
+      toBuffer = _Structs.toBuffer;
+
+  var eos = mergeWriteFunctions(config, EosApi, structs, abis);
+
+  Object.assign(eos, {
+    config: safeConfig(config),
+    fc: {
+      structs: structs,
+      types: types,
+      fromBuffer: fromBuffer,
+      toBuffer: toBuffer,
+      abiCache: abiCache
+    },
+    authPermisson: authPermisson,
+    payForGood: payForGood,
+    confirmPayment: confirmPayment,
+    // Repeat of static Eos.modules, help apps that use dependency injection
+    modules: {
+      format: format
+    }
+  });
+
+  if (!config.signProvider) {
+    config.signProvider = defaultSignProvider(eos, config);
+  }
+
+  return eos;
+}
+
+/**
+  Set each property as read-only, read-write, no-access.  This is shallow
+  in that it applies only to the root object and does not limit access
+  to properties under a given object.
+*/
+function safeConfig(config) {
+  // access control is shallow references only
+  var readOnly = new Set(['httpEndpoint', 'abiCache', 'chainId', 'expireInSeconds', 'paymentUser']);
+  var readWrite = new Set(['verbose', 'debug', 'broadcast', 'logger', 'sign']);
+  var protectedConfig = {};
+
+  Object.keys(config).forEach(function (key) {
+    Object.defineProperty(protectedConfig, key, {
+      set: function set(value) {
+        if (readWrite.has(key)) {
+          config[key] = value;
+          return;
+        }
+        throw new Error('Access denied');
+      },
+
+      get: function get() {
+        if (readOnly.has(key) || readWrite.has(key)) {
+          return config[key];
+        }
+        throw new Error('Access denied');
+      }
+    });
+  });
+  return protectedConfig;
+}
+
+/**
+  Merge in write functions (operations).  Tested against existing methods for
+  name conflicts.
+
+  @arg {object} config.network - read-only api calls
+  @arg {object} EosApi - api[EosApi] read-only api calls
+  @return {object} - read and write method calls (create and sign transactions)
+  @throw {TypeError} if a funciton name conflicts
+*/
+function mergeWriteFunctions(config, EosApi, structs, abis) {
+  var network = config.network;
+
+
+  var merge = Object.assign({}, network);
+
+  var writeApi = writeApiGen(EosApi, network, structs, config, abis);
+  throwOnDuplicate(merge, writeApi, 'Conflicting methods in EosApi and Transaction Api');
+  Object.assign(merge, writeApi);
+
+  return merge;
+}
+
+function throwOnDuplicate(o1, o2, msg) {
+  for (var key in o1) {
+    if (o2[key]) {
+      throw new TypeError(msg + ': ' + key);
+    }
+  }
+}
+
+/**
+  The default sign provider is designed to interact with the available public
+  keys (maybe just one), the transaction, and the blockchain to figure out
+  the minimum set of signing keys.
+
+  If only one key is available, the blockchain API calls are skipped and that
+  key is used to sign the transaction.
+*/
+var defaultSignProvider = function defaultSignProvider(eos, config) {
+  return function _callee(_ref) {
+    var sign = _ref.sign,
+        buf = _ref.buf,
+        transaction = _ref.transaction,
+        optionsKeyProvider = _ref.optionsKeyProvider;
+
+    var keyProvider, keys, pvt, sigs, _iteratorNormalCompletion3, _didIteratorError3, _iteratorError3, _iterator3, _step3, key, keyMap, _iteratorNormalCompletion4, _didIteratorError4, _iteratorError4, _iterator4, _step4, _key, isPrivate, isPublic, pubkeys;
+
+    return _regenerator2.default.async(function _callee$(_context4) {
+      while (1) {
+        switch (_context4.prev = _context4.next) {
+          case 0:
+            // optionsKeyProvider is a per-action key: await eos.someAction('user2' .., {keyProvider: privateKey2})
+            keyProvider = optionsKeyProvider ? optionsKeyProvider : config.keyProvider;
+
+            if (keyProvider) {
+              _context4.next = 3;
+              break;
+            }
+
+            throw new TypeError('This transaction requires a keyProvider for signing');
+
+          case 3:
+            keys = keyProvider;
+
+            if (typeof keyProvider === 'function') {
+              keys = keyProvider({ transaction: transaction });
+            }
+
+            // keyProvider may return keys or Promise<keys>
+            _context4.next = 7;
+            return _regenerator2.default.awrap(Promise.resolve(keys));
+
+          case 7:
+            keys = _context4.sent;
+
+
+            if (!Array.isArray(keys)) {
+              keys = [keys];
+            }
+
+            keys = keys.map(function (key) {
+              try {
+                // normalize format (WIF => PVT_K1_base58privateKey)
+                return { private: ecc.PrivateKey(key).toString() };
+              } catch (e) {
+                // normalize format (EOSKey => PUB_K1_base58publicKey)
+                return { public: ecc.PublicKey(key).toString() };
+              }
+              assert(false, 'expecting public or private keys from keyProvider');
+            });
+
+            if (keys.length) {
+              _context4.next = 12;
+              break;
+            }
+
+            throw new Error('missing key, check your keyProvider');
+
+          case 12:
+            if (!(keys.length === 1 && keys[0].private)) {
+              _context4.next = 15;
+              break;
+            }
+
+            pvt = keys[0].private;
+            return _context4.abrupt('return', sign(buf, pvt));
+
+          case 15:
+            if (!(config.httpEndpoint == null)) {
+              _context4.next = 37;
+              break;
+            }
+
+            sigs = [];
+            _iteratorNormalCompletion3 = true;
+            _didIteratorError3 = false;
+            _iteratorError3 = undefined;
+            _context4.prev = 20;
+
+            for (_iterator3 = keys[Symbol.iterator](); !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+              key = _step3.value;
+
+              sigs.push(sign(buf, key.private));
+            }
+            _context4.next = 28;
+            break;
+
+          case 24:
+            _context4.prev = 24;
+            _context4.t0 = _context4['catch'](20);
+            _didIteratorError3 = true;
+            _iteratorError3 = _context4.t0;
+
+          case 28:
+            _context4.prev = 28;
+            _context4.prev = 29;
+
+            if (!_iteratorNormalCompletion3 && _iterator3.return) {
+              _iterator3.return();
+            }
+
+          case 31:
+            _context4.prev = 31;
+
+            if (!_didIteratorError3) {
+              _context4.next = 34;
+              break;
+            }
+
+            throw _iteratorError3;
+
+          case 34:
+            return _context4.finish(31);
+
+          case 35:
+            return _context4.finish(28);
+
+          case 36:
+            return _context4.abrupt('return', sigs);
+
+          case 37:
+            keyMap = new Map();
+
+            // keys are either public or private keys
+
+            _iteratorNormalCompletion4 = true;
+            _didIteratorError4 = false;
+            _iteratorError4 = undefined;
+            _context4.prev = 41;
+            for (_iterator4 = keys[Symbol.iterator](); !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+              _key = _step4.value;
+              isPrivate = _key.private != null;
+              isPublic = _key.public != null;
+
+
+              if (isPrivate) {
+                keyMap.set(ecc.privateToPublic(_key.private), _key.private);
+              } else {
+                keyMap.set(_key.public, null);
+              }
+            }
+
+            _context4.next = 49;
+            break;
+
+          case 45:
+            _context4.prev = 45;
+            _context4.t1 = _context4['catch'](41);
+            _didIteratorError4 = true;
+            _iteratorError4 = _context4.t1;
+
+          case 49:
+            _context4.prev = 49;
+            _context4.prev = 50;
+
+            if (!_iteratorNormalCompletion4 && _iterator4.return) {
+              _iterator4.return();
+            }
+
+          case 52:
+            _context4.prev = 52;
+
+            if (!_didIteratorError4) {
+              _context4.next = 55;
+              break;
+            }
+
+            throw _iteratorError4;
+
+          case 55:
+            return _context4.finish(52);
+
+          case 56:
+            return _context4.finish(49);
+
+          case 57:
+            pubkeys = Array.from(keyMap.keys());
+            return _context4.abrupt('return', eos.getRequiredKeys(transaction, pubkeys).then(function (_ref2) {
+              var required_keys = _ref2.required_keys;
+
+              if (!required_keys.length) {
+                throw new Error('missing required keys for ' + JSON.stringify(transaction));
+              }
+
+              var pvts = [],
+                  missingKeys = [];
+
+              var _iteratorNormalCompletion5 = true;
+              var _didIteratorError5 = false;
+              var _iteratorError5 = undefined;
+
+              try {
+                for (var _iterator5 = required_keys[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
+                  var requiredKey = _step5.value;
+
+                  // normalize (EOSKey.. => PUB_K1_Key..)
+                  requiredKey = ecc.PublicKey(requiredKey).toString();
+
+                  var wif = keyMap.get(requiredKey);
+                  if (wif) {
+                    pvts.push(wif);
+                  } else {
+                    missingKeys.push(requiredKey);
+                  }
+                }
+              } catch (err) {
+                _didIteratorError5 = true;
+                _iteratorError5 = err;
+              } finally {
+                try {
+                  if (!_iteratorNormalCompletion5 && _iterator5.return) {
+                    _iterator5.return();
+                  }
+                } finally {
+                  if (_didIteratorError5) {
+                    throw _iteratorError5;
+                  }
+                }
+              }
+
+              if (missingKeys.length !== 0) {
+                assert(typeof keyProvider === 'function', 'keyProvider function is needed for private key lookup');
+
+                // const pubkeys = missingKeys.map(key => ecc.PublicKey(key).toStringLegacy())
+                keyProvider({ pubkeys: missingKeys }).forEach(function (pvt) {
+                  pvts.push(pvt);
+                });
+              }
+
+              var sigs = [];
+              var _iteratorNormalCompletion6 = true;
+              var _didIteratorError6 = false;
+              var _iteratorError6 = undefined;
+
+              try {
+                for (var _iterator6 = pvts[Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
+                  var _pvt = _step6.value;
+
+                  sigs.push(sign(buf, _pvt));
+                }
+              } catch (err) {
+                _didIteratorError6 = true;
+                _iteratorError6 = err;
+              } finally {
+                try {
+                  if (!_iteratorNormalCompletion6 && _iterator6.return) {
+                    _iterator6.return();
+                  }
+                } finally {
+                  if (_didIteratorError6) {
+                    throw _iteratorError6;
+                  }
+                }
+              }
+
+              return sigs;
+            }));
+
+          case 59:
+          case 'end':
+            return _context4.stop();
+        }
+      }
+    }, null, this, [[20, 24, 28, 36], [29,, 31, 35], [41, 45, 49, 57], [50,, 52, 56]]);
+  };
+};
+
+function checkChainId(network, chainId, logger) {
+  network.getInfo({}).then(function (info) {
+    if (info.chain_id !== chainId) {
+      if (logger.log) {
+        logger.log('chainId mismatch, signatures will not match transaction authority. ' + ('expected ' + chainId + ' !== actual ' + info.chain_id));
+      }
+    }
+  }).catch(function (error) {
+    if (logger.error) {
+      logger.error('Warning, unable to validate chainId: ' + error.message);
+    }
+  });
+}
+},{"./abi-cache":2,"./format":3,"./schema":9,"./schema/eosio.null.abi.json":6,"./schema/eosio.system.abi.json":7,"./schema/eosio.token.abi.json":8,"./structs":10,"./write-api":11,"assert":191,"babel-runtime/helpers/typeof":21,"babel-runtime/regenerator":22,"eosjs-api":135,"eosjs-ecc":144,"fcbuffer":13}],5:[function(require,module,exports){
+module.exports={
+  "name": "uint64",
+  "checksum160": "fixed_bytes20",
+  "checksum256": "fixed_bytes32",
+  "checksum512": "fixed_bytes64",
+  "signature": "fixed_bytes65",
+  "public_key": "fixed_bytes33",
+  "message_type": "fixed_string16",
+  "symbol": "uint64",
+  "symbol_code": "uint64",
+  "field_name": "string",
+  "account_name": "name",
+  "permission_name": "name",
+  "type_name": "string",
+  "token_name": "name",
+  "table_name": "name",
+  "scope_name": "name",
+  "action_name": "name",
+  "time_point": "int64",
+  "time_point_sec": "time",
+  "timestamp": "uint32",
+  "block_timestamp_type": "timestamp",
+  "block_id": "fixed_bytes32",
+  "checksum_type": "fixed_bytes32",
+  "checksum256_type": "fixed_bytes32",
+  "checksum512_type": "fixed_bytes64",
+  "checksum160_type": "fixed_bytes20",
+  "sha256": "fixed_bytes32",
+  "sha512": "fixed_bytes64",
+  "sha160": "fixed_bytes20",
+  "weight_type": "uint16",
+  "block_num_type": "uint32",
+  "share_type": "int64",
+  "digest_type": "checksum_type",
+  "context_free_type": "bytes",
+  "unsigned_int": "varuint32",
+  "bool": "uint8",
+
+  "extensions_type": {
+    "base": "",
+    "fields": {
+      "type": "uint16",
+      "data": "bytes"
+    }
+  },
+  "transaction_header": {
+    "base": "",
+    "fields": {
+      "expiration": "time",
+      "ref_block_num": "uint16",
+      "ref_block_prefix": "uint32",
+      "max_net_usage_words": "unsigned_int",
+      "max_cpu_usage_ms": "uint8",
+      "delay_sec": "unsigned_int"
+    }
+  },
+  "transaction": {
+    "base": "transaction_header",
+    "fields": {
+      "context_free_actions": "action[]",
+      "actions": "action[]",
+      "transaction_extensions": "extensions_type[]"
+    }
+  },
+  "signed_transaction": {
+    "base": "transaction",
+    "fields": {
+      "signatures": "signature[]",
+      "context_free_data": "bytes[]"
+    }
+  },
+  "fields": "field_def[]",
+  "field_def": {
+    "fields": {
+      "name": "field_name",
+      "type": "type_name"
+    }
+  },
+  "asset": {
+    "fields": {
+      "amount": "share_type",
+      "sym": "symbol"
+    }
+  },
+  "producer_key": {
+    "fields": {
+      "producer_name": "account_name",
+      "block_signing_key": "public_key"
+    }
+  },
+  "producer_schedule": {
+    "fields": {
+      "version": "uint32",
+      "producers": "producer_key[]"
+    }
+  },
+  "chain_config": {
+    "fields": {
+      "target_block_size": "uint32",
+      "max_block_size": "uint32",
+      "target_block_acts_per_scope": "uint32",
+      "max_block_acts_per_scope": "uint32",
+      "target_block_acts": "uint32",
+      "max_block_acts": "uint32",
+      "real_threads": "uint64",
+      "max_storage_size": "uint64",
+      "max_transaction_lifetime": "uint32",
+      "max_authority_depth": "uint16",
+      "max_transaction_exec_time": "uint32",
+      "max_inline_depth": "uint16",
+      "max_inline_action_size": "uint32",
+      "max_generated_transaction_size": "uint32"
+    }
+  },
+  "type_def": {
+    "base": "",
+    "fields": {
+      "new_type_name": "type_name",
+      "type": "type_name"
+    }
+  },
+  "struct_def": {
+    "base": "",
+    "fields": {
+      "name": "type_name",
+      "base": "type_name",
+      "fields": "field_def[]"
+    }
+  },
+  "clause_pair": {
+    "base": "",
+    "fields": {
+      "id": "string",
+      "body": "string"
+    }
+  },
+  "error_message": {
+    "base": "",
+    "fields": {
+      "error_code": "uint64",
+      "error_msg": "string"
+    }
+  },
+  "abi_def": {
+    "base": "",
+    "fields": {
+      "version": "string",
+      "types": "type_def[]",
+      "structs": "struct_def[]",
+      "actions": "action_def[]",
+      "tables": "table_def[]",
+      "ricardian_clauses": "clause_pair[]",
+      "error_messages": "error_message[]",
+      "abi_extensions": "extensions_type[]"
+    }
+  },
+  "table_def": {
+    "base": "",
+    "fields": {
+      "name": "table_name",
+      "index_type": "type_name",
+      "key_names": "field_name[]",
+      "key_types": "type_name[]",
+      "type": "type_name"
+    }
+  },
+  "permission_level": {
+    "base": "",
+    "fields": {
+      "actor": "account_name",
+      "permission": "permission_name"
+    }
+  },
+  "action": {
+    "base": "",
+    "fields": {
+      "account": "account_name",
+      "name": "action_name",
+      "authorization": "permission_level[]",
+      "data": "bytes"
+    }
+  },
+  "action_def": {
+    "base": "",
+    "fields": {
+      "name": "action_name",
+      "type": "type_name",
+      "ricardian_contract": "string"
+    }
+  },
+  "block_header": {
+    "base": "",
+    "fields": {
+      "previous": "checksum256",
+      "timestamp": "timestamp",
+      "transaction_mroot": "checksum256",
+      "action_mroot": "checksum256",
+      "block_mroot": "checksum256",
+      "producer": "account_name",
+      "schedule_version": "uint32",
+      "new_producers": "producer_schedule?"
+    }
+  },
+  "packed_transaction": {
+    "fields": {
+      "signatures": "signature[]",
+      "compression": "uint8",
+      "packed_context_free_data": "bytes",
+      "packed_trx": "bytes"
+    }
+  }
+}
+
+},{}],6:[function(require,module,exports){
+module.exports={
+  "version": "eosio::abi/1.0",
+  "types": [],
+  "structs": [{
+      "name": "nonce",
+      "base": "",
+      "fields": [
+        {"name":"value", "type":"string"}
+      ]
+    }
+  ],
+  "actions": [{
+      "name": "nonce",
+      "type": "nonce",
+      "ricardian_contract": ""
+    }
+  ],
+  "tables": [],
+  "ricardian_clauses": [],
+  "abi_extensions": []
+}
+
+},{}],7:[function(require,module,exports){
+module.exports={
+   "version": "eosio::abi/1.0",
+   "types": [{
+      "new_type_name": "account_name",
+      "type": "name"
+   },{
+      "new_type_name": "permission_name",
+      "type": "name"
+   },{
+      "new_type_name": "action_name",
+      "type": "name"
+   },{
+      "new_type_name": "transaction_id_type",
+      "type": "checksum256"
+   },{
+      "new_type_name": "weight_type",
+      "type": "uint16"
+   }],
+   "____comment": "eosio.bios structs: set_account_limits, setpriv, set_global_limits, producer_key, set_producers, require_auth are provided so abi available for deserialization in future.",
+   "structs": [{
+      "name": "permission_level",
+      "base": "",
+      "fields": [
+        {"name":"actor",      "type":"account_name"},
+        {"name":"permission", "type":"permission_name"}
+      ]
+    },{
+      "name": "key_weight",
+      "base": "",
+      "fields": [
+        {"name":"key",    "type":"public_key"},
+        {"name":"weight", "type":"weight_type"}
+      ]
+    },{
+      "name": "bidname",
+      "base": "",
+      "fields": [
+        {"name":"bidder",  "type":"account_name"},
+        {"name":"newname", "type":"account_name"},
+        {"name":"bid", "type":"asset"}
+      ]
+    },{
+      "name": "permission_level_weight",
+      "base": "",
+      "fields": [
+        {"name":"permission", "type":"permission_level"},
+        {"name":"weight",     "type":"weight_type"}
+      ]
+    },{
+      "name": "wait_weight",
+      "base": "",
+      "fields": [
+        {"name":"wait_sec", "type":"uint32"},
+        {"name":"weight",   "type":"weight_type"}
+      ]
+    },{
+      "name": "authority",
+      "base": "",
+      "fields": [
+        {"name":"threshold", "type":"uint32"},
+        {"name":"keys",      "type":"key_weight[]"},
+        {"name":"accounts",  "type":"permission_level_weight[]"},
+        {"name":"waits",     "type":"wait_weight[]"}
+      ]
+    },{
+      "name": "newaccount",
+      "base": "",
+      "fields": [
+        {"name":"creator", "type":"account_name"},
+        {"name":"name",    "type":"account_name"},
+        {"name":"owner",   "type":"authority"},
+        {"name":"active",  "type":"authority"}
+      ]
+    },{
+      "name": "setcode",
+      "base": "",
+      "fields": [
+        {"name":"account",   "type":"account_name"},
+        {"name":"vmtype",    "type":"uint8"},
+        {"name":"vmversion", "type":"uint8"},
+        {"name":"code",      "type":"bytes"}
+      ]
+    },{
+      "name": "setabi",
+      "base": "",
+      "fields": [
+        {"name":"account", "type":"account_name"},
+        {"name":"abi",     "type":"bytes"}
+      ]
+    },{
+      "name": "updateauth",
+      "base": "",
+      "fields": [
+        {"name":"account",    "type":"account_name"},
+        {"name":"permission", "type":"permission_name"},
+        {"name":"parent",     "type":"permission_name"},
+        {"name":"auth",       "type":"authority"}
+      ]
+    },{
+      "name": "deleteauth",
+      "base": "",
+      "fields": [
+        {"name":"account",    "type":"account_name"},
+        {"name":"permission", "type":"permission_name"}
+      ]
+    },{
+      "name": "linkauth",
+      "base": "",
+      "fields": [
+        {"name":"account",     "type":"account_name"},
+        {"name":"code",        "type":"account_name"},
+        {"name":"type",        "type":"action_name"},
+        {"name":"requirement", "type":"permission_name"}
+      ]
+    },{
+      "name": "unlinkauth",
+      "base": "",
+      "fields": [
+        {"name":"account",     "type":"account_name"},
+        {"name":"code",        "type":"account_name"},
+        {"name":"type",        "type":"action_name"}
+      ]
+    },{
+      "name": "canceldelay",
+      "base": "",
+      "fields": [
+        {"name":"canceling_auth", "type":"permission_level"},
+        {"name":"trx_id",         "type":"transaction_id_type"}
+      ]
+    },{
+      "name": "onerror",
+      "base": "",
+      "fields": [
+        {"name":"sender_id", "type":"uint128"},
+        {"name":"sent_trx",  "type":"bytes"}
+      ]
+    },{
+      "name": "buyrambytes",
+      "base": "",
+      "fields": [
+         {"name":"payer", "type":"account_name"},
+         {"name":"receiver", "type":"account_name"},
+         {"name":"bytes", "type":"uint32"}
+      ]
+    },{
+      "name": "sellram",
+      "base": "",
+      "fields": [
+         {"name":"account", "type":"account_name"},
+         {"name":"bytes", "type":"uint64"}
+      ]
+    },{
+      "name": "buyram",
+      "base": "",
+      "fields": [
+         {"name":"payer", "type":"account_name"},
+         {"name":"receiver", "type":"account_name"},
+         {"name":"quant", "type":"asset"}
+      ]
+    },{
+      "name": "delegatebw",
+      "base": "",
+      "fields": [
+         {"name":"from", "type":"account_name"},
+         {"name":"receiver", "type":"account_name"},
+         {"name":"stake_net_quantity", "type":"asset"},
+         {"name":"stake_cpu_quantity", "type":"asset"},
+         {"name":"transfer", "type":"bool"}
+      ]
+    },{
+      "name": "undelegatebw",
+      "base": "",
+      "fields": [
+         {"name":"from", "type":"account_name"},
+         {"name":"receiver", "type":"account_name"},
+         {"name":"unstake_net_quantity", "type":"asset"},
+         {"name":"unstake_cpu_quantity", "type":"asset"}
+      ]
+    },{
+      "name": "refund",
+      "base": "",
+      "fields": [
+         {"name":"owner", "type":"account_name"}
+      ]
+    },{
+      "name": "delegated_bandwidth",
+      "base": "",
+      "fields": [
+         {"name":"from", "type":"account_name"},
+         {"name":"to", "type":"account_name"},
+         {"name":"net_weight", "type":"asset"},
+         {"name":"cpu_weight", "type":"asset"}
+      ]
+    },{
+      "name": "user_resources",
+      "base": "",
+      "fields": [
+         {"name":"owner", "type":"account_name"},
+         {"name":"net_weight", "type":"asset"},
+         {"name":"cpu_weight", "type":"asset"},
+         {"name":"ram_bytes", "type":"uint64"}
+      ]
+    },{
+      "name": "total_resources",
+      "base": "",
+      "fields": [
+         {"name":"owner", "type":"account_name"},
+         {"name":"net_weight", "type":"asset"},
+         {"name":"cpu_weight", "type":"asset"},
+         {"name":"ram_bytes", "type":"uint64"}
+      ]
+    },{
+      "name": "refund_request",
+      "base": "",
+      "fields": [
+         {"name":"owner", "type":"account_name"},
+         {"name":"request_time", "type":"time_point_sec"},
+         {"name":"net_amount", "type":"asset"},
+         {"name":"cpu_amount", "type":"asset"}
+      ]
+    },{
+      "name": "blockchain_parameters",
+      "base": "",
+      "fields": [
+
+         {"name":"max_block_net_usage",                 "type":"uint64"},
+         {"name":"target_block_net_usage_pct",          "type":"uint32"},
+         {"name":"max_transaction_net_usage",           "type":"uint32"},
+         {"name":"base_per_transaction_net_usage",      "type":"uint32"},
+         {"name":"net_usage_leeway",                    "type":"uint32"},
+         {"name":"context_free_discount_net_usage_num", "type":"uint32"},
+         {"name":"context_free_discount_net_usage_den", "type":"uint32"},
+         {"name":"max_block_cpu_usage",                 "type":"uint32"},
+         {"name":"target_block_cpu_usage_pct",          "type":"uint32"},
+         {"name":"max_transaction_cpu_usage",           "type":"uint32"},
+         {"name":"min_transaction_cpu_usage",           "type":"uint32"},
+         {"name":"max_transaction_lifetime",            "type":"uint32"},
+         {"name":"deferred_trx_expiration_window",      "type":"uint32"},
+         {"name":"max_transaction_delay",               "type":"uint32"},
+         {"name":"max_inline_action_size",              "type":"uint32"},
+         {"name":"max_inline_action_depth",             "type":"uint16"},
+         {"name":"max_authority_depth",                 "type":"uint16"}
+
+      ]
+    },{
+      "name": "eosio_global_state",
+      "base": "blockchain_parameters",
+      "fields": [
+         {"name":"max_ram_size",                  "type":"uint64"},
+         {"name":"total_ram_bytes_reserved",      "type":"uint64"},
+         {"name":"total_ram_stake",               "type":"int64"},
+         {"name":"last_producer_schedule_update", "type":"block_timestamp_type"},
+         {"name":"last_pervote_bucket_fill",      "type":"uint64"},
+         {"name":"pervote_bucket",                "type":"int64"},
+         {"name":"perblock_bucket",               "type":"int64"},
+         {"name":"total_unpaid_blocks",           "type":"uint32"},
+         {"name":"total_activated_stake",         "type":"int64"},
+         {"name":"thresh_activated_stake_time",   "type":"uint64"},
+         {"name":"last_producer_schedule_size",   "type":"uint16"},
+         {"name":"total_producer_vote_weight",    "type":"float64"},
+         {"name":"last_name_close",               "type":"block_timestamp_type"}
+      ]
+    },{
+      "name": "producer_info",
+      "base": "",
+      "fields": [
+         {"name":"owner",           "type":"account_name"},
+         {"name":"total_votes",     "type":"float64"},
+         {"name":"producer_key",    "type":"public_key"},
+         {"name":"is_active",       "type":"bool"},
+         {"name":"url",             "type":"string"},
+         {"name":"unpaid_blocks",   "type":"uint32"},
+         {"name":"last_claim_time", "type":"uint64"},
+         {"name":"location",        "type":"uint16"}
+      ]
+    },{
+      "name": "regproducer",
+      "base": "",
+      "fields": [
+        {"name":"producer",     "type":"account_name"},
+        {"name":"producer_key", "type":"public_key"},
+        {"name":"url",          "type":"string"},
+        {"name":"location",     "type":"uint16"}
+      ]
+    },{
+      "name": "unregprod",
+      "base": "",
+      "fields": [
+        {"name":"producer",     "type":"account_name"}
+      ]
+    },{
+      "name": "setram",
+      "base": "",
+      "fields": [
+        {"name":"max_ram_size",     "type":"uint64"}
+      ]
+    },{
+      "name": "regproxy",
+      "base": "",
+      "fields": [
+        {"name":"proxy",     "type":"account_name"},
+        {"name":"isproxy",   "type":"bool"}
+      ]
+    },{
+      "name": "voteproducer",
+      "base": "",
+      "fields": [
+        {"name":"voter",     "type":"account_name"},
+        {"name":"proxy",     "type":"account_name"},
+        {"name":"producers", "type":"account_name[]"}
+      ]
+    },{
+      "name": "voter_info",
+      "base": "",
+      "fields": [
+        {"name":"owner",                "type":"account_name"},
+        {"name":"proxy",                "type":"account_name"},
+        {"name":"producers",            "type":"account_name[]"},
+        {"name":"staked",               "type":"int64"},
+        {"name":"last_vote_weight",     "type":"float64"},
+        {"name":"proxied_vote_weight",  "type":"float64"},
+        {"name":"is_proxy",             "type":"bool"}
+      ]
+    },{
+      "name": "claimrewards",
+      "base": "",
+      "fields": [
+        {"name":"owner",   "type":"account_name"}
+      ]
+    },{
+      "name": "setpriv",
+      "base": "",
+      "fields": [
+        {"name":"account",    "type":"account_name"},
+        {"name":"is_priv",    "type":"int8"}
+      ]
+    },{
+      "name": "rmvproducer",
+      "base": "",
+      "fields": [
+        {"name":"producer", "type":"account_name"}
+      ]
+    },{
+      "name": "set_account_limits",
+      "base": "",
+      "fields": [
+        {"name":"account",    "type":"account_name"},
+        {"name":"ram_bytes",  "type":"int64"},
+        {"name":"net_weight", "type":"int64"},
+        {"name":"cpu_weight", "type":"int64"}
+      ]
+    },{
+      "name": "set_global_limits",
+      "base": "",
+      "fields": [
+        {"name":"cpu_usec_per_period",    "type":"int64"}
+      ]
+    },{
+      "name": "producer_key",
+      "base": "",
+      "fields": [
+        {"name":"producer_name",      "type":"account_name"},
+        {"name":"block_signing_key",  "type":"public_key"}
+      ]
+    },{
+      "name": "set_producers",
+      "base": "",
+      "fields": [
+        {"name":"schedule",   "type":"producer_key[]"}
+      ]
+    },{
+      "name": "require_auth",
+      "base": "",
+      "fields": [
+        {"name":"from", "type":"account_name"}
+      ]
+    },{
+      "name": "setparams",
+      "base": "",
+      "fields": [
+        {"name":"params", "type":"blockchain_parameters"}
+      ]
+    },{
+      "name": "connector",
+      "base": "",
+      "fields": [
+        {"name":"balance", "type":"asset"},
+        {"name":"weight", "type":"float64"}
+      ]
+    },{
+      "name": "exchange_state",
+      "base": "",
+      "fields": [
+        {"name":"supply", "type":"asset"},
+        {"name":"base", "type":"connector"},
+        {"name":"quote", "type":"connector"}
+      ]
+    }, {
+       "name": "namebid_info",
+       "base": "",
+       "fields": [
+          {"name":"newname", "type":"account_name"},
+          {"name":"high_bidder", "type":"account_name"},
+          {"name":"high_bid", "type":"int64"},
+          {"name":"last_bid_time", "type":"uint64"}
+       ]
+    }
+   ],
+   "actions": [{
+     "name": "newaccount",
+     "type": "newaccount",
+     "ricardian_contract": ""
+   },{
+     "name": "setcode",
+     "type": "setcode",
+     "ricardian_contract": ""
+   },{
+     "name": "setabi",
+     "type": "setabi",
+     "ricardian_contract": ""
+   },{
+     "name": "updateauth",
+     "type": "updateauth",
+     "ricardian_contract": ""
+   },{
+     "name": "deleteauth",
+     "type": "deleteauth",
+     "ricardian_contract": ""
+   },{
+     "name": "linkauth",
+     "type": "linkauth",
+     "ricardian_contract": ""
+   },{
+     "name": "unlinkauth",
+     "type": "unlinkauth",
+     "ricardian_contract": ""
+   },{
+     "name": "canceldelay",
+     "type": "canceldelay",
+     "ricardian_contract": ""
+   },{
+     "name": "onerror",
+     "type": "onerror",
+     "ricardian_contract": ""
+   },{
+      "name": "buyrambytes",
+      "type": "buyrambytes",
+      "ricardian_contract": ""
+   },{
+      "name": "buyram",
+      "type": "buyram",
+      "ricardian_contract": ""
+   },{
+      "name": "sellram",
+      "type": "sellram",
+      "ricardian_contract": ""
+   },{
+      "name": "delegatebw",
+      "type": "delegatebw",
+      "ricardian_contract": ""
+   },{
+      "name": "undelegatebw",
+      "type": "undelegatebw",
+      "ricardian_contract": ""
+   },{
+      "name": "refund",
+      "type": "refund",
+      "ricardian_contract": ""
+   },{
+      "name": "regproducer",
+      "type": "regproducer",
+      "ricardian_contract": ""
+   },{
+      "name": "setram",
+      "type": "setram",
+      "ricardian_contract": ""
+   },{
+      "name": "bidname",
+      "type": "bidname",
+      "ricardian_contract": ""
+   },{
+      "name": "unregprod",
+      "type": "unregprod",
+      "ricardian_contract": ""
+   },{
+      "name": "regproxy",
+      "type": "regproxy",
+      "ricardian_contract": ""
+   },{
+      "name": "voteproducer",
+      "type": "voteproducer",
+      "ricardian_contract": ""
+   },{
+      "name": "claimrewards",
+      "type": "claimrewards",
+      "ricardian_contract": ""
+   },{
+      "name": "setpriv",
+      "type": "setpriv",
+      "ricardian_contract": ""
+   },{
+      "name": "rmvproducer",
+      "type": "rmvproducer",
+      "ricardian_contract": ""
+   },{
+      "name": "setalimits",
+      "type": "set_account_limits",
+      "ricardian_contract": ""
+    },{
+      "name": "setglimits",
+      "type": "set_global_limits",
+      "ricardian_contract": ""
+    },{
+      "name": "setprods",
+      "type": "set_producers",
+      "ricardian_contract": ""
+    },{
+      "name": "reqauth",
+      "type": "require_auth",
+      "ricardian_contract": ""
+    },{
+      "name": "setparams",
+      "type": "setparams",
+      "ricardian_contract": ""
+    }],
+   "tables": [{
+      "name": "producers",
+      "type": "producer_info",
+      "index_type": "i64",
+      "key_names" : ["owner"],
+      "key_types" : ["uint64"]
+    },{
+      "name": "global",
+      "type": "eosio_global_state",
+      "index_type": "i64",
+      "key_names" : [],
+      "key_types" : []
+    },{
+      "name": "voters",
+      "type": "voter_info",
+      "index_type": "i64",
+      "key_names" : ["owner"],
+      "key_types" : ["account_name"]
+    },{
+      "name": "userres",
+      "type": "user_resources",
+      "index_type": "i64",
+      "key_names" : ["owner"],
+      "key_types" : ["uint64"]
+    },{
+      "name": "delband",
+      "type": "delegated_bandwidth",
+      "index_type": "i64",
+      "key_names" : ["to"],
+      "key_types" : ["uint64"]
+    },{
+      "name": "rammarket",
+      "type": "exchange_state",
+      "index_type": "i64",
+      "key_names" : ["supply"],
+      "key_types" : ["uint64"]
+    },{
+      "name": "refunds",
+      "type": "refund_request",
+      "index_type": "i64",
+      "key_names" : ["owner"],
+      "key_types" : ["uint64"]
+    },{
+       "name": "namebids",
+       "type": "namebid_info",
+       "index_type": "i64",
+       "key_names" : ["newname"],
+       "key_types" : ["account_name"]
+    }
+   ],
+   "ricardian_clauses": [],
+   "abi_extensions": []
+}
+
+},{}],8:[function(require,module,exports){
+module.exports={
+   "version": "eosio::abi/1.0",
+   "types": [{
+      "new_type_name": "account_name",
+      "type": "name"
+   }],
+  "structs": [{
+      "name": "transfer",
+      "base": "",
+      "fields": [
+        {"name":"from", "type":"account_name"},
+        {"name":"to", "type":"account_name"},
+        {"name":"quantity", "type":"asset"},
+        {"name":"memo", "type":"string"}
+      ]
+    },{
+     "name": "create",
+     "base": "",
+     "fields": [
+        {"name":"issuer", "type":"account_name"},
+        {"name":"maximum_supply", "type":"asset"}
+     ]
+  },{
+     "name": "issue",
+     "base": "",
+     "fields": [
+        {"name":"to", "type":"account_name"},
+        {"name":"quantity", "type":"asset"},
+        {"name":"memo", "type":"string"}
+     ]
+  },{
+      "name": "account",
+      "base": "",
+      "fields": [
+        {"name":"balance", "type":"asset"}
+      ]
+    },{
+      "name": "currency_stats",
+      "base": "",
+      "fields": [
+        {"name":"supply", "type":"asset"},
+        {"name":"max_supply", "type":"asset"},
+        {"name":"issuer", "type":"account_name"}
+      ]
+    }
+  ],
+  "actions": [{
+      "name": "transfer",
+      "type": "transfer",
+      "ricardian_contract": ""
+    },{
+      "name": "issue",
+      "type": "issue",
+      "ricardian_contract": ""
+    }, {
+      "name": "create",
+      "type": "create",
+      "ricardian_contract": ""
+    }
+
+  ],
+  "tables": [{
+      "name": "accounts",
+      "type": "account",
+      "index_type": "i64",
+      "key_names" : ["currency"],
+      "key_types" : ["uint64"]
+    },{
+      "name": "stat",
+      "type": "currency_stats",
+      "index_type": "i64",
+      "key_names" : ["currency"],
+      "key_types" : ["uint64"]
+    }
+  ],
+  "ricardian_clauses": [],
+  "abi_extensions": []
+}
+
+},{}],9:[function(require,module,exports){
+'use strict';
+
+var schema = Object.assign({}, require('./chain_types.json'));
+
+module.exports = schema;
+},{"./chain_types.json":5}],10:[function(require,module,exports){
+(function (Buffer){
+'use strict';
+
+var _slicedToArray2 = require('babel-runtime/helpers/slicedToArray');
+
+var _slicedToArray3 = _interopRequireDefault(_slicedToArray2);
+
+var _typeof2 = require('babel-runtime/helpers/typeof');
+
+var _typeof3 = _interopRequireDefault(_typeof2);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var _require = require('eosjs-ecc'),
+    Signature = _require.Signature,
+    PublicKey = _require.PublicKey;
+
+var Fcbuffer = require('fcbuffer');
+var ByteBuffer = require('bytebuffer');
+var assert = require('assert');
+
+var schema = require('./schema');
+
+var _require2 = require('./format'),
+    isName = _require2.isName,
+    encodeName = _require2.encodeName,
+    decodeName = _require2.decodeName,
+    DecimalPad = _require2.DecimalPad,
+    DecimalImply = _require2.DecimalImply,
+    DecimalUnimply = _require2.DecimalUnimply,
+    printAsset = _require2.printAsset,
+    parseAsset = _require2.parseAsset;
+
+/** Configures Fcbuffer for EOS specific structs and types. */
+
+
+module.exports = function () {
+  var config = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+  var extendedSchema = arguments[1];
+
+  var structLookup = function structLookup(lookupName, account) {
+    var cache = config.abiCache.abi(account);
+
+    // Lookup by ABI action "name"
+    var _iteratorNormalCompletion = true;
+    var _didIteratorError = false;
+    var _iteratorError = undefined;
+
+    try {
+      for (var _iterator = cache.abi.actions[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+        var action = _step.value;
+
+        if (action.name === lookupName) {
+          var _struct = cache.structs[action.type];
+          if (_struct != null) {
+            return _struct;
+          }
+        }
+      }
+
+      // Lookup struct by "type"
+    } catch (err) {
+      _didIteratorError = true;
+      _iteratorError = err;
+    } finally {
+      try {
+        if (!_iteratorNormalCompletion && _iterator.return) {
+          _iterator.return();
+        }
+      } finally {
+        if (_didIteratorError) {
+          throw _iteratorError;
+        }
+      }
+    }
+
+    var struct = cache.structs[lookupName];
+    if (struct != null) {
+      return struct;
+    }
+
+    throw new Error('Missing ABI action: ' + lookupName);
+  };
+
+  // If nodeos does not have an ABI setup for a certain action.type, it will throw
+  // an error: `Invalid cast from object_type to string` .. forceActionDataHex
+  // may be used to until native ABI is added or fixed.
+  var forceActionDataHex = config.forceActionDataHex != null ? config.forceActionDataHex : true;
+
+  var override = Object.assign({}, authorityOverride(config), abiOverride(structLookup), wasmCodeOverride(config), actionDataOverride(structLookup, forceActionDataHex), config.override);
+
+  var eosTypes = {
+    name: function name() {
+      return [Name];
+    },
+    public_key: function public_key() {
+      return [variant(PublicKeyEcc)];
+    },
+
+    symbol: function symbol() {
+      return [_Symbol];
+    },
+    symbol_code: function symbol_code() {
+      return [SymbolCode];
+    },
+    extended_symbol: function extended_symbol() {
+      return [ExtendedSymbol];
+    },
+
+    asset: function asset() {
+      return [Asset];
+    }, // After Symbol: amount, precision, symbol, contract
+    extended_asset: function extended_asset() {
+      return [ExtendedAsset];
+    }, // After Asset: amount, precision, symbol, contract
+
+    signature: function signature() {
+      return [variant(SignatureType)];
+    }
+  };
+
+  var customTypes = Object.assign({}, eosTypes, config.customTypes);
+  config = Object.assign({ override: override }, { customTypes: customTypes }, config);
+
+  // Do not sort transaction actions
+  config.sort = Object.assign({}, config.sort);
+  config.sort['action.authorization'] = true;
+  config.sort['signed_transaction.signature'] = true;
+  config.sort['authority.accounts'] = true;
+  config.sort['authority.keys'] = true;
+
+  var fullSchema = Object.assign({}, schema, extendedSchema);
+
+  var _Fcbuffer = Fcbuffer(fullSchema, config),
+      structs = _Fcbuffer.structs,
+      types = _Fcbuffer.types,
+      errors = _Fcbuffer.errors,
+      fromBuffer = _Fcbuffer.fromBuffer,
+      toBuffer = _Fcbuffer.toBuffer;
+
+  if (errors.length !== 0) {
+    throw new Error(JSON.stringify(errors, null, 4));
+  }
+
+  return { structs: structs, types: types, fromBuffer: fromBuffer, toBuffer: toBuffer };
+};
+
+/**
+  Name eos::types native.hpp
+*/
+var Name = function Name(validation) {
+  return {
+    fromByteBuffer: function fromByteBuffer(b) {
+      var n = decodeName(b.readUint64(), false); // b is already in littleEndian
+      // if(validation.debug) {
+      //   console.error(`${n}`, '(Name.fromByteBuffer)')
+      // }
+      return n;
+    },
+    appendByteBuffer: function appendByteBuffer(b, value) {
+      // if(validation.debug) {
+      //   console.error(`${value}`, (Name.appendByteBuffer))
+      // }
+      b.writeUint64(encodeName(value, false)); // b is already in littleEndian
+    },
+    fromObject: function fromObject(value) {
+      return value;
+    },
+    toObject: function toObject(value) {
+      if (validation.defaults && value == null) {
+        return '';
+      }
+      return value;
+    }
+  };
+};
+
+/**
+  A variant is like having a version of an object.  A varint comes
+  first and identifies which type of object this is.
+
+  @arg {Array} variantArray array of types
+*/
+var variant = function variant() {
+  for (var _len = arguments.length, variantArray = Array(_len), _key = 0; _key < _len; _key++) {
+    variantArray[_key] = arguments[_key];
+  }
+
+  return function (validation, baseTypes, customTypes) {
+    var variants = variantArray.map(function (Type) {
+      return Type(validation, baseTypes, customTypes);
+    });
+    var staticVariant = baseTypes.static_variant(variants);
+
+    return {
+      fromByteBuffer: function fromByteBuffer(b) {
+        return staticVariant.fromByteBuffer(b);
+      },
+      appendByteBuffer: function appendByteBuffer(b, value) {
+        if (!Array.isArray(value)) {
+          value = [0, value];
+        }
+        staticVariant.appendByteBuffer(b, value);
+      },
+      fromObject: function fromObject(value) {
+        if (!Array.isArray(value)) {
+          value = [0, value];
+        }
+        return staticVariant.fromObject(value)[1];
+      },
+      toObject: function toObject(value) {
+        if (!Array.isArray(value)) {
+          value = [0, value];
+        }
+        return staticVariant.toObject(value)[1];
+      }
+    };
+  };
+};
+
+var PublicKeyEcc = function PublicKeyEcc(validation) {
+  return {
+    fromByteBuffer: function fromByteBuffer(b) {
+      var bcopy = b.copy(b.offset, b.offset + 33);
+      b.skip(33);
+      var pubbuf = Buffer.from(bcopy.toBinary(), 'binary');
+      return PublicKey.fromBuffer(pubbuf).toString(validation.keyPrefix);
+    },
+    appendByteBuffer: function appendByteBuffer(b, value) {
+      // if(validation.debug) {
+      //   console.error(`${value}`, 'PublicKeyType.appendByteBuffer')
+      // }
+      var buf = PublicKey.fromStringOrThrow(value, validation.keyPrefix).toBuffer();
+      b.append(buf.toString('binary'), 'binary');
+    },
+    fromObject: function fromObject(value) {
+      return value;
+    },
+    toObject: function toObject(value) {
+      if (validation.defaults && value == null) {
+        var keyPrefix = validation.keyPrefix ? validation.keyPrefix : 'EOS';
+        return keyPrefix + '6MRy..';
+      }
+      return value;
+    }
+  };
+};
+
+/**
+  Internal: precision, symbol
+  External: symbol
+  @example 'SYS'
+*/
+var _Symbol = function _Symbol(validation) {
+  return {
+    fromByteBuffer: function fromByteBuffer(b) {
+      var bcopy = b.copy(b.offset, b.offset + 8);
+      b.skip(8);
+
+      var precision = bcopy.readUint8();
+      var bin = bcopy.toBinary();
+
+      var symbol = '';
+      var _iteratorNormalCompletion2 = true;
+      var _didIteratorError2 = false;
+      var _iteratorError2 = undefined;
+
+      try {
+        for (var _iterator2 = bin[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+          var code = _step2.value;
+
+          if (code == '\0') {
+            break;
+          }
+          symbol += code;
+        }
+      } catch (err) {
+        _didIteratorError2 = true;
+        _iteratorError2 = err;
+      } finally {
+        try {
+          if (!_iteratorNormalCompletion2 && _iterator2.return) {
+            _iterator2.return();
+          }
+        } finally {
+          if (_didIteratorError2) {
+            throw _iteratorError2;
+          }
+        }
+      }
+
+      return precision + ',' + symbol;
+    },
+    appendByteBuffer: function appendByteBuffer(b, value) {
+      var _parseAsset = parseAsset(value),
+          symbol = _parseAsset.symbol,
+          precision = _parseAsset.precision;
+
+      assert(precision != null, 'Precision unknown for symbol: ' + value);
+      var pad = '\0'.repeat(7 - symbol.length);
+      b.append(String.fromCharCode(precision) + symbol + pad);
+    },
+    fromObject: function fromObject(value) {
+      assert(value != null, 'Symbol is required: ' + value);
+
+      var _parseAsset2 = parseAsset(value),
+          symbol = _parseAsset2.symbol,
+          precision = _parseAsset2.precision;
+
+      if (precision == null) {
+        return symbol;
+      } else {
+        // Internal object, this can have the precision prefix
+        return precision + ',' + symbol;
+      }
+    },
+    toObject: function toObject(value) {
+      if (validation.defaults && value == null) {
+        return 'SYS';
+      }
+      // symbol only (without precision prefix)
+      return parseAsset(value).symbol;
+    }
+  };
+};
+
+/** Symbol type without the precision */
+var SymbolCode = function SymbolCode(validation) {
+  return {
+    fromByteBuffer: function fromByteBuffer(b) {
+      var bcopy = b.copy(b.offset, b.offset + 8);
+      b.skip(8);
+
+      var bin = bcopy.toBinary();
+
+      var symbol = '';
+      var _iteratorNormalCompletion3 = true;
+      var _didIteratorError3 = false;
+      var _iteratorError3 = undefined;
+
+      try {
+        for (var _iterator3 = bin[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+          var code = _step3.value;
+
+          if (code == '\0') {
+            break;
+          }
+          symbol += code;
+        }
+      } catch (err) {
+        _didIteratorError3 = true;
+        _iteratorError3 = err;
+      } finally {
+        try {
+          if (!_iteratorNormalCompletion3 && _iterator3.return) {
+            _iterator3.return();
+          }
+        } finally {
+          if (_didIteratorError3) {
+            throw _iteratorError3;
+          }
+        }
+      }
+
+      return '' + symbol;
+    },
+    appendByteBuffer: function appendByteBuffer(b, value) {
+      var _parseAsset3 = parseAsset(value),
+          symbol = _parseAsset3.symbol;
+
+      var pad = '\0'.repeat(8 - symbol.length);
+      b.append(symbol + pad);
+    },
+    fromObject: function fromObject(value) {
+      assert(value != null, 'Symbol is required: ' + value);
+
+      var _parseAsset4 = parseAsset(value),
+          symbol = _parseAsset4.symbol;
+
+      return symbol;
+    },
+    toObject: function toObject(value) {
+      if (validation.defaults && value == null) {
+        return 'SYS';
+      }
+      return parseAsset(value).symbol;
+    }
+  };
+};
+
+/**
+  Internal: precision, symbol, contract
+  External: symbol, contract
+  @example 'SYS@contract'
+*/
+var ExtendedSymbol = function ExtendedSymbol(validation, baseTypes, customTypes) {
+  var symbolType = customTypes.symbol(validation);
+  var contractName = customTypes.name(validation);
+
+  return {
+    fromByteBuffer: function fromByteBuffer(b) {
+      var symbol = symbolType.fromByteBuffer(b);
+      var contract = contractName.fromByteBuffer(b);
+      return symbol + '@' + contract;
+    },
+    appendByteBuffer: function appendByteBuffer(b, value) {
+      assert.equal(typeof value === 'undefined' ? 'undefined' : (0, _typeof3.default)(value), 'string', 'Invalid extended symbol: ' + value);
+
+      var _value$split = value.split('@'),
+          _value$split2 = (0, _slicedToArray3.default)(_value$split, 2),
+          symbol = _value$split2[0],
+          contract = _value$split2[1];
+
+      assert(contract != null, 'Missing @contract suffix in extended symbol: ' + value);
+
+      symbolType.appendByteBuffer(b, symbol);
+      contractName.appendByteBuffer(b, contract);
+    },
+    fromObject: function fromObject(value) {
+      return value;
+    },
+    toObject: function toObject(value) {
+      if (validation.defaults && value == null) {
+        return 'SYS@contract';
+      }
+      return value;
+    }
+  };
+};
+
+/**
+  Internal: amount, precision, symbol, contract
+  @example '1.0000 SYS'
+*/
+var Asset = function Asset(validation, baseTypes, customTypes) {
+  var amountType = baseTypes.int64(validation);
+  var symbolType = customTypes.symbol(validation);
+
+  return {
+    fromByteBuffer: function fromByteBuffer(b) {
+      var amount = amountType.fromByteBuffer(b);
+      assert(amount != null, 'amount');
+
+      var sym = symbolType.fromByteBuffer(b);
+
+      var _parseAsset5 = parseAsset('' + sym),
+          precision = _parseAsset5.precision,
+          symbol = _parseAsset5.symbol;
+
+      assert(precision != null, 'precision');
+      assert(symbol != null, 'symbol');
+
+      return DecimalUnimply(amount, precision) + ' ' + symbol;
+    },
+    appendByteBuffer: function appendByteBuffer(b, value) {
+      var _parseAsset6 = parseAsset(value),
+          amount = _parseAsset6.amount,
+          precision = _parseAsset6.precision,
+          symbol = _parseAsset6.symbol;
+
+      assert(amount != null, 'amount');
+      assert(precision != null, 'precision');
+      assert(symbol != null, 'symbol');
+
+      amountType.appendByteBuffer(b, DecimalImply(amount, precision));
+      symbolType.appendByteBuffer(b, precision + ',' + symbol);
+    },
+    fromObject: function fromObject(value) {
+      var _parseAsset7 = parseAsset(value),
+          amount = _parseAsset7.amount,
+          precision = _parseAsset7.precision,
+          symbol = _parseAsset7.symbol;
+
+      assert(amount != null, 'amount');
+      assert(precision != null, 'precision');
+      assert(symbol != null, 'symbol');
+
+      return DecimalPad(amount, precision) + ' ' + symbol;
+    },
+    toObject: function toObject(value) {
+      if (validation.defaults && value == null) {
+        return '0.0001 SYS';
+      }
+
+      var _parseAsset8 = parseAsset(value),
+          amount = _parseAsset8.amount,
+          precision = _parseAsset8.precision,
+          symbol = _parseAsset8.symbol;
+
+      assert(amount != null, 'amount');
+      assert(precision != null, 'precision');
+      assert(symbol != null, 'symbol');
+
+      return DecimalPad(amount, precision) + ' ' + symbol;
+    }
+  };
+};
+
+/**
+  @example '1.0000 SYS@contract'
+*/
+var ExtendedAsset = function ExtendedAsset(validation, baseTypes, customTypes) {
+  var assetType = customTypes.asset(validation);
+  var contractName = customTypes.name(validation);
+
+  return {
+    fromByteBuffer: function fromByteBuffer(b) {
+      var asset = assetType.fromByteBuffer(b);
+      var contract = contractName.fromByteBuffer(b);
+      return parseAsset(asset + '@' + contract);
+    },
+    appendByteBuffer: function appendByteBuffer(b, value) {
+      assert.equal(typeof value === 'undefined' ? 'undefined' : (0, _typeof3.default)(value), 'object', 'expecting extended_asset object, got ' + (typeof value === 'undefined' ? 'undefined' : (0, _typeof3.default)(value)));
+
+      var asset = printAsset(value);
+
+      var _asset$split = asset.split('@'),
+          _asset$split2 = (0, _slicedToArray3.default)(_asset$split, 2),
+          contract = _asset$split2[1];
+
+      assert.equal(typeof contract === 'undefined' ? 'undefined' : (0, _typeof3.default)(contract), 'string', 'Invalid extended asset: ' + value);
+
+      // asset includes contract (assetType needs this)
+      assetType.appendByteBuffer(b, asset);
+      contractName.appendByteBuffer(b, contract);
+    },
+    fromObject: function fromObject(value) {
+      // like: 1.0000 SYS@contract or 1 SYS@contract
+      var asset = {};
+      if (typeof value === 'string') {
+        Object.assign(asset, parseAsset(value));
+      } else if ((typeof value === 'undefined' ? 'undefined' : (0, _typeof3.default)(value)) === 'object') {
+        Object.assign(asset, value);
+      } else {
+        assert(false, 'expecting extended_asset<object|string>, got: ' + (typeof value === 'undefined' ? 'undefined' : (0, _typeof3.default)(value)));
+      }
+
+      var amount = asset.amount,
+          precision = asset.precision,
+          symbol = asset.symbol,
+          contract = asset.contract;
+
+      assert(amount != null, 'missing amount');
+      assert(precision != null, 'missing precision');
+      assert(symbol != null, 'missing symbol');
+      assert(contract != null, 'missing contract');
+
+      return { amount: amount, precision: precision, symbol: symbol, contract: contract };
+    },
+    toObject: function toObject(value) {
+      if (validation.defaults && value == null) {
+        return {
+          amount: '1.0000',
+          precision: 4,
+          symbol: 'SYS',
+          contract: 'eosio.token'
+        };
+      }
+
+      assert.equal(typeof value === 'undefined' ? 'undefined' : (0, _typeof3.default)(value), 'object', 'expecting extended_asset object');
+      var amount = value.amount,
+          precision = value.precision,
+          symbol = value.symbol,
+          contract = value.contract;
+
+
+      return {
+        amount: DecimalPad(amount, precision),
+        precision: precision,
+        symbol: symbol,
+        contract: contract
+      };
+    }
+  };
+};
+
+var SignatureType = function SignatureType(validation, baseTypes) {
+  var signatureType = baseTypes.fixed_bytes65(validation);
+  return {
+    fromByteBuffer: function fromByteBuffer(b) {
+      var signatureBuffer = signatureType.fromByteBuffer(b);
+      var signature = Signature.from(signatureBuffer);
+      return signature.toString();
+    },
+    appendByteBuffer: function appendByteBuffer(b, value) {
+      var signature = Signature.from(value);
+      signatureType.appendByteBuffer(b, signature.toBuffer());
+    },
+    fromObject: function fromObject(value) {
+      var signature = Signature.from(value);
+      return signature.toString();
+    },
+    toObject: function toObject(value) {
+      if (validation.defaults && value == null) {
+        return 'SIG_K1_bas58signature..';
+      }
+      var signature = Signature.from(value);
+      return signature.toString();
+    }
+  };
+};
+
+var authorityOverride = function authorityOverride(config) {
+  return {
+    /** shorthand `EOS6MRyAj..` */
+    'authority.fromObject': function authorityFromObject(value) {
+      if (PublicKey.fromString(value, config.keyPrefix)) {
+        return {
+          threshold: 1,
+          keys: [{ key: value, weight: 1 }]
+        };
+      }
+      if (typeof value === 'string') {
+        var _value$split3 = value.split('@'),
+            _value$split4 = (0, _slicedToArray3.default)(_value$split3, 2),
+            account = _value$split4[0],
+            _value$split4$ = _value$split4[1],
+            permission = _value$split4$ === undefined ? 'active' : _value$split4$;
+
+        return {
+          threshold: 1,
+          accounts: [{
+            permission: {
+              actor: account,
+              permission: permission
+            },
+            weight: 1
+          }]
+        };
+      }
+    }
+  };
+};
+
+var abiOverride = function abiOverride(structLookup) {
+  return {
+    'abi_def.fromObject': function abi_defFromObject(value) {
+      if (typeof value === 'string') {
+        var json = Buffer.from(value, 'hex').toString();
+        if (json.length === 0) {
+          json = Buffer.from(value).toString();
+        }
+        return JSON.parse(json);
+      }
+      if (Buffer.isBuffer(value)) {
+        return JSON.parse(value.toString());
+      }
+      return null; // let the default type take care of it
+    },
+
+    'setabi.abi.appendByteBuffer': function setabiAbiAppendByteBuffer(_ref) {
+      var fields = _ref.fields,
+          object = _ref.object,
+          b = _ref.b;
+
+      var ser = structLookup('abi_def', 'eosio');
+      var b2 = new ByteBuffer(ByteBuffer.DEFAULT_CAPACITY, ByteBuffer.LITTLE_ENDIAN);
+
+      if (Buffer.isBuffer(object.abi)) {
+        b2.append(object.abi);
+      } else if ((0, _typeof3.default)(object.abi) == 'object') {
+        ser.appendByteBuffer(b2, object.abi);
+      }
+
+      b.writeVarint32(b2.offset); // length prefix
+      b.append(b2.copy(0, b2.offset), 'binary');
+    }
+  };
+};
+
+var wasmCodeOverride = function wasmCodeOverride(config) {
+  return {
+    'setcode.code.fromObject': function setcodeCodeFromObject(_ref2) {
+      var object = _ref2.object,
+          result = _ref2.result;
+
+      try {
+        var code = object.code.toString();
+        if (/^\s*\(module/.test(code)) {
+          var binaryen = config.binaryen;
+
+          assert(binaryen != null, 'required: config.binaryen = require("binaryen")');
+          if (config.debug) {
+            console.log('Assembling WASM..');
+          }
+          var wasm = Buffer.from(binaryen.parseText(code).emitBinary());
+          result.code = wasm;
+        } else {
+          result.code = object.code;
+        }
+      } catch (error) {
+        console.error(error, object.code);
+        throw error;
+      }
+    }
+  };
+};
+
+/**
+  Nested serialized structure.  Nested struct may be in HEX or object format.
+*/
+var actionDataOverride = function actionDataOverride(structLookup, forceActionDataHex) {
+  return {
+    'action.data.fromByteBuffer': function actionDataFromByteBuffer(_ref3) {
+      var fields = _ref3.fields,
+          object = _ref3.object,
+          b = _ref3.b,
+          config = _ref3.config;
+
+      var ser = (object.name || '') == '' ? fields.data : structLookup(object.name, object.account);
+      if (ser) {
+        b.readVarint32(); // length prefix (usefull if object.name is unknown)
+        object.data = ser.fromByteBuffer(b, config);
+      } else {
+        // console.log(`Unknown Action.name ${object.name}`)
+        var lenPrefix = b.readVarint32();
+        var bCopy = b.copy(b.offset, b.offset + lenPrefix);
+        b.skip(lenPrefix);
+        object.data = Buffer.from(bCopy.toBinary(), 'binary');
+      }
+    },
+
+    'action.data.appendByteBuffer': function actionDataAppendByteBuffer(_ref4) {
+      var fields = _ref4.fields,
+          object = _ref4.object,
+          b = _ref4.b;
+
+      var ser = (object.name || '') == '' ? fields.data : structLookup(object.name, object.account);
+      if (ser) {
+        var b2 = new ByteBuffer(ByteBuffer.DEFAULT_CAPACITY, ByteBuffer.LITTLE_ENDIAN);
+        ser.appendByteBuffer(b2, object.data);
+        b.writeVarint32(b2.offset);
+        b.append(b2.copy(0, b2.offset), 'binary');
+      } else {
+        // console.log(`Unknown Action.name ${object.name}`)
+        var data = typeof object.data === 'string' ? Buffer.from(object.data, 'hex') : object.data;
+        if (!Buffer.isBuffer(data)) {
+          throw new TypeError('Unknown struct \'' + object.name + '\' for contract \'' + object.account + '\', locate this struct or provide serialized action.data');
+        }
+        b.writeVarint32(data.length);
+        b.append(data.toString('binary'), 'binary');
+      }
+    },
+
+    'action.data.fromObject': function actionDataFromObject(_ref5) {
+      var fields = _ref5.fields,
+          object = _ref5.object,
+          result = _ref5.result;
+      var data = object.data,
+          name = object.name;
+
+      var ser = (name || '') == '' ? fields.data : structLookup(name, object.account);
+      if (ser) {
+        if ((typeof data === 'undefined' ? 'undefined' : (0, _typeof3.default)(data)) === 'object') {
+          result.data = ser.fromObject(data); // resolve shorthand
+        } else if (typeof data === 'string') {
+          var buf = Buffer.from(data, 'hex');
+          result.data = Fcbuffer.fromBuffer(ser, buf);
+        } else {
+          throw new TypeError('Expecting hex string or object in action.data');
+        }
+      } else {
+        // console.log(`Unknown Action.name ${object.name}`)
+        result.data = data;
+      }
+    },
+
+    'action.data.toObject': function actionDataToObject(_ref6) {
+      var fields = _ref6.fields,
+          object = _ref6.object,
+          result = _ref6.result,
+          config = _ref6.config;
+
+      var _ref7 = object || {},
+          data = _ref7.data,
+          name = _ref7.name;
+
+      var ser = (name || '') == '' ? fields.data : structLookup(name, object.account);
+      if (!ser) {
+        // Types without an ABI will accept hex
+        result.data = Buffer.isBuffer(data) ? data.toString('hex') : data;
+        return;
+      }
+
+      if (forceActionDataHex) {
+        var b2 = new ByteBuffer(ByteBuffer.DEFAULT_CAPACITY, ByteBuffer.LITTLE_ENDIAN);
+        if (data) {
+          ser.appendByteBuffer(b2, data);
+        }
+        result.data = b2.copy(0, b2.offset).toString('hex');
+        // console.log('result.data', result.data)
+        return;
+      }
+
+      // Serializable JSON
+      result.data = ser.toObject(data, config);
+    }
+  };
+};
+}).call(this,require("buffer").Buffer)
+},{"./format":3,"./schema":9,"assert":191,"babel-runtime/helpers/slicedToArray":20,"babel-runtime/helpers/typeof":21,"buffer":194,"bytebuffer":48,"eosjs-ecc":144,"fcbuffer":13}],11:[function(require,module,exports){
+(function (Buffer){
+'use strict';
+
+var _slicedToArray2 = require('babel-runtime/helpers/slicedToArray');
+
+var _slicedToArray3 = _interopRequireDefault(_slicedToArray2);
+
+var _regenerator = require('babel-runtime/regenerator');
+
+var _regenerator2 = _interopRequireDefault(_regenerator);
+
+var _typeof2 = require('babel-runtime/helpers/typeof');
+
+var _typeof3 = _interopRequireDefault(_typeof2);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var assert = require('assert');
+var ecc = require('eosjs-ecc');
+var Fcbuffer = require('fcbuffer');
+var createHash = require('create-hash');
+
+var _require = require('eosjs-api'),
+    processArgs = _require.processArgs;
+
+var Structs = require('./structs');
+
+module.exports = writeApiGen;
+
+var sign = ecc.sign;
+
+
+function writeApiGen(Network, network, structs, config, abis) {
+  if (typeof config.chainId !== 'string') {
+    throw new TypeError('config.chainId is required');
+  }
+  var writeApi = WriteApi(Network, network, config, structs.transaction);
+  var reserveFunctions = new Set(['transaction', 'contract']);
+
+  var merge = {};
+  // sends transactions, can act as an action collecting wrapper
+  merge.transaction = writeApi.genTransaction(structs, merge);
+
+  // Immediate send operations automatically calls merge.transaction
+  var _iteratorNormalCompletion = true;
+  var _didIteratorError = false;
+  var _iteratorError = undefined;
+
+  try {
+    for (var _iterator = abis[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+      var abi = _step.value;
+
+      for (var type in abi.schema) {
+        var typeStruct = abi.schema[type];
+        if (typeof typeStruct === 'string') {
+          // skip types like; name, account_name, etc..
+          continue;
+        }
+
+        assert.equal(typeof typeStruct === 'undefined' ? 'undefined' : (0, _typeof3.default)(typeStruct), 'object', 'abi.schema[type = ' + type + ']');
+
+        var action = typeStruct.action;
+
+        if (action === undefined) {
+          // ABI private struct
+          continue;
+        }
+
+        if (reserveFunctions.has(action.name)) {
+          throw new TypeError('Conflicting Api function: ' + type);
+        }
+
+        var definition = schemaFields(abi.schema, type);
+        merge[action.name] = writeApi.genMethod(type, definition, merge.transaction, action.account, action.name);
+      }
+    }
+
+    /**
+      Immedate send contract actions.
+       @example eos.contract('mycontract', [options], [callback])
+      @example eos.contract('mycontract').then(mycontract => mycontract.myaction(...))
+    */
+  } catch (err) {
+    _didIteratorError = true;
+    _iteratorError = err;
+  } finally {
+    try {
+      if (!_iteratorNormalCompletion && _iterator.return) {
+        _iterator.return();
+      }
+    } finally {
+      if (_didIteratorError) {
+        throw _iteratorError;
+      }
+    }
+  }
+
+  merge.contract = function () {
+    for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+      args[_key] = arguments[_key];
+    }
+
+    var _processArgs = processArgs(args, ['account'], 'contract', optionsFormatter),
+        params = _processArgs.params,
+        options = _processArgs.options,
+        returnPromise = _processArgs.returnPromise,
+        callback = _processArgs.callback;
+
+    var account = params.account;
+
+    // sends transactions via its own transaction function
+
+    writeApi.genContractActions(account).then(function (r) {
+      callback(null, r);
+    }).catch(function (r) {
+      callback(r);
+    });
+
+    return returnPromise;
+  };
+
+  return merge;
+}
+
+function WriteApi(Network, network, config, Transaction) {
+  /**
+    @arg {array} [args.contracts]
+    @arg {callback|object} args.transaction tr => {tr.transfer .. }
+    @arg {object} [args.options]
+    @arg {function} [args.callback]
+  */
+  var genTransaction = function genTransaction(structs, merge) {
+    return function _callee() {
+      for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+        args[_key2] = arguments[_key2];
+      }
+
+      var contracts, options, callback, isContractArray, accounts, _iteratorNormalCompletion2, _didIteratorError2, _iteratorError2, _iterator2, _step2, action, abiPromises, cachedCode, arg, contractPromises, _iteratorNormalCompletion3, _didIteratorError3, _iteratorError3, _iterator3, _step3, account;
+
+      return _regenerator2.default.async(function _callee$(_context) {
+        while (1) {
+          switch (_context.prev = _context.next) {
+            case 0:
+              contracts = void 0, options = void 0, callback = void 0;
+
+
+              if (args[args.length - 1] == null) {
+                // callback may be undefined
+                args = args.slice(0, args.length - 1);
+              }
+
+              isContractArray = isStringArray(args[0]);
+
+              if (!isContractArray) {
+                _context.next = 8;
+                break;
+              }
+
+              contracts = args[0];
+              args = args.slice(1);
+              _context.next = 39;
+              break;
+
+            case 8:
+              if (!(typeof args[0] === 'string')) {
+                _context.next = 13;
+                break;
+              }
+
+              contracts = [args[0]];
+              args = args.slice(1);
+              _context.next = 39;
+              break;
+
+            case 13:
+              if (!((0, _typeof3.default)(args[0]) === 'object' && Array.isArray(args[0].actions))) {
+                _context.next = 39;
+                break;
+              }
+
+              // full transaction, lookup ABIs used by each action
+              accounts = new Set(); // make a unique list
+
+              // TODO: Add args[0].context_free_actions to accounts too?
+
+              _iteratorNormalCompletion2 = true;
+              _didIteratorError2 = false;
+              _iteratorError2 = undefined;
+              _context.prev = 18;
+              for (_iterator2 = args[0].actions[Symbol.iterator](); !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+                action = _step2.value;
+
+                accounts.add(action.account);
+              }
+
+              _context.next = 26;
+              break;
+
+            case 22:
+              _context.prev = 22;
+              _context.t0 = _context['catch'](18);
+              _didIteratorError2 = true;
+              _iteratorError2 = _context.t0;
+
+            case 26:
+              _context.prev = 26;
+              _context.prev = 27;
+
+              if (!_iteratorNormalCompletion2 && _iterator2.return) {
+                _iterator2.return();
+              }
+
+            case 29:
+              _context.prev = 29;
+
+              if (!_didIteratorError2) {
+                _context.next = 32;
+                break;
+              }
+
+              throw _iteratorError2;
+
+            case 32:
+              return _context.finish(29);
+
+            case 33:
+              return _context.finish(26);
+
+            case 34:
+              abiPromises = [];
+
+              // Eos contract operations are cached (efficient and offline transactions)
+
+              cachedCode = new Set(['eosio', 'eosio.token', 'eosio.null']);
+
+              accounts.forEach(function (account) {
+                if (!cachedCode.has(account)) {
+                  abiPromises.push(config.abiCache.abiAsync(account));
+                }
+              });
+              _context.next = 39;
+              return _regenerator2.default.awrap(Promise.all(abiPromises));
+
+            case 39:
+
+              if (args.length > 1 && typeof args[args.length - 1] === 'function') {
+                callback = args.pop();
+              }
+
+              if (args.length > 1 && (0, _typeof3.default)(args[args.length - 1]) === 'object') {
+                options = args.pop();
+              }
+
+              assert.equal(args.length, 1, 'transaction args: contracts<string|array>, transaction<callback|object>, [options], [callback]');
+              arg = args[0];
+
+              if (!contracts) {
+                _context.next = 67;
+                break;
+              }
+
+              assert(!callback, 'callback with contracts are not supported');
+              assert.equal('function', typeof arg === 'undefined' ? 'undefined' : (0, _typeof3.default)(arg), 'provide function callback following contracts array parameter');
+
+              contractPromises = [];
+              _iteratorNormalCompletion3 = true;
+              _didIteratorError3 = false;
+              _iteratorError3 = undefined;
+              _context.prev = 50;
+
+              for (_iterator3 = contracts[Symbol.iterator](); !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+                account = _step3.value;
+
+                // setup wrapper functions to collect contract api calls
+                contractPromises.push(genContractActions(account, merge.transaction));
+              }
+
+              _context.next = 58;
+              break;
+
+            case 54:
+              _context.prev = 54;
+              _context.t1 = _context['catch'](50);
+              _didIteratorError3 = true;
+              _iteratorError3 = _context.t1;
+
+            case 58:
+              _context.prev = 58;
+              _context.prev = 59;
+
+              if (!_iteratorNormalCompletion3 && _iterator3.return) {
+                _iterator3.return();
+              }
+
+            case 61:
+              _context.prev = 61;
+
+              if (!_didIteratorError3) {
+                _context.next = 64;
+                break;
+              }
+
+              throw _iteratorError3;
+
+            case 64:
+              return _context.finish(61);
+
+            case 65:
+              return _context.finish(58);
+
+            case 66:
+              return _context.abrupt('return', Promise.all(contractPromises).then(function (actions) {
+                var merges = {};
+                actions.forEach(function (m, i) {
+                  merges[contracts[i]] = m;
+                });
+                var param = isContractArray ? merges : merges[contracts[0]];
+                // collect and invoke api calls
+                return trMessageCollector(arg, options, param);
+              }));
+
+            case 67:
+              if (!(typeof arg === 'function')) {
+                _context.next = 69;
+                break;
+              }
+
+              return _context.abrupt('return', trMessageCollector(arg, options, merge));
+
+            case 69:
+              if (!((typeof arg === 'undefined' ? 'undefined' : (0, _typeof3.default)(arg)) === 'object')) {
+                _context.next = 71;
+                break;
+              }
+
+              return _context.abrupt('return', transaction(arg, options, callback));
+
+            case 71:
+              throw new Error('first transaction argument unrecognized', arg);
+
+            case 72:
+            case 'end':
+              return _context.stop();
+          }
+        }
+      }, null, this, [[18, 22, 26, 34], [27,, 29, 33], [50, 54, 58, 66], [59,, 61, 65]]);
+    };
+  };
+
+  function genContractActions(account) {
+    var transaction = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+
+    return config.abiCache.abiAsync(account).then(function (cache) {
+      assert(Array.isArray(cache.abi.actions) && cache.abi.actions.length, 'No actions');
+
+      var contractMerge = {};
+      contractMerge.transaction = transaction ? transaction : genTransaction(cache.structs, contractMerge);
+
+      cache.abi.actions.forEach(function (_ref) {
+        var name = _ref.name,
+            type = _ref.type;
+
+        var definition = schemaFields(cache.schema, type);
+        contractMerge[name] = genMethod(type, definition, contractMerge.transaction, account, name);
+      });
+
+      contractMerge.fc = cache;
+
+      return contractMerge;
+    });
+  }
+
+  function genMethod(type, definition, transactionArg) {
+    var account = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 'eosio.token';
+    var name = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : type;
+
+    return function () {
+      for (var _len3 = arguments.length, args = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+        args[_key3] = arguments[_key3];
+      }
+
+      if (args.length === 0) {
+        console.log(usage({ name: name, type: type }, definition, Network, account, config));
+        return;
+      }
+
+      // Special case like multi-action transactions where this lib needs
+      // to be sure the broadcast is off.
+      var optionOverrides = {};
+      var lastArg = args[args.length - 1];
+      if ((typeof lastArg === 'undefined' ? 'undefined' : (0, _typeof3.default)(lastArg)) === 'object' && (0, _typeof3.default)(lastArg.__optionOverrides) === 'object') {
+        // pop() fixes the args.length
+        Object.assign(optionOverrides, args.pop().__optionOverrides);
+      }
+
+      var processedArgs = processArgs(args, Object.keys(definition), type, optionsFormatter);
+
+      var options = processedArgs.options;
+      var params = processedArgs.params,
+          returnPromise = processedArgs.returnPromise,
+          callback = processedArgs.callback;
+
+
+      var optionDefaults = { // From config and configDefaults
+        broadcast: config.broadcast,
+        sign: config.sign
+
+        // internal options (ex: multi-action transaction)
+      };options = Object.assign({}, optionDefaults, options, optionOverrides);
+      if (optionOverrides.noCallback && !returnPromise) {
+        throw new Error('Callback during a transaction are not supported');
+      }
+
+      var authorization = [];
+      var providedAuth = options.authorization ? options.authorization : config.authorization;
+      var addDefaultAuths = providedAuth == null;
+
+      // Often if the first field in an action is an account name it is
+      // also the required authorization.
+      function firstAccount() {
+        var fieldKeys = Object.keys(definition);
+        var f1 = fieldKeys[0];
+
+        if (definition[f1] === 'account_name') {
+          return params[f1];
+        }
+      }
+
+      if (providedAuth) {
+        var authArray = void 0;
+        if (typeof providedAuth === 'string') {
+          authArray = [providedAuth];
+        } else if (Array.isArray(providedAuth)) {
+          authArray = providedAuth;
+        }
+
+        if (authArray) {
+          authArray.forEach(function (auth) {
+            if (typeof auth === 'string') {
+              var _auth$split = auth.split('@'),
+                  _auth$split2 = (0, _slicedToArray3.default)(_auth$split, 2),
+                  actor = _auth$split2[0],
+                  _auth$split2$ = _auth$split2[1],
+                  permission = _auth$split2$ === undefined ? 'active' : _auth$split2$;
+
+              if (actor === '') {
+                actor = firstAccount();
+              }
+              if (actor) {
+                authorization.push({ actor: actor, permission: permission });
+              }
+            } else if ((typeof auth === 'undefined' ? 'undefined' : (0, _typeof3.default)(auth)) === 'object') {
+              authorization.push(auth);
+            }
+          });
+        }
+
+        assert.equal(authorization.length, authArray.length, 'invalid authorization in: ' + JSON.stringify(providedAuth));
+      }
+
+      var tr = {
+        actions: [{
+          account: account,
+          name: name,
+          authorization: authorization,
+          data: params
+        }]
+      };
+
+      if (addDefaultAuths) {
+        var actor = firstAccount();
+        if (actor) {
+          // Default authorization (since user did not provide one)
+          tr.actions[0].authorization.push({
+            actor: actor,
+            permission: 'active'
+          });
+        }
+      }
+
+      tr.actions[0].authorization.sort(function (a, b) {
+        return a.actor > b.actor ? 1 : a.actor < b.actor ? -1 : 0;
+      });
+
+      // multi-action transaction support
+      if (!optionOverrides.messageOnly) {
+        transactionArg(tr, options, callback);
+      } else {
+        callback(null, tr);
+      }
+
+      return returnPromise;
+    };
+  }
+
+  /**
+    Transaction Message Collector
+     Wrap merge.functions adding optionOverrides that will suspend
+    transaction broadcast.
+  */
+  function trMessageCollector(trCallback) {
+    var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+    var merges = arguments[2];
+
+    assert.equal('function', typeof trCallback === 'undefined' ? 'undefined' : (0, _typeof3.default)(trCallback), 'trCallback');
+    assert.equal('object', typeof options === 'undefined' ? 'undefined' : (0, _typeof3.default)(options), 'options');
+    assert.equal('object', typeof merges === 'undefined' ? 'undefined' : (0, _typeof3.default)(merges), 'merges');
+    assert(!Array.isArray(merges), 'merges should not be an array');
+    assert.equal('function', typeof transaction === 'undefined' ? 'undefined' : (0, _typeof3.default)(transaction), 'transaction');
+
+    var messageList = [];
+    var messageCollector = {};
+
+    var wrap = function wrap(opFunction) {
+      return function () {
+        for (var _len4 = arguments.length, args = Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
+          args[_key4] = arguments[_key4];
+        }
+
+        // call the original function but force-disable a lot of stuff
+        var ret = opFunction.apply(undefined, args.concat([{
+          __optionOverrides: {
+            broadcast: false,
+            messageOnly: true,
+            noCallback: true
+          }
+        }]));
+        if (ret == null) {
+          // double-check (code can change)
+          throw new Error('Callbacks can not be used when creating a multi-action transaction');
+        }
+        messageList.push(ret);
+      };
+    };
+
+    // merges can be an object of functions (as in the main eos contract)
+    // or an object of contract names with functions under those
+    for (var key in merges) {
+      var value = merges[key];
+      var variableName = key.replace(/\./, '_');
+      if (typeof value === 'function') {
+        // Native operations (eos contract for example)
+        messageCollector[variableName] = wrap(value);
+      } else if ((typeof value === 'undefined' ? 'undefined' : (0, _typeof3.default)(value)) === 'object') {
+        // other contract(s) (currency contract for example)
+        if (messageCollector[variableName] == null) {
+          messageCollector[variableName] = {};
+        }
+        for (var key2 in value) {
+          if (key2 === 'transaction') {
+            continue;
+          }
+          messageCollector[variableName][key2] = wrap(value[key2]);
+        }
+      }
+    }
+
+    var promiseCollector = void 0;
+    try {
+      // caller will load this up with actions
+      promiseCollector = trCallback(messageCollector);
+    } catch (error) {
+      promiseCollector = Promise.reject(error);
+    }
+
+    return Promise.resolve(promiseCollector).then(function () {
+      return Promise.all(messageList).then(function (resolvedMessageList) {
+        var actions = [];
+        var _iteratorNormalCompletion4 = true;
+        var _didIteratorError4 = false;
+        var _iteratorError4 = undefined;
+
+        try {
+          for (var _iterator4 = resolvedMessageList[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+            var m = _step4.value;
+
+            var _m$actions = (0, _slicedToArray3.default)(m.actions, 1),
+                action = _m$actions[0];
+
+            actions.push(action);
+          }
+        } catch (err) {
+          _didIteratorError4 = true;
+          _iteratorError4 = err;
+        } finally {
+          try {
+            if (!_iteratorNormalCompletion4 && _iterator4.return) {
+              _iterator4.return();
+            }
+          } finally {
+            if (_didIteratorError4) {
+              throw _iteratorError4;
+            }
+          }
+        }
+
+        var trObject = {};
+        trObject.actions = actions;
+        return transaction(trObject, options);
+      });
+    });
+  }
+
+  function transaction(arg, options, callback) {
+    var defaultExpiration, optionDefault, returnPromise, superCallback, rawTx, _arr, _i, txField, txObject, buf, tr, transactionId, sigs, chainIdBuf, packedContextFreeData, signBuf;
+
+    return _regenerator2.default.async(function transaction$(_context4) {
+      while (1) {
+        switch (_context4.prev = _context4.next) {
+          case 0:
+            defaultExpiration = config.expireInSeconds ? config.expireInSeconds : 60;
+            optionDefault = { expireInSeconds: defaultExpiration, broadcast: true, sign: true };
+
+            options = Object.assign({} /*clone*/, optionDefault, options);
+
+            returnPromise = void 0;
+
+            if (typeof callback !== 'function') {
+              returnPromise = new Promise(function (resolve, reject) {
+                callback = function callback(err, result) {
+                  if (err) {
+                    reject(err);
+                  } else {
+                    resolve(result);
+                  }
+                };
+              });
+            }
+
+            if (!((typeof arg === 'undefined' ? 'undefined' : (0, _typeof3.default)(arg)) !== 'object')) {
+              _context4.next = 7;
+              break;
+            }
+
+            throw new TypeError('First transaction argument should be an object or function');
+
+          case 7:
+            if (Array.isArray(arg.actions)) {
+              _context4.next = 9;
+              break;
+            }
+
+            throw new TypeError('Expecting actions array');
+
+          case 9:
+
+            if (config.logger.log || config.logger.error) {
+              // wrap the callback with the logger
+              superCallback = callback;
+
+              callback = function callback(error, tr) {
+                if (error && config.logger.error) {
+                  config.logger.error(error);
+                }
+                if (config.logger.log) {
+                  config.logger.log(JSON.stringify(tr));
+                }
+                superCallback(error, tr);
+              };
+            }
+
+            arg.actions.forEach(function (action) {
+              if (!Array.isArray(action.authorization)) {
+                throw new TypeError('Expecting action.authorization array', action);
+              }
+            });
+
+            if (!(options.sign && typeof config.signProvider !== 'function')) {
+              _context4.next = 13;
+              break;
+            }
+
+            throw new TypeError('Expecting config.signProvider function (disable using {sign: false})');
+
+          case 13:
+            rawTx = {
+              max_net_usage_words: 0,
+              max_cpu_usage_ms: 0,
+              delay_sec: 0,
+              context_free_actions: [],
+              actions: [],
+              signatures: [],
+              transaction_extensions: []
+
+              // global transaction headers
+            };
+
+            if (!config.transactionHeaders) {
+              _context4.next = 25;
+              break;
+            }
+
+            if (!((0, _typeof3.default)(config.transactionHeaders) === 'object')) {
+              _context4.next = 19;
+              break;
+            }
+
+            Object.assign(rawTx, config.transactionHeaders);
+            _context4.next = 25;
+            break;
+
+          case 19:
+            if (!(typeof config.transactionHeaders === 'function')) {
+              _context4.next = 24;
+              break;
+            }
+
+            _context4.next = 22;
+            return _regenerator2.default.awrap(config.transactionHeaders(options.expireInSeconds, checkError(callback, config.logger, function _callee2(headers) {
+              return _regenerator2.default.async(function _callee2$(_context2) {
+                while (1) {
+                  switch (_context2.prev = _context2.next) {
+                    case 0:
+                      assert.equal(typeof headers === 'undefined' ? 'undefined' : (0, _typeof3.default)(headers), 'object', 'expecting transaction header object');
+                      Object.assign(rawTx, headers);
+
+                    case 2:
+                    case 'end':
+                      return _context2.stop();
+                  }
+                }
+              }, null, this);
+            })));
+
+          case 22:
+            _context4.next = 25;
+            break;
+
+          case 24:
+            assert(false, 'config.transactionHeaders should be an object or function');
+
+          case 25:
+
+            // per transaction headers
+            _arr = ['expiration', 'ref_block_num', 'ref_block_prefix', 'delay_sec', 'max_net_usage_words', 'max_cpu_usage_ms'];
+            for (_i = 0; _i < _arr.length; _i++) {
+              txField = _arr[_i];
+
+              if (arg[txField] !== undefined) {
+                // eos.transaction('eosio', eosio => { eosio.myaction(..) }, {delay_sec: 369})
+                // eos.transaction({delay_sec: 369, actions: [...]})
+                rawTx[txField] = arg[txField];
+              } else if (options[txField] !== undefined) {
+                // eos.transaction(tr => {tr.transfer(...)}, {delay_sec: 369})
+                rawTx[txField] = options[txField];
+              }
+            }
+
+            // eosjs calcualted headers
+
+            if (!( // minimum required headers
+            rawTx.expiration === undefined || rawTx.ref_block_num === undefined || rawTx.ref_block_prefix === undefined)) {
+              _context4.next = 31;
+              break;
+            }
+
+            assert(network, 'Network is required, provide httpEndpoint or own transaction headers');
+            _context4.next = 31;
+            return _regenerator2.default.awrap(new Promise(function (resolve) {
+              network.createTransaction(options.expireInSeconds, checkError(callback, config.logger, function _callee3(headers) {
+                var _arr2, _i2, txField;
+
+                return _regenerator2.default.async(function _callee3$(_context3) {
+                  while (1) {
+                    switch (_context3.prev = _context3.next) {
+                      case 0:
+                        _arr2 = ['expiration', 'ref_block_num', 'ref_block_prefix'];
+
+                        for (_i2 = 0; _i2 < _arr2.length; _i2++) {
+                          txField = _arr2[_i2];
+
+                          // console.log(txField, headers[txField]);
+                          if (rawTx[txField] === undefined) {
+                            rawTx[txField] = headers[txField];
+                          }
+                        }
+                        resolve();
+
+                      case 3:
+                      case 'end':
+                        return _context3.stop();
+                    }
+                  }
+                }, null, this);
+              }));
+            }));
+
+          case 31:
+
+            // console.log('rawTx', rawTx)
+
+            assert.equal((0, _typeof3.default)(rawTx.expiration), 'string', 'expecting expiration: iso date time string');
+            assert.equal((0, _typeof3.default)(rawTx.ref_block_num), 'number', 'expecting ref_block_num number');
+            assert.equal((0, _typeof3.default)(rawTx.ref_block_prefix), 'number', 'expecting ref_block_prefix number');
+
+            rawTx.context_free_actions = arg.context_free_actions;
+            rawTx.actions = arg.actions;
+            rawTx.transaction_extensions = arg.transaction_extensions;
+
+            // Resolve shorthand
+            txObject = Transaction.fromObject(rawTx);
+            // console.log('txObject', txObject)
+
+            buf = Fcbuffer.toBuffer(Transaction, txObject);
+            tr = Transaction.toObject(txObject);
+            transactionId = createHash('sha256').update(buf).digest().toString('hex');
+            sigs = [];
+
+            if (options.sign) {
+              chainIdBuf = Buffer.from(config.chainId, 'hex');
+              packedContextFreeData = Buffer.from(new Uint8Array(32)); // TODO
+
+              signBuf = Buffer.concat([chainIdBuf, buf, packedContextFreeData]);
+
+
+              sigs = config.signProvider({ transaction: tr, buf: signBuf, sign: sign,
+                optionsKeyProvider: options.keyProvider });
+
+              if (!Array.isArray(sigs)) {
+                sigs = [sigs];
+              }
+            }
+
+            // sigs can be strings or Promises
+            Promise.all(sigs).then(function (sigs) {
+              sigs = [].concat.apply([], sigs); // flatten arrays in array
+
+              for (var i = 0; i < sigs.length; i++) {
+                var sig = sigs[i];
+                // normalize (hex to base58 format for example)
+                if (typeof sig === 'string' && sig.length === 130) {
+                  sigs[i] = ecc.Signature.from(sig).toString();
+                }
+              }
+
+              var packedTr = {
+                compression: 'none',
+                transaction: tr,
+                signatures: sigs
+              };
+
+              var mock = config.mockTransactions ? config.mockTransactions() : null;
+              if (mock != null) {
+                assert(/pass|fail/.test(mock), 'mockTransactions should return a string: pass or fail');
+                if (mock === 'pass') {
+                  callback(null, {
+                    transaction_id: transactionId,
+                    mockTransaction: true,
+                    broadcast: false,
+                    transaction: packedTr
+                  });
+                }
+                if (mock === 'fail') {
+                  var error = '[push_transaction mock error] \'fake error\', digest \'' + buf.toString('hex') + '\'';
+
+                  if (config.logger.error) {
+                    config.logger.error(error);
+                  }
+
+                  callback(error);
+                }
+                return;
+              }
+
+              if (!options.broadcast || !network) {
+                callback(null, {
+                  transaction_id: transactionId,
+                  broadcast: false,
+                  transaction: packedTr
+                });
+              } else {
+                network.pushTransaction(packedTr, function (error, processedTransaction) {
+                  if (!error) {
+                    callback(null, Object.assign({
+                      broadcast: true,
+                      transaction: packedTr,
+                      transaction_id: transactionId
+                    }, processedTransaction));
+                  } else {
+                    if (config.logger.error) {
+                      config.logger.error('[push_transaction error] \'' + error.message + '\', transaction \'' + buf.toString('hex') + '\'');
+                    }
+                    callback(error.message);
+                  }
+                });
+              }
+            }).catch(function (error) {
+              if (config.logger.error) {
+                config.logger.error(error);
+              }
+              callback(error);
+            });
+            return _context4.abrupt('return', returnPromise);
+
+          case 45:
+          case 'end':
+            return _context4.stop();
+        }
+      }
+    }, null, this);
+  }
+
+  // return WriteApi
+  return {
+    genTransaction: genTransaction,
+    genContractActions: genContractActions,
+    genMethod: genMethod
+  };
+}
+
+var isStringArray = function isStringArray(o) {
+  return Array.isArray(o) && o.length > 0 && o.findIndex(function (o) {
+    return typeof o !== 'string';
+  }) === -1;
+};
+
+// Normalize the extra optional options argument
+var optionsFormatter = function optionsFormatter(option) {
+  if ((typeof option === 'undefined' ? 'undefined' : (0, _typeof3.default)(option)) === 'object') {
+    return option; // {debug, broadcast, etc} (etc my overwrite tr below)
+  }
+  if (typeof option === 'boolean') {
+    // broadcast argument as a true false value, back-end cli will use this shorthand
+    return { broadcast: option };
+  }
+};
+
+function usage(action, definition, Network, account, config) {
+  var usage = '';
+  var out = function out() {
+    var str = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
+
+    usage += str + '\n';
+  };
+  out('CONTRACT');
+  out(account);
+  out();
+
+  out('ACTION');
+  out(action.name);
+  out();
+
+  var cache = config.abiCache.abi(account);
+
+  out('PARAMETERS');
+  out(JSON.stringify(schemaFields(cache.schema, action.type), null, 4));
+  out();
+
+  var struct = cache.structs[action.type];
+
+  out('EXAMPLE');
+  out(account + '.' + action.name + '(' + JSON.stringify(struct.toObject(), null, 4) + ')');
+
+  return usage;
+}
+
+var checkError = function checkError(parentErr, logger, parrentRes) {
+  return function (error, result) {
+    if (error) {
+      if (logger.error) {
+        logger.error('error', error);
+      }
+      parentErr(error);
+    } else {
+      Promise.resolve(parrentRes(result)).catch(function (error) {
+        parentErr(error);
+      });
+    }
+  };
+};
+
+/** Collapse inheritance (via "base") putting all the fields in one object. */
+function schemaFields(schema, type) {
+  var _schema$type = schema[type],
+      base = _schema$type.base,
+      fields = _schema$type.fields;
+
+  var def = {};
+  if (base && base !== '') {
+    Object.assign(def, schemaFields(schema, base));
+  }
+  Object.assign(def, fields);
+  return def;
+}
+}).call(this,require("buffer").Buffer)
+},{"./structs":10,"assert":191,"babel-runtime/helpers/slicedToArray":20,"babel-runtime/helpers/typeof":21,"babel-runtime/regenerator":22,"buffer":194,"create-hash":121,"eosjs-api":135,"eosjs-ecc":144,"fcbuffer":13}],12:[function(require,module,exports){
+(function (Buffer){
+'use strict';
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+var ByteBuffer = require('bytebuffer');
+var Struct = require('./struct');
+
+module.exports = {
+  create: create,
+  toBuffer: toBuffer,
+  fromBuffer: fromBuffer
+
+  /**
+    @summary Create a serializer for each definition.
+    @return {CreateStruct}
+  */
+};function create(definitions, types) {
+  var config = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : types.config;
+
+  var errors = [];
+  if (!config.sort) {
+    config.sort = {};
+  }
+
+  // Basic structure validation
+  for (var key in definitions) {
+    var value = definitions[key];
+    var base = value.base,
+        fields = value.fields;
+
+    var typeOfValue = typeof value === 'undefined' ? 'undefined' : _typeof(value);
+    if (typeOfValue === 'object') {
+      if (!base && !fields) {
+        errors.push('Expecting ' + key + '.fields or ' + key + '.base');
+        continue;
+      }
+      if (base && typeof base !== 'string') {
+        errors.push('Expecting string ' + key + '.base');
+      }
+      if (fields) {
+        if ((typeof fields === 'undefined' ? 'undefined' : _typeof(fields)) !== 'object') {
+          errors.push('Expecting object ' + key + '.fields');
+        } else {
+          for (var field in fields) {
+            if (typeof fields[field] !== 'string') {
+              errors.push('Expecting string in ' + key + '.fields.' + field);
+            }
+          }
+        }
+      }
+    } else if (typeOfValue !== 'string') {
+      errors.push('Expecting object or string under ' + key + ', instead got ' + (typeof value === 'undefined' ? 'undefined' : _typeof(value)));
+      continue;
+    }
+  }
+
+  // Keys with objects are structs
+  var structs = {};
+  for (var _key in definitions) {
+    var _value = definitions[_key];
+    if ((typeof _value === 'undefined' ? 'undefined' : _typeof(_value)) === 'object') {
+      structs[_key] = Struct(_key, config);
+    }
+  }
+
+  // Resolve user-friendly typedef names pointing to a native type (or another typedef)
+  for (var _key2 in definitions) {
+    var _value2 = definitions[_key2];
+    if (typeof _value2 === 'string') {
+      var type = types[_value2];
+      if (type) {
+        types[_key2] = type;
+      } else {
+        // example: key === 'fields' && value === field[]
+        var struct = getTypeOrStruct(_key2, _value2); // type = vector(field)
+        if (struct) {
+          structs[_key2] = struct;
+        } else {
+          errors.push('Unrecognized type or struct ' + _key2 + '.' + _value2);
+        }
+      }
+    }
+  }
+
+  // Structs can inherit another struct, they will share the same instance
+  for (var _key3 in definitions) {
+    var thisStruct = structs[_key3];
+    if (!thisStruct) continue;
+    var _value3 = definitions[_key3];
+    if ((typeof _value3 === 'undefined' ? 'undefined' : _typeof(_value3)) === 'object' && _value3.base) {
+      var base = _value3.base;
+      var baseStruct = structs[base];
+      if (!baseStruct) {
+        errors.push('Missing ' + base + ' in ' + _key3 + '.base');
+        continue;
+      }
+      thisStruct.add('', structPtr(baseStruct));
+    }
+  }
+
+  // Create types from a string (ex vector[Type])
+  function getTypeOrStruct(key, Type, typeArgs, fieldName) {
+    var typeatty = parseType(Type);
+    if (!typeatty) return null;
+    var name = typeatty.name,
+        annotation = typeatty.annotation,
+        arrayType = typeatty.arrayType;
+
+    var ret = void 0;
+    if (annotation) {
+      // any_type<field_name, type_name>
+      var _type = types[name];
+      if (_type == null) {
+        errors.push('Missing ' + name + ' in ' + Type);
+        return null;
+      }
+      var annTypes = [];
+      var _iteratorNormalCompletion = true;
+      var _didIteratorError = false;
+      var _iteratorError = undefined;
+
+      try {
+        for (var _iterator = annotation[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+          var annTypeName = _step.value;
+
+          var annType = getTypeOrStruct(key, annTypeName, null, fieldName);
+          if (!annType) {
+            errors.push('Missing ' + annTypeName + ' in ' + Type);
+            return null;
+          }
+          annTypes.push(annType);
+        }
+      } catch (err) {
+        _didIteratorError = true;
+        _iteratorError = err;
+      } finally {
+        try {
+          if (!_iteratorNormalCompletion && _iterator.return) {
+            _iterator.return();
+          }
+        } finally {
+          if (_didIteratorError) {
+            throw _iteratorError;
+          }
+        }
+      }
+
+      ret = _type(annTypes);
+    } else if (arrayType == null) {
+      // AnyType
+      var fieldStruct = structs[name];
+      if (fieldStruct) {
+        return fieldStruct;
+      }
+
+      var _type2 = types[name];
+      if (!_type2) {
+        return null;
+      }
+
+      // types need to be instantiated
+      ret = _type2(typeArgs);
+    } else if (arrayType === '') {
+      // AnyType[]
+      var nameType = getTypeOrStruct(key, typeatty.name, null, fieldName);
+      if (!nameType) {
+        return null;
+      }
+
+      var sort = config.sort[key + '.' + fieldName] || false;
+      // console.log('sort?', `${key}.${fieldName}`, sort, config.sort)
+      ret = types.vector(nameType, sort);
+    } else if (arrayType.length > 0) {
+      // vector[Type]
+      var arrayTs = getTypeOrStruct(key, typeatty.arrayType, null, fieldName);
+      if (!arrayTs) {
+        errors.push('Missing ' + typeatty.arrayType + ' in ' + Type);
+        return null;
+      }
+      var baseTs = getTypeOrStruct(key, typeatty.name, arrayTs, fieldName);
+      if (!baseTs) {
+        errors.push('Missing ' + typeatty.name + ' in ' + Type);
+        return null;
+      }
+      ret = baseTs;
+    }
+    return typeatty.optional ? types.optional(ret) : ret;
+  }
+
+  // Add all the fields.  Thanks to structPtr no need to look at base types.
+  for (var _key4 in definitions) {
+    var _thisStruct = structs[_key4];
+    if (!_thisStruct) continue;
+    var _value4 = definitions[_key4];
+    if (!_value4.fields) continue;
+    var fields = _value4.fields;
+
+    for (var Field in fields) {
+      var Type = fields[Field];
+      var ts = getTypeOrStruct(_key4, Type, null, Field);
+      if (!ts) {
+        errors.push('Missing ' + Type + ' in ' + _key4 + '.fields.' + Field);
+        continue;
+      }
+      _thisStruct.add(Field, ts);
+    }
+  }
+
+  if (errors.length) {
+    // 'structs' could contain invalid references
+    return { errors: errors };
+  }
+
+  return { errors: errors, structs: structs };
+}
+
+var parseType = function parseType(name) {
+  if (!name || typeof name !== 'string') {
+    return null;
+  }
+
+  name = name.trim();
+
+  var annotationMatch = name.match(/<(.*)>/);
+  if (annotationMatch) {
+    var annotation = annotationMatch ? annotationMatch[1].replace(/ /g, '').split(',') : null;
+
+    name = name.replace(annotationMatch[0], '').trim();
+    return { name: name, annotation: annotation };
+  }
+
+  var arrayMatch = name.match(/\[(.*)\]/);
+  var arrayType = arrayMatch ? arrayMatch[1].trim() : null;
+
+  if (arrayMatch) {
+    name = name.replace(arrayMatch[0], '').trim();
+  }
+
+  var optional = false;
+  if (/\?$/.test(name)) {
+    name = name.substring(0, name.length - 1);
+    optional = true;
+  }
+  return { name: name, arrayType: arrayType, optional: optional };
+};
+
+/**
+  Base types all point to the same struct.
+
+  Note, appendByteBuffer has no return type.
+*/
+var structPtr = function structPtr(type) {
+  return {
+    fromByteBuffer: function fromByteBuffer(b) {
+      return type.fromByteBuffer(b);
+    },
+    appendByteBuffer: function appendByteBuffer(b, value) {
+      type.appendByteBuffer(b, value);
+    },
+    fromObject: function fromObject(value) {
+      return type.fromObject(value);
+    },
+    toObject: function toObject(value) {
+      return type.toObject(value);
+    }
+  };
+};
+
+function toBuffer(type, value) {
+  var struct = type.fromObject(value);
+  return Buffer.from(toByteBuffer(type, struct).toBinary(), 'binary');
+}
+
+function fromBuffer(type, buffer) {
+  var toObject = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : true;
+
+  var b = ByteBuffer.fromBinary(buffer.toString('binary'), ByteBuffer.LITTLE_ENDIAN);
+  var struct = type.fromByteBuffer(b);
+  return toObject ? type.toObject(struct) : struct;
+}
+
+function toByteBuffer(type, value) {
+  var b = new ByteBuffer(ByteBuffer.DEFAULT_CAPACITY, ByteBuffer.LITTLE_ENDIAN);
+  type.appendByteBuffer(b, value);
+  return b.copy(0, b.offset);
+}
+}).call(this,require("buffer").Buffer)
+},{"./struct":14,"buffer":194,"bytebuffer":48}],13:[function(require,module,exports){
+(function (Buffer){
+'use strict';
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+var Types = require('./types');
+var Fcbuffer = require('./fcbuffer');
+var assert = require('assert');
+
+var create = Fcbuffer.create;
+
+/**
+  @typedef {object} SerializerConfig
+  @property {boolean} [SerializerConfig.defaults = false] - Insert in defaults (like 0, false, '000...', or '') for any missing values.  This helps test and inspect what a definition should look like.  Do not enable in production.
+  @property {boolean} [SerializerConfig.debug = false] - Prints lots of HEX and field-level information to help debug binary serialization.
+  @property {object} [customTypes] - Add or overwrite low level types (see ./src/types.js `const types = {...}`).
+*/
+
+/**
+  @typedef {object} CreateStruct
+  @property {Array<String>} CreateStruct.errors - If any errors exists, no struts will be created.
+  @property {Object} CreateStruct.struct - Struct objects keyed by definition name.
+  @property {String} CreateStruct.struct.structName - Struct object that will serialize this type.
+  @property {Struct} CreateStruct.struct.struct - Struct object that will serialize this type (see ./src/struct.js).
+*/
+
+/**
+  @arg {object} definitions - examples https://github.com/EOSIO/eosjs-json/blob/master/schema
+  @arg {SerializerConfig} config
+  @return {CreateStruct}
+*/
+
+module.exports = function (definitions) {
+  var config = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+  if ((typeof definitions === 'undefined' ? 'undefined' : _typeof(definitions)) !== 'object') {
+    throw new TypeError('definitions is a required parameter');
+  }
+
+  if (config.customTypes) {
+    definitions = Object.assign({}, definitions); //clone
+    for (var key in config.customTypes) {
+      // custom types overwrite definitions
+      delete definitions[key];
+    }
+  }
+
+  var types = Types(config);
+
+  var _create = create(definitions, types),
+      errors = _create.errors,
+      structs = _create.structs;
+
+  /** Extend with more JSON schema and type definitions */
+
+
+  var _extend = function _extend(parent, child) {
+    var combined = Object.assign({}, parent, child);
+
+    var _create2 = create(combined, types),
+        structs = _create2.structs,
+        errors = _create2.errors;
+
+    return {
+      errors: errors,
+      structs: structs,
+      extend: function extend(child) {
+        return _extend(combined, child);
+      },
+      fromBuffer: fromBuffer(types, structs),
+      toBuffer: toBuffer(types, structs)
+    };
+  };
+
+  return {
+    errors: errors,
+    structs: structs,
+    types: types,
+    extend: function extend(child) {
+      return _extend(definitions, child);
+    },
+
+    /**
+      @arg {string} typeName lookup struct or type by name
+      @arg {Buffer} buf serialized data to be parsed
+      @return {object} deserialized object
+    */
+    fromBuffer: fromBuffer(types, structs),
+
+    /**
+      @arg {string} typeName lookup struct or type by name
+      @arg {Object} object for serialization
+      @return {Buffer} serialized object
+    */
+    toBuffer: toBuffer(types, structs)
+  };
+};
+
+var fromBuffer = function fromBuffer(types, structs) {
+  return function (typeName, buf) {
+    assert.equal(typeof typeName === 'undefined' ? 'undefined' : _typeof(typeName), 'string', 'typeName (type or struct name)');
+    if (typeof buf === 'string') {
+      buf = Buffer.from(buf, 'hex');
+    }
+    assert(Buffer.isBuffer(buf), 'expecting buf<hex|Buffer>');
+
+    var type = types[typeName];
+    if (type) {
+      type = type();
+    } else {
+      type = structs[typeName];
+    }
+    assert(type, 'missing type or struct: ' + typeName);
+    return Fcbuffer.fromBuffer(type, buf);
+  };
+};
+
+var toBuffer = function toBuffer(types, structs) {
+  return function (typeName, object) {
+    assert.equal(typeof typeName === 'undefined' ? 'undefined' : _typeof(typeName), 'string', 'typeName (type or struct name)');
+    assert.equal(typeof object === 'undefined' ? 'undefined' : _typeof(object), 'object', 'object');
+
+    var type = types[typeName];
+    if (type) {
+      type = type();
+    } else {
+      type = structs[typeName];
+    }
+    assert(type, 'missing type or struct: ' + typeName);
+    return Fcbuffer.toBuffer(type, object);
+  };
+};
+
+module.exports.fromBuffer = Fcbuffer.fromBuffer;
+module.exports.toBuffer = Fcbuffer.toBuffer;
+}).call(this,require("buffer").Buffer)
+},{"./fcbuffer":12,"./types":15,"assert":191,"buffer":194}],14:[function(require,module,exports){
+'use strict';
+
+var ByteBuffer = require('bytebuffer');
+
+/**
+  @class Struct
+
+  @arg {object} config.override = {
+    'Message.data.appendByteBuffer': ({fields, object, b}) => {..}
+  }
+  Rare cases where specialized serilization is needed (ex A Message object has
+  'type' and 'data' fields where object.type === 'transfer' can define
+  serialization time Struct needed for 'data' .. This saves complexity for the
+  end-user's working with json.  See override unit test.
+*/
+module.exports = function (name) {
+  var config = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : { debug: false };
+
+  config = Object.assign({ override: {} }, config);
+  var fields = {};
+  var fieldOne = void 0,
+      fieldOneName = void 0;
+
+  return {
+    compare: function compare(a, b) {
+      var v1 = a[fieldOneName];
+      var v2 = b[fieldOneName];
+
+      if (!fieldOne || !fieldOne.compare) {
+        return v1 > v2 ? 1 : v1 < v2 ? -1 : 0;
+      }
+
+      return fieldOne.compare(v1, v2);
+    },
+
+
+    /** @private */
+    add: function add(fieldName, type) {
+      fields[fieldName] = type;
+      if (fieldOne == null) {
+        fieldOne = type;
+        fieldOneName = fieldName;
+      }
+    },
+
+
+    // Complete list of fields, after resolving "base" inheritance
+    fields: fields,
+
+    fromByteBuffer: function fromByteBuffer(b) {
+      var object = {};
+      var field = null;
+      try {
+        for (field in fields) {
+          var type = fields[field];
+          try {
+            var o1 = b.offset;
+            if (field === '') {
+              // structPtr
+              object = type.fromByteBuffer(b, config);
+            } else {
+              var fromByteBuffer = config.override[name + '.' + field + '.fromByteBuffer'];
+              if (fromByteBuffer) {
+                fromByteBuffer({ fields: fields, object: object, b: b, config: config });
+              } else {
+                object[field] = type.fromByteBuffer(b, config);
+              }
+            }
+            if (config.debug) {
+              if (type.struct) {
+                console.error(type.struct);
+              } else {
+                var value = void 0;
+                try {
+                  // human readable text
+                  value = type.toObject(field === '' ? object : object[field], config);
+                } catch (error) {
+                  // console.error('fromByteBuffer debug error:', error)
+                  value = '';
+                }
+                var _b = b.copy(o1, b.offset);
+                console.error('fromByteBuffer', name + '.' + field, '\'' + value + '\'', _b.toHex());
+              }
+            }
+          } catch (e) {
+            console.error(e + ' in ' + name + '.' + field);
+            b.printDebug();
+            throw e;
+          }
+        }
+      } catch (error) {
+        error.message += ' in ' + name + '.' + field;
+        throw error;
+      }
+      return object;
+    },
+    appendByteBuffer: function appendByteBuffer(b, object) {
+      var field = null;
+      try {
+        for (field in fields) {
+          var type = fields[field];
+          if (field === '') {
+            // structPtr
+            type.appendByteBuffer(b, object);
+          } else {
+            var appendByteBuffer = config.override[name + '.' + field + '.appendByteBuffer'];
+            if (appendByteBuffer) {
+              appendByteBuffer({ fields: fields, object: object, b: b });
+            } else {
+              type.appendByteBuffer(b, object[field]);
+            }
+          }
+        }
+      } catch (error) {
+        try {
+          error.message += ' ' + name + '.' + field + ' = ' + JSON.stringify(object[field]);
+        } catch (e) {
+          // circular ref
+          error.message += ' ' + name + '.' + field + ' = ' + object[field];
+        }
+        throw error;
+      }
+    },
+    fromObject: function fromObject(serializedObject) {
+      var fromObject_struct = config.override[name + '.fromObject'];
+      if (fromObject_struct) {
+        var ret = fromObject_struct(serializedObject);
+        if (ret != null) {
+          return ret;
+        }
+      }
+
+      var result = {};
+      var field = null;
+      try {
+        for (field in fields) {
+          // if(config.debug) {
+          //   console.error(name, field, '(fromObject)')
+          // }
+          var type = fields[field];
+          if (field === '') {
+            // structPtr
+            var object = type.fromObject(serializedObject);
+            Object.assign(result, object);
+          } else {
+            var fromObject = config.override[name + '.' + field + '.fromObject'];
+            if (fromObject) {
+              fromObject({ fields: fields, object: serializedObject, result: result });
+            } else {
+              var value = serializedObject[field];
+              var _object = type.fromObject(value);
+              result[field] = _object;
+            }
+          }
+        }
+      } catch (error) {
+        error.message += ' ' + name + '.' + field;
+        throw error;
+      }
+
+      return result;
+    },
+    toObject: function toObject() {
+      var serializedObject = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+      var toObject_struct = config.override[name + '.toObject'];
+      if (toObject_struct) {
+        var ret = toObject_struct(serializedObject);
+        if (ret != null) {
+          return ret;
+        }
+      }
+
+      var result = {};
+      var field = null;
+      try {
+        // if (!fields) { return result }
+
+        for (field in fields) {
+          var type = fields[field];
+
+          var toObject = config.override[name + '.' + field + '.toObject'];
+          if (toObject) {
+            toObject({ fields: fields, object: serializedObject, result: result, config: config });
+          } else {
+            if (field === '') {
+              // structPtr
+              var object = type.toObject(serializedObject, config);
+              Object.assign(result, object);
+            } else {
+              var _object2 = type.toObject(serializedObject ? serializedObject[field] : null, config);
+              result[field] = _object2;
+            }
+          }
+
+          if (config.debug) {
+            try {
+              var b = new ByteBuffer(ByteBuffer.DEFAULT_CAPACITY, ByteBuffer.LITTLE_ENDIAN);
+              if (serializedObject != null) {
+                var value = serializedObject[field];
+                if (value) {
+                  var appendByteBuffer = config.override[name + '.' + field + '.appendByteBuffer'];
+                  if (toObject && appendByteBuffer) {
+                    appendByteBuffer({ fields: fields, object: serializedObject, b: b });
+                  } else {
+                    type.appendByteBuffer(b, value);
+                  }
+                }
+              }
+              b = b.copy(0, b.offset);
+              console.error('toObject', name + '.' + field, '\'' + result[field] + '\'', b.toHex());
+            } catch (error) {
+              // work-around to prevent debug time crash
+              error.message = name + '.' + field + ' ' + error.message;
+              console.error(error);
+            }
+          }
+        }
+      } catch (error) {
+        error.message += ' ' + name + '.' + field;
+        throw error;
+      }
+      return result;
+    }
+  };
+};
+},{"bytebuffer":48}],15:[function(require,module,exports){
+(function (Buffer){
+'use strict';
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
+var BN = require('bn.js');
+
+var _require = require('bytebuffer'),
+    Long = _require.Long;
+
+var assert = require('assert');
+
+var types = {
+  bytes: function bytes() {
+    return [bytebuf];
+  },
+  string: function string() {
+    return [_string];
+  },
+  vector: function vector(type) {
+    var sorted = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+    return [_vector, { type: type, sorted: sorted }];
+  },
+  optional: function optional(type) {
+    return [_optional, { type: type }];
+  },
+  time: function time() {
+    return [_time2];
+  },
+  map: function map(annotation) {
+    return [_map, { annotation: annotation }];
+  },
+  static_variant: function static_variant(types) {
+    return [_static_variant, { types: types }];
+  },
+
+  fixed_string16: function fixed_string16() {
+    return [_string, { maxLen: 16 }];
+  },
+  fixed_string32: function fixed_string32() {
+    return [_string, { maxLen: 32 }];
+  },
+
+  fixed_bytes16: function fixed_bytes16() {
+    return [bytebuf, { len: 16 }];
+  },
+  fixed_bytes20: function fixed_bytes20() {
+    return [bytebuf, { len: 20 }];
+  },
+  fixed_bytes28: function fixed_bytes28() {
+    return [bytebuf, { len: 28 }];
+  },
+  fixed_bytes32: function fixed_bytes32() {
+    return [bytebuf, { len: 32 }];
+  },
+  fixed_bytes33: function fixed_bytes33() {
+    return [bytebuf, { len: 33 }];
+  },
+  fixed_bytes64: function fixed_bytes64() {
+    return [bytebuf, { len: 64 }];
+  },
+  fixed_bytes65: function fixed_bytes65() {
+    return [bytebuf, { len: 65 }];
+  },
+
+  uint8: function uint8() {
+    return [intbuf, { bits: 8 }];
+  },
+  uint16: function uint16() {
+    return [intbuf, { bits: 16 }];
+  },
+  uint32: function uint32() {
+    return [intbuf, { bits: 32 }];
+  },
+  uint64: function uint64() {
+    return [intbuf, { bits: 64 }];
+  },
+  uint128: function uint128() {
+    return [bnbuf, { bits: 128 }];
+  },
+  uint224: function uint224() {
+    return [bnbuf, { bits: 224 }];
+  },
+  uint256: function uint256() {
+    return [bnbuf, { bits: 256 }];
+  },
+  uint512: function uint512() {
+    return [bnbuf, { bits: 512 }];
+  },
+
+  varuint32: function varuint32() {
+    return [intbuf, { bits: 32, variable: true }];
+  },
+
+  int8: function int8() {
+    return [intbuf, { signed: true, bits: 8 }];
+  },
+  int16: function int16() {
+    return [intbuf, { signed: true, bits: 16 }];
+  },
+  int32: function int32() {
+    return [intbuf, { signed: true, bits: 32 }];
+  },
+  int64: function int64() {
+    return [intbuf, { signed: true, bits: 64 }];
+  },
+  int128: function int128() {
+    return [bnbuf, { signed: true, bits: 128 }];
+  },
+  int224: function int224() {
+    return [bnbuf, { signed: true, bits: 224 }];
+  },
+  int256: function int256() {
+    return [bnbuf, { signed: true, bits: 256 }];
+  },
+  int512: function int512() {
+    return [bnbuf, { signed: true, bits: 512 }];
+  },
+
+  varint32: function varint32() {
+    return [intbuf, { signed: true, bits: 32, variable: true }];
+  },
+
+  float32: function float32() {
+    return [float, { bits: 32 }];
+  },
+  float64: function float64() {
+    return [float, { bits: 64 }];
+  }
+
+  /*
+    @arg {SerializerConfig} config
+    @return {object} {[typeName]: function(args)}
+  */
+};module.exports = function (config) {
+  config = Object.assign({ defaults: false, debug: false, customTypes: {} }, config);
+
+  var allTypes = Object.assign({}, types, config.customTypes);
+
+  var createTypeReducer = function createTypeReducer(baseTypes) {
+    return function (customTypes, name) {
+      customTypes[name] = function () {
+        for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+          args[_key] = arguments[_key];
+        }
+
+        var type = createType(name, config, args, baseTypes, allTypes, customTypes);
+        return type;
+      };
+      return customTypes;
+    };
+  };
+
+  var baseTypes = Object.keys(types).reduce(createTypeReducer(), {});
+
+  var customTypes = Object.keys(config.customTypes || {}).reduce(createTypeReducer(baseTypes), {});
+
+  return Object.assign({}, baseTypes, customTypes, { config: config });
+};
+
+/**
+    @args {string} typeName - matches types[]
+    @args {string} config - Additional arguments for types
+*/
+function createType(typeName, config, args, baseTypes, allTypes, customTypes) {
+  var Type = baseTypes ? allTypes[typeName] : types[typeName];
+
+  var _Type = Type.apply(undefined, _toConsumableArray(args)),
+      _Type2 = _slicedToArray(_Type, 2),
+      fn = _Type2[0],
+      _Type2$ = _Type2[1],
+      v = _Type2$ === undefined ? {} : _Type2$;
+
+  var validation = Object.assign(v, config);
+  validation.typeName = typeName;
+  var type = fn(validation, baseTypes, customTypes);
+  type.typeName = typeName;
+  return type;
+}
+
+var _map = function _map(validation) {
+  var _validation$annotatio = _slicedToArray(validation.annotation, 2),
+      type1 = _validation$annotatio[0],
+      type2 = _validation$annotatio[1];
+
+  if (!isSerializer(type1)) {
+    throw new TypeError('map<type1, > unknown');
+  }
+  if (!isSerializer(type2)) {
+    throw new TypeError('map<, type2> unknown');
+  }
+
+  return {
+    fromByteBuffer: function fromByteBuffer(b) {
+      var size = b.readVarint32();
+      var result = {};
+      for (var i = 0; i < size; i++) {
+        result[type1.fromByteBuffer(b)] = type2.fromByteBuffer(b);
+      }
+      if (validation.debug) {
+        console.log('0x' + size.toString(16), '(map.fromByteBuffer length)', result);
+      }
+      return result;
+    },
+    appendByteBuffer: function appendByteBuffer(b, value) {
+      validate(value, validation);
+      var keys = Object.keys(value);
+      b.writeVarint32(keys.length);
+      if (validation.debug) {
+        console.log('0x' + keys.length.toString(16), '(map.appendByteBuffer length)', keys);
+      }
+      // if(sorted === true) {
+      //   value = sortKeys(type1, Object.assign({}, value))
+      // }
+      var _iteratorNormalCompletion = true;
+      var _didIteratorError = false;
+      var _iteratorError = undefined;
+
+      try {
+        for (var _iterator = keys[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+          var o = _step.value;
+
+          var value2 = value[o];
+          type1.appendByteBuffer(b, o);
+          type2.appendByteBuffer(b, value2);
+        }
+      } catch (err) {
+        _didIteratorError = true;
+        _iteratorError = err;
+      } finally {
+        try {
+          if (!_iteratorNormalCompletion && _iterator.return) {
+            _iterator.return();
+          }
+        } finally {
+          if (_didIteratorError) {
+            throw _iteratorError;
+          }
+        }
+      }
+    },
+    fromObject: function fromObject(value) {
+      validate(value, validation);
+      var result = {};
+      // if(sorted === true) {
+      //   value = sortKeys(type1, Object.assign({}, value))
+      // }
+      for (var o in value) {
+        result[type1.fromObject(o)] = type2.fromObject(value[o]);
+      }
+      return result;
+    },
+    toObject: function toObject(value) {
+      if (validation.defaults && value == null) {
+        return _defineProperty({}, type1.toObject(null), type2.toObject(null));
+      }
+      validate(value, validation);
+      var result = {};
+      // if(sorted === true) {
+      //   value = sortKey(type1, Object.assign({}, value))
+      // }
+      for (var o in value) {
+        result[type1.toObject(o)] = type2.toObject(value[o]);
+      }
+      return result;
+    }
+  };
+};
+
+var _static_variant = function _static_variant(validation) {
+  var types = validation.types;
+
+  return {
+    fromByteBuffer: function fromByteBuffer(b) {
+      var typePosition = b.readVarint32();
+      var type = types[typePosition];
+      if (validation.debug) {
+        console.error('static_variant id ' + typePosition + ' (0x' + typePosition.toString(16) + ')');
+      }
+      assert(type, 'static_variant invalid type position ' + typePosition);
+      return [typePosition, type.fromByteBuffer(b)];
+    },
+    appendByteBuffer: function appendByteBuffer(b, object) {
+      assert(Array.isArray(object) && object.length === 2, 'Required tuple');
+      var typePosition = object[0];
+      var type = types[typePosition];
+      assert(type, 'type ' + typePosition);
+      b.writeVarint32(typePosition);
+      type.appendByteBuffer(b, object[1]);
+    },
+    fromObject: function fromObject(object) {
+      assert(Array.isArray(object) && object.length === 2, 'Required tuple');
+      var typePosition = object[0];
+      var type = types[typePosition];
+      assert(type, 'type ' + typePosition);
+      return [typePosition, type.fromObject(object[1])];
+    },
+    toObject: function toObject(object) {
+      if (validation.defaults && object == null) {
+        return [0, types[0].toObject(null, debug)];
+      }
+      assert(Array.isArray(object) && object.length === 2, 'Required tuple');
+      var typePosition = object[0];
+      var type = types[typePosition];
+      assert(type, 'type ' + typePosition);
+      return [typePosition, type.toObject(object[1])];
+    }
+  };
+};
+
+var _vector = function _vector(validation) {
+  var type = validation.type,
+      sorted = validation.sorted;
+
+  if (!isSerializer(type)) {
+    throw new TypeError('vector type should be a serializer');
+  }
+
+  return {
+    fromByteBuffer: function fromByteBuffer(b) {
+      var size = b.readVarint32();
+      if (validation.debug) {
+        console.log('fromByteBuffer vector length', size, '(0x' + size.toString(16) + ')');
+      }
+      var result = [];
+      for (var i = 0; i < size; i++) {
+        result.push(type.fromByteBuffer(b));
+      }
+      return result;
+    },
+    appendByteBuffer: function appendByteBuffer(b, value) {
+      if (value == null) {
+        value = [];
+      }
+      validate(value, validation);
+      b.writeVarint32(value.length);
+      if (sorted === true) {
+        value = sort(type, Object.assign([], value));
+      }
+      if (validation.debug) {
+        console.log('0x' + value.length.toString(16), '(vector.appendByteBuffer length)', value);
+      }
+      var _iteratorNormalCompletion2 = true;
+      var _didIteratorError2 = false;
+      var _iteratorError2 = undefined;
+
+      try {
+        for (var _iterator2 = value[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+          var o = _step2.value;
+
+          type.appendByteBuffer(b, o);
+        }
+      } catch (err) {
+        _didIteratorError2 = true;
+        _iteratorError2 = err;
+      } finally {
+        try {
+          if (!_iteratorNormalCompletion2 && _iterator2.return) {
+            _iterator2.return();
+          }
+        } finally {
+          if (_didIteratorError2) {
+            throw _iteratorError2;
+          }
+        }
+      }
+    },
+    fromObject: function fromObject(value) {
+      if (value == null) {
+        value = [];
+      }
+      validate(value, validation);
+      var result = [];
+      var _iteratorNormalCompletion3 = true;
+      var _didIteratorError3 = false;
+      var _iteratorError3 = undefined;
+
+      try {
+        for (var _iterator3 = value[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+          var o = _step3.value;
+
+          result.push(type.fromObject(o));
+        }
+      } catch (err) {
+        _didIteratorError3 = true;
+        _iteratorError3 = err;
+      } finally {
+        try {
+          if (!_iteratorNormalCompletion3 && _iterator3.return) {
+            _iterator3.return();
+          }
+        } finally {
+          if (_didIteratorError3) {
+            throw _iteratorError3;
+          }
+        }
+      }
+
+      if (sorted === true) {
+        result = sort(type, Object.assign([], result));
+      }
+      return result;
+    },
+    toObject: function toObject(value) {
+      if (validation.defaults && value == null) {
+        return [type.toObject(value)];
+      }
+      if (value == null) {
+        value = [];
+      }
+      validate(value, validation);
+      if (sorted === true) {
+        value = sort(type, Object.assign([], value));
+      }
+      var result = [];
+      var _iteratorNormalCompletion4 = true;
+      var _didIteratorError4 = false;
+      var _iteratorError4 = undefined;
+
+      try {
+        for (var _iterator4 = value[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+          var o = _step4.value;
+
+          result.push(type.toObject(o));
+        }
+      } catch (err) {
+        _didIteratorError4 = true;
+        _iteratorError4 = err;
+      } finally {
+        try {
+          if (!_iteratorNormalCompletion4 && _iterator4.return) {
+            _iterator4.return();
+          }
+        } finally {
+          if (_didIteratorError4) {
+            throw _iteratorError4;
+          }
+        }
+      }
+
+      return result;
+    }
+  };
+};
+
+var _optional = function _optional(validation) {
+  var type = validation.type;
+
+  if (!isSerializer(type)) {
+    throw new TypeError('optional parameter should be a serializer');
+  }
+
+  return {
+    fromByteBuffer: function fromByteBuffer(b) {
+      if (!(b.readUint8() === 1)) {
+        return null;
+      }
+      return type.fromByteBuffer(b);
+    },
+    appendByteBuffer: function appendByteBuffer(b, value) {
+      if (value != null) {
+        b.writeUint8(1);
+        type.appendByteBuffer(b, value);
+      } else {
+        b.writeUint8(0);
+      }
+    },
+    fromObject: function fromObject(value) {
+      if (value == null) {
+        return null;
+      }
+      return type.fromObject(value);
+    },
+    toObject: function toObject(value) {
+      // toObject is only null save if defaults is true
+      var resultValue = void 0;
+      if (value == null && !validation.defaults) {
+        resultValue = null;
+      } else {
+        resultValue = type.toObject(value);
+      }
+      return resultValue;
+    }
+  };
+};
+
+var intbufType = function intbufType(_ref2) {
+  var _ref2$signed = _ref2.signed,
+      signed = _ref2$signed === undefined ? false : _ref2$signed,
+      bits = _ref2.bits,
+      variable = _ref2.variable;
+  return variable ? 'Varint' + bits + (signed ? 'ZigZag' : '') : '' + (signed ? 'Int' : 'Uint') + bits;
+};
+
+var intbuf = function intbuf(validation) {
+  return {
+    fromByteBuffer: function fromByteBuffer(b) {
+      var value = b['read' + intbufType(validation)]();
+      return Long.isLong(value) ? value.toString() : value;
+    },
+    appendByteBuffer: function appendByteBuffer(b, value) {
+      // validateInt(value, validation)
+      // value = typeof value === 'string' ? Long.fromString(value) : value
+      b['write' + intbufType(validation)](value);
+    },
+    fromObject: function fromObject(value) {
+      validateInt(value, validation);
+      // if(validation.bits > 53 && typeof value === 'number')
+      //     value = String(value)
+
+      return value;
+    },
+    toObject: function toObject(value) {
+      if (validation.defaults && value == null) {
+        return validation.bits > 53 ? '0' : 0;
+      }
+
+      validateInt(value, validation);
+      // if(validation.bits > 53 && typeof value === 'number')
+      //     value = String(value)
+
+      return Long.isLong(value) ? value.toString() : value;
+    }
+  };
+};
+
+/** Big Numbers (> 64 bits) */
+var bnbuf = function bnbuf(validation) {
+  var _validation$signed = validation.signed,
+      signed = _validation$signed === undefined ? false : _validation$signed,
+      bits = validation.bits;
+
+  var size = bits / 8;
+  return {
+    fromByteBuffer: function fromByteBuffer(b) {
+      var bcopy = b.copy(b.offset, b.offset + size);
+      b.skip(size);
+
+      var bn = new BN(bcopy.toHex(), 'hex');
+      var buf = bn.toArrayLike(Buffer, 'le', size); // convert to little endian
+      bn = new BN(buf.toString('hex'), 'hex');
+      if (signed) {
+        bn = bn.fromTwos(bits);
+      }
+      var value = bn.toString();
+      validateInt(value, validation);
+      return bits > 53 ? value : bn.toNumber();
+    },
+    appendByteBuffer: function appendByteBuffer(b, value) {
+      validateInt(value, validation);
+      var bn = new BN(value);
+      if (signed) {
+        bn = bn.toTwos(bits);
+      }
+      var buf = bn.toArrayLike(Buffer, 'le', size);
+      b.append(buf.toString('binary'), 'binary');
+    },
+    fromObject: function fromObject(value) {
+      validateInt(value, validation);
+      return value;
+    },
+    toObject: function toObject(value) {
+      if (validation.defaults && value == null) {
+        return validation.bits > 53 ? '0' : 0;
+      }
+      validateInt(value, validation);
+      return value;
+    }
+  };
+};
+
+var floatPoint = require('ieee-float');
+
+var float = function float(validation) {
+  var bits = validation.bits;
+
+  // assert(bits === 32 || bits === 64, 'unsupported float bit size: ' + bits)
+
+  var sizeName = bits === 32 ? 'Float' : bits === 64 ? 'Double' : null;
+  assert(sizeName, 'unsupported float bit size: ' + bits);
+  var size = bits / 8;
+
+  return {
+    fromByteBuffer: function fromByteBuffer(b) {
+      var bcopy = b.copy(b.offset, b.offset + size);
+      b.skip(size);
+      var fb = Buffer.from(bcopy.toBinary(), 'binary');
+      return floatPoint['read' + sizeName + 'LE'](fb);
+    },
+    appendByteBuffer: function appendByteBuffer(b, value) {
+      var output = [];
+      floatPoint['write' + sizeName + 'LE'](output, value);
+      b.append(output);
+    },
+    fromObject: function fromObject(value) {
+      return value;
+    },
+    toObject: function toObject(value) {
+      if (validation.defaults && value == null) {
+        return 0.0;
+      }
+      return value;
+    }
+  };
+};
+
+var bytebuf = function bytebuf(validation) {
+  var _bytebuf = {
+    fromByteBuffer: function fromByteBuffer(b) {
+      var len = validation.len;
+
+      var bCopy = void 0;
+      if (len == null) {
+        var lenPrefix = b.readVarint32();
+        bCopy = b.copy(b.offset, b.offset + lenPrefix);
+        b.skip(lenPrefix);
+      } else {
+        bCopy = b.copy(b.offset, b.offset + len);
+        b.skip(len);
+      }
+      return Buffer.from(bCopy.toBinary(), 'binary');
+    },
+    appendByteBuffer: function appendByteBuffer(b, value) {
+      // value = _bytebuf.fromObject(value)
+
+      var len = validation.len;
+
+      if (len == null) {
+        b.writeVarint32(value.length);
+      }
+      b.append(value.toString('binary'), 'binary');
+    },
+    fromObject: function fromObject(value) {
+      if (typeof value === 'string') {
+        value = Buffer.from(value, 'hex');
+      }
+
+      validate(value, validation);
+      return value;
+    },
+    toObject: function toObject(value) {
+      var defaults = validation.defaults,
+          len = validation.len;
+
+      if (defaults && value == null) {
+        return Array(len ? len + 1 : 1).join('00');
+      }
+      validate(value, validation);
+      return value.toString('hex');
+    },
+    compare: function compare(a, b) {
+      return Buffer.compare(a, b);
+    }
+  };
+  return _bytebuf;
+};
+
+var _string = function _string(validation) {
+  return {
+    fromByteBuffer: function fromByteBuffer(b) {
+      return b.readVString();
+    },
+    appendByteBuffer: function appendByteBuffer(b, value) {
+      validate(value, validation);
+      b.writeVString(value.toString());
+    },
+    fromObject: function fromObject(value) {
+      validate(value, validation);
+      return value;
+    },
+    toObject: function toObject(value) {
+      if (validation.defaults && value == null) {
+        return '';
+      }
+      validate(value, validation);
+      return value;
+    }
+  };
+};
+
+var _time2 = function _time2(validation) {
+  var _time = {
+    fromByteBuffer: function fromByteBuffer(b) {
+      return b.readUint32();
+    },
+    appendByteBuffer: function appendByteBuffer(b, value) {
+      // if(typeof value !== "number")
+      //     value = _time.fromObject(value)
+
+      validate(value, validation);
+      b.writeUint32(value);
+    },
+    fromObject: function fromObject(value) {
+      validate(value, validation);
+
+      if (typeof value === 'number') {
+        return value;
+      }
+
+      if (value.getTime) {
+        return Math.floor(value.getTime() / 1000);
+      }
+
+      if (typeof value !== 'string') {
+        throw new Error('Unknown date type: ' + value);
+      }
+
+      // Chrome assumes Zulu when missing, Firefox does not
+      if (typeof value === 'string' && !/Z$/.test(value)) {
+        value += 'Z';
+      }
+
+      return Math.floor(new Date(value).getTime() / 1000);
+    },
+    toObject: function toObject(value) {
+      if (validation.defaults && value == null) {
+        return new Date(0).toISOString().split('.')[0];
+      }
+
+      validate(value, validation);
+
+      // if(typeof value === "string") {
+      //     if(!/Z$/.test(value))
+      //         value += "Z"
+      //
+      //     return value
+      // }
+
+      // if(value.getTime)
+      //     return value.toISOString().split('.')[0] + 'Z'
+
+      validateInt(value, spread(validation, { bits: 32 }));
+      var int = parseInt(value);
+      return new Date(int * 1000).toISOString().split('.')[0];
+    }
+  };
+  return _time;
+};
+
+var validate = function validate(value, validation) {
+  if (isEmpty(value)) {
+    throw new Error('Required ' + validation.typeName);
+  }
+
+  if (validation.len != null) {
+    if (value.length == null) {
+      throw new Error('len validation requries a "length" property');
+    }
+
+    var len = validation.len;
+
+    if (value.length !== len) {
+      throw new Error(validation.typeName + ' length ' + value.length + ' does not equal ' + len);
+    }
+  }
+
+  if (validation.maxLen != null) {
+    var maxLen = validation.maxLen;
+
+    if (value.length == null) {
+      throw new Error('maxLen validation requries a "length" property');
+    }
+
+    if (value.length > maxLen) {
+      throw new Error(validation.typeName + ' length ' + value.length + ' exceeds maxLen ' + maxLen);
+    }
+  }
+};
+
+var ZERO = new BN();
+var ONE = new BN('1');
+
+function validateInt(value, validation) {
+  if (isEmpty(value)) {
+    throw new Error('Required ' + validation.typeName);
+  }
+  var _validation$signed2 = validation.signed,
+      signed = _validation$signed2 === undefined ? false : _validation$signed2,
+      _validation$bits = validation.bits,
+      bits = _validation$bits === undefined ? 54 : _validation$bits;
+
+
+  value = String(value).trim();
+  if (signed && !/^-?[0-9]+$/.test(value) || !signed && !/^[0-9]+$/.test(value)) {
+    throw new Error('Number format ' + validation.typeName + ' ' + value);
+  }
+
+  var max = signed ? maxSigned(bits) : maxUnsigned(bits);
+  var min = signed ? minSigned(bits) : ZERO;
+  var i = new BN(value);
+
+  // console.log('i.toString(), min.toString()', i.toString(), min.toString())
+  if (i.cmp(min) < 0 || i.cmp(max) > 0) {
+    throw new Error('Overflow ' + validation.typeName + ' ' + value + ', ' + ('max ' + max.toString() + ', min ' + min.toString() + ', signed ' + signed + ', bits ' + bits));
+  }
+}
+
+var isSerializer = function isSerializer(type) {
+  return (typeof type === 'undefined' ? 'undefined' : _typeof(type)) === 'object' && typeof type.fromByteBuffer === 'function' && typeof type.appendByteBuffer === 'function' && typeof type.fromObject === 'function' && typeof type.toObject === 'function';
+};
+
+var toString = function toString(value, encoding) {
+  return value == null ? value : value.toString ? value.toString(encoding) : value;
+};
+
+var sort = function sort(type, values) {
+  return type.compare ? values.sort(type.compare) : // custom compare
+  values.sort();
+};
+
+var spread = function spread() {
+  return Object.assign.apply(Object, arguments);
+};
+var isEmpty = function isEmpty(value) {
+  return value == null;
+};
+
+// 1 << N === Math.pow(2, N)
+var maxUnsigned = function maxUnsigned(bits) {
+  return new BN(1).ishln(bits).isub(ONE);
+};
+var maxSigned = function maxSigned(bits) {
+  return new BN(1).ishln(bits - 1).isub(ONE);
+};
+var minSigned = function minSigned(bits) {
+  return new BN(1).ishln(bits - 1).ineg();
+};
+}).call(this,require("buffer").Buffer)
+},{"assert":191,"bn.js":28,"buffer":194,"bytebuffer":48,"ieee-float":166}],16:[function(require,module,exports){
 module.exports = { "default": require("core-js/library/fn/get-iterator"), __esModule: true };
-},{"core-js/library/fn/get-iterator":37}],3:[function(require,module,exports){
+},{"core-js/library/fn/get-iterator":51}],17:[function(require,module,exports){
 module.exports = { "default": require("core-js/library/fn/is-iterable"), __esModule: true };
-},{"core-js/library/fn/is-iterable":38}],4:[function(require,module,exports){
+},{"core-js/library/fn/is-iterable":52}],18:[function(require,module,exports){
 module.exports = { "default": require("core-js/library/fn/symbol"), __esModule: true };
-},{"core-js/library/fn/symbol":39}],5:[function(require,module,exports){
+},{"core-js/library/fn/symbol":53}],19:[function(require,module,exports){
 module.exports = { "default": require("core-js/library/fn/symbol/iterator"), __esModule: true };
-},{"core-js/library/fn/symbol/iterator":40}],6:[function(require,module,exports){
+},{"core-js/library/fn/symbol/iterator":54}],20:[function(require,module,exports){
 "use strict";
 
 exports.__esModule = true;
@@ -143,7 +5616,7 @@ exports.default = function () {
     }
   };
 }();
-},{"../core-js/get-iterator":2,"../core-js/is-iterable":3}],7:[function(require,module,exports){
+},{"../core-js/get-iterator":16,"../core-js/is-iterable":17}],21:[function(require,module,exports){
 "use strict";
 
 exports.__esModule = true;
@@ -165,10 +5638,10 @@ exports.default = typeof _symbol2.default === "function" && _typeof(_iterator2.d
 } : function (obj) {
   return obj && typeof _symbol2.default === "function" && obj.constructor === _symbol2.default && obj !== _symbol2.default.prototype ? "symbol" : typeof obj === "undefined" ? "undefined" : _typeof(obj);
 };
-},{"../core-js/symbol":4,"../core-js/symbol/iterator":5}],8:[function(require,module,exports){
+},{"../core-js/symbol":18,"../core-js/symbol/iterator":19}],22:[function(require,module,exports){
 module.exports = require("regenerator-runtime");
 
-},{"regenerator-runtime":163}],9:[function(require,module,exports){
+},{"regenerator-runtime":177}],23:[function(require,module,exports){
 // base-x encoding
 // Forked from https://github.com/cryptocoinjs/bs58
 // Originally written by Mike Hearn for BitcoinJ
@@ -262,7 +5735,7 @@ module.exports = function base (ALPHABET) {
   }
 }
 
-},{"safe-buffer":166}],10:[function(require,module,exports){
+},{"safe-buffer":180}],24:[function(require,module,exports){
 // (public) Constructor
 function BigInteger(a, b, c) {
   if (!(this instanceof BigInteger))
@@ -1773,7 +7246,7 @@ BigInteger.valueOf = nbv
 
 module.exports = BigInteger
 
-},{"../package.json":13}],11:[function(require,module,exports){
+},{"../package.json":27}],25:[function(require,module,exports){
 (function (Buffer){
 // FIXME: Kind of a weird way to throw exceptions, consider removing
 var assert = require('assert')
@@ -1868,14 +7341,14 @@ BigInteger.prototype.toHex = function(size) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"./bigi":10,"assert":177,"buffer":180}],12:[function(require,module,exports){
+},{"./bigi":24,"assert":191,"buffer":194}],26:[function(require,module,exports){
 var BigInteger = require('./bigi')
 
 //addons
 require('./convert')
 
 module.exports = BigInteger
-},{"./bigi":10,"./convert":11}],13:[function(require,module,exports){
+},{"./bigi":24,"./convert":25}],27:[function(require,module,exports){
 module.exports={
   "_args": [
     [
@@ -1888,7 +7361,7 @@ module.exports={
         "spec": ">=1.4.2 <2.0.0",
         "type": "range"
       },
-      "/Users/benson/Documents/workspace3/aaaChain/app/src/main/assets/node_modules/w3ajs"
+      "/Users/benson/Documents/workspace3/private_aaaChain/dev-demo-android/app/src/main/assets/node_modules/eosjs-ecc"
     ]
   ],
   "_cnpm_publish_time": 1469584194433,
@@ -1919,13 +7392,13 @@ module.exports={
   },
   "_requiredBy": [
     "/ecurve",
-    "/w3ajs"
+    "/eosjs-ecc"
   ],
   "_resolved": "https://registry.npm.taobao.org/bigi/download/bigi-1.4.2.tgz",
   "_shasum": "9c665a95f88b8b08fc05cfd731f561859d725825",
   "_shrinkwrap": null,
   "_spec": "bigi@^1.4.2",
-  "_where": "/Users/benson/Documents/workspace3/aaaChain/app/src/main/assets/node_modules/w3ajs",
+  "_where": "/Users/benson/Documents/workspace3/private_aaaChain/dev-demo-android/app/src/main/assets/node_modules/eosjs-ecc",
   "bugs": {
     "url": "https://github.com/cryptocoinjs/bigi/issues"
   },
@@ -2014,7 +7487,7 @@ module.exports={
   "version": "1.4.2"
 }
 
-},{}],14:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 (function (module, exports) {
   'use strict';
 
@@ -5443,7 +10916,7 @@ module.exports={
   };
 })(typeof module === 'undefined' || module, this);
 
-},{"buffer":179}],15:[function(require,module,exports){
+},{"buffer":193}],29:[function(require,module,exports){
 // based on the aes implimentation in triple sec
 // https://github.com/keybase/triplesec
 // which is in turn based on the one from crypto-js
@@ -5673,7 +11146,7 @@ AES.prototype.scrub = function () {
 
 module.exports.AES = AES
 
-},{"safe-buffer":166}],16:[function(require,module,exports){
+},{"safe-buffer":180}],30:[function(require,module,exports){
 var aes = require('./aes')
 var Buffer = require('safe-buffer').Buffer
 var Transform = require('cipher-base')
@@ -5792,7 +11265,7 @@ StreamCipher.prototype.setAAD = function setAAD (buf) {
 
 module.exports = StreamCipher
 
-},{"./aes":15,"./ghash":20,"./incr32":21,"buffer-xor":33,"cipher-base":36,"inherits":153,"safe-buffer":166}],17:[function(require,module,exports){
+},{"./aes":29,"./ghash":34,"./incr32":35,"buffer-xor":47,"cipher-base":50,"inherits":167,"safe-buffer":180}],31:[function(require,module,exports){
 var ciphers = require('./encrypter')
 var deciphers = require('./decrypter')
 var modes = require('./modes/list.json')
@@ -5807,7 +11280,7 @@ exports.createDecipher = exports.Decipher = deciphers.createDecipher
 exports.createDecipheriv = exports.Decipheriv = deciphers.createDecipheriv
 exports.listCiphers = exports.getCiphers = getCiphers
 
-},{"./decrypter":18,"./encrypter":19,"./modes/list.json":29}],18:[function(require,module,exports){
+},{"./decrypter":32,"./encrypter":33,"./modes/list.json":43}],32:[function(require,module,exports){
 var AuthCipher = require('./authCipher')
 var Buffer = require('safe-buffer').Buffer
 var MODES = require('./modes')
@@ -5933,7 +11406,7 @@ function createDecipher (suite, password) {
 exports.createDecipher = createDecipher
 exports.createDecipheriv = createDecipheriv
 
-},{"./aes":15,"./authCipher":16,"./modes":28,"./streamCipher":31,"cipher-base":36,"evp_bytestokey":146,"inherits":153,"safe-buffer":166}],19:[function(require,module,exports){
+},{"./aes":29,"./authCipher":30,"./modes":42,"./streamCipher":45,"cipher-base":50,"evp_bytestokey":160,"inherits":167,"safe-buffer":180}],33:[function(require,module,exports){
 var MODES = require('./modes')
 var AuthCipher = require('./authCipher')
 var Buffer = require('safe-buffer').Buffer
@@ -6049,7 +11522,7 @@ function createCipher (suite, password) {
 exports.createCipheriv = createCipheriv
 exports.createCipher = createCipher
 
-},{"./aes":15,"./authCipher":16,"./modes":28,"./streamCipher":31,"cipher-base":36,"evp_bytestokey":146,"inherits":153,"safe-buffer":166}],20:[function(require,module,exports){
+},{"./aes":29,"./authCipher":30,"./modes":42,"./streamCipher":45,"cipher-base":50,"evp_bytestokey":160,"inherits":167,"safe-buffer":180}],34:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 var ZEROES = Buffer.alloc(16, 0)
 
@@ -6140,7 +11613,7 @@ GHASH.prototype.final = function (abl, bl) {
 
 module.exports = GHASH
 
-},{"safe-buffer":166}],21:[function(require,module,exports){
+},{"safe-buffer":180}],35:[function(require,module,exports){
 function incr32 (iv) {
   var len = iv.length
   var item
@@ -6157,7 +11630,7 @@ function incr32 (iv) {
 }
 module.exports = incr32
 
-},{}],22:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
 var xor = require('buffer-xor')
 
 exports.encrypt = function (self, block) {
@@ -6176,7 +11649,7 @@ exports.decrypt = function (self, block) {
   return xor(out, pad)
 }
 
-},{"buffer-xor":33}],23:[function(require,module,exports){
+},{"buffer-xor":47}],37:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 var xor = require('buffer-xor')
 
@@ -6211,7 +11684,7 @@ exports.encrypt = function (self, data, decrypt) {
   return out
 }
 
-},{"buffer-xor":33,"safe-buffer":166}],24:[function(require,module,exports){
+},{"buffer-xor":47,"safe-buffer":180}],38:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 
 function encryptByte (self, byteParam, decrypt) {
@@ -6255,7 +11728,7 @@ exports.encrypt = function (self, chunk, decrypt) {
   return out
 }
 
-},{"safe-buffer":166}],25:[function(require,module,exports){
+},{"safe-buffer":180}],39:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 
 function encryptByte (self, byteParam, decrypt) {
@@ -6282,7 +11755,7 @@ exports.encrypt = function (self, chunk, decrypt) {
   return out
 }
 
-},{"safe-buffer":166}],26:[function(require,module,exports){
+},{"safe-buffer":180}],40:[function(require,module,exports){
 var xor = require('buffer-xor')
 var Buffer = require('safe-buffer').Buffer
 var incr32 = require('../incr32')
@@ -6314,7 +11787,7 @@ exports.encrypt = function (self, chunk) {
   return xor(chunk, pad)
 }
 
-},{"../incr32":21,"buffer-xor":33,"safe-buffer":166}],27:[function(require,module,exports){
+},{"../incr32":35,"buffer-xor":47,"safe-buffer":180}],41:[function(require,module,exports){
 exports.encrypt = function (self, block) {
   return self._cipher.encryptBlock(block)
 }
@@ -6323,7 +11796,7 @@ exports.decrypt = function (self, block) {
   return self._cipher.decryptBlock(block)
 }
 
-},{}],28:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 var modeModules = {
   ECB: require('./ecb'),
   CBC: require('./cbc'),
@@ -6343,7 +11816,7 @@ for (var key in modes) {
 
 module.exports = modes
 
-},{"./cbc":22,"./cfb":23,"./cfb1":24,"./cfb8":25,"./ctr":26,"./ecb":27,"./list.json":29,"./ofb":30}],29:[function(require,module,exports){
+},{"./cbc":36,"./cfb":37,"./cfb1":38,"./cfb8":39,"./ctr":40,"./ecb":41,"./list.json":43,"./ofb":44}],43:[function(require,module,exports){
 module.exports={
   "aes-128-ecb": {
     "cipher": "AES",
@@ -6536,7 +12009,7 @@ module.exports={
   }
 }
 
-},{}],30:[function(require,module,exports){
+},{}],44:[function(require,module,exports){
 (function (Buffer){
 var xor = require('buffer-xor')
 
@@ -6556,7 +12029,7 @@ exports.encrypt = function (self, chunk) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":180,"buffer-xor":33}],31:[function(require,module,exports){
+},{"buffer":194,"buffer-xor":47}],45:[function(require,module,exports){
 var aes = require('./aes')
 var Buffer = require('safe-buffer').Buffer
 var Transform = require('cipher-base')
@@ -6585,13 +12058,13 @@ StreamCipher.prototype._final = function () {
 
 module.exports = StreamCipher
 
-},{"./aes":15,"cipher-base":36,"inherits":153,"safe-buffer":166}],32:[function(require,module,exports){
+},{"./aes":29,"cipher-base":50,"inherits":167,"safe-buffer":180}],46:[function(require,module,exports){
 var basex = require('base-x')
 var ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
 
 module.exports = basex(ALPHABET)
 
-},{"base-x":9}],33:[function(require,module,exports){
+},{"base-x":23}],47:[function(require,module,exports){
 (function (Buffer){
 module.exports = function xor (a, b) {
   var length = Math.min(a.length, b.length)
@@ -6605,7 +12078,7 @@ module.exports = function xor (a, b) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":180}],34:[function(require,module,exports){
+},{"buffer":194}],48:[function(require,module,exports){
 /*
  Copyright 2013-2014 Daniel Wirtz <dcode@dcode.io>
 
@@ -10353,7 +15826,7 @@ module.exports = function xor (a, b) {
     return ByteBuffer;
 });
 
-},{"long":155}],35:[function(require,module,exports){
+},{"long":169}],49:[function(require,module,exports){
 var upperCase = require('upper-case')
 var noCase = require('no-case')
 
@@ -10378,7 +15851,7 @@ module.exports = function (value, locale, mergeNumbers) {
   })
 }
 
-},{"no-case":158,"upper-case":175}],36:[function(require,module,exports){
+},{"no-case":172,"upper-case":189}],50:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 var Transform = require('stream').Transform
 var StringDecoder = require('string_decoder').StringDecoder
@@ -10479,45 +15952,45 @@ CipherBase.prototype._toString = function (value, enc, fin) {
 
 module.exports = CipherBase
 
-},{"inherits":153,"safe-buffer":166,"stream":203,"string_decoder":204}],37:[function(require,module,exports){
+},{"inherits":167,"safe-buffer":180,"stream":217,"string_decoder":218}],51:[function(require,module,exports){
 require('../modules/web.dom.iterable');
 require('../modules/es6.string.iterator');
 module.exports = require('../modules/core.get-iterator');
 
-},{"../modules/core.get-iterator":98,"../modules/es6.string.iterator":102,"../modules/web.dom.iterable":106}],38:[function(require,module,exports){
+},{"../modules/core.get-iterator":112,"../modules/es6.string.iterator":116,"../modules/web.dom.iterable":120}],52:[function(require,module,exports){
 require('../modules/web.dom.iterable');
 require('../modules/es6.string.iterator');
 module.exports = require('../modules/core.is-iterable');
 
-},{"../modules/core.is-iterable":99,"../modules/es6.string.iterator":102,"../modules/web.dom.iterable":106}],39:[function(require,module,exports){
+},{"../modules/core.is-iterable":113,"../modules/es6.string.iterator":116,"../modules/web.dom.iterable":120}],53:[function(require,module,exports){
 require('../../modules/es6.symbol');
 require('../../modules/es6.object.to-string');
 require('../../modules/es7.symbol.async-iterator');
 require('../../modules/es7.symbol.observable');
 module.exports = require('../../modules/_core').Symbol;
 
-},{"../../modules/_core":47,"../../modules/es6.object.to-string":101,"../../modules/es6.symbol":103,"../../modules/es7.symbol.async-iterator":104,"../../modules/es7.symbol.observable":105}],40:[function(require,module,exports){
+},{"../../modules/_core":61,"../../modules/es6.object.to-string":115,"../../modules/es6.symbol":117,"../../modules/es7.symbol.async-iterator":118,"../../modules/es7.symbol.observable":119}],54:[function(require,module,exports){
 require('../../modules/es6.string.iterator');
 require('../../modules/web.dom.iterable');
 module.exports = require('../../modules/_wks-ext').f('iterator');
 
-},{"../../modules/_wks-ext":95,"../../modules/es6.string.iterator":102,"../../modules/web.dom.iterable":106}],41:[function(require,module,exports){
+},{"../../modules/_wks-ext":109,"../../modules/es6.string.iterator":116,"../../modules/web.dom.iterable":120}],55:[function(require,module,exports){
 module.exports = function (it) {
   if (typeof it != 'function') throw TypeError(it + ' is not a function!');
   return it;
 };
 
-},{}],42:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 module.exports = function () { /* empty */ };
 
-},{}],43:[function(require,module,exports){
+},{}],57:[function(require,module,exports){
 var isObject = require('./_is-object');
 module.exports = function (it) {
   if (!isObject(it)) throw TypeError(it + ' is not an object!');
   return it;
 };
 
-},{"./_is-object":63}],44:[function(require,module,exports){
+},{"./_is-object":77}],58:[function(require,module,exports){
 // false -> Array#indexOf
 // true  -> Array#includes
 var toIObject = require('./_to-iobject');
@@ -10542,7 +16015,7 @@ module.exports = function (IS_INCLUDES) {
   };
 };
 
-},{"./_to-absolute-index":87,"./_to-iobject":89,"./_to-length":90}],45:[function(require,module,exports){
+},{"./_to-absolute-index":101,"./_to-iobject":103,"./_to-length":104}],59:[function(require,module,exports){
 // getting tag from 19.1.3.6 Object.prototype.toString()
 var cof = require('./_cof');
 var TAG = require('./_wks')('toStringTag');
@@ -10567,18 +16040,18 @@ module.exports = function (it) {
     : (B = cof(O)) == 'Object' && typeof O.callee == 'function' ? 'Arguments' : B;
 };
 
-},{"./_cof":46,"./_wks":96}],46:[function(require,module,exports){
+},{"./_cof":60,"./_wks":110}],60:[function(require,module,exports){
 var toString = {}.toString;
 
 module.exports = function (it) {
   return toString.call(it).slice(8, -1);
 };
 
-},{}],47:[function(require,module,exports){
-var core = module.exports = { version: '2.5.5' };
+},{}],61:[function(require,module,exports){
+var core = module.exports = { version: '2.5.7' };
 if (typeof __e == 'number') __e = core; // eslint-disable-line no-undef
 
-},{}],48:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 // optional / simple context binding
 var aFunction = require('./_a-function');
 module.exports = function (fn, that, length) {
@@ -10600,20 +16073,20 @@ module.exports = function (fn, that, length) {
   };
 };
 
-},{"./_a-function":41}],49:[function(require,module,exports){
+},{"./_a-function":55}],63:[function(require,module,exports){
 // 7.2.1 RequireObjectCoercible(argument)
 module.exports = function (it) {
   if (it == undefined) throw TypeError("Can't call method on  " + it);
   return it;
 };
 
-},{}],50:[function(require,module,exports){
+},{}],64:[function(require,module,exports){
 // Thank's IE8 for his funny defineProperty
 module.exports = !require('./_fails')(function () {
   return Object.defineProperty({}, 'a', { get: function () { return 7; } }).a != 7;
 });
 
-},{"./_fails":55}],51:[function(require,module,exports){
+},{"./_fails":69}],65:[function(require,module,exports){
 var isObject = require('./_is-object');
 var document = require('./_global').document;
 // typeof document.createElement is 'object' in old IE
@@ -10622,13 +16095,13 @@ module.exports = function (it) {
   return is ? document.createElement(it) : {};
 };
 
-},{"./_global":56,"./_is-object":63}],52:[function(require,module,exports){
+},{"./_global":70,"./_is-object":77}],66:[function(require,module,exports){
 // IE 8- don't enum bug keys
 module.exports = (
   'constructor,hasOwnProperty,isPrototypeOf,propertyIsEnumerable,toLocaleString,toString,valueOf'
 ).split(',');
 
-},{}],53:[function(require,module,exports){
+},{}],67:[function(require,module,exports){
 // all enumerable object keys, includes symbols
 var getKeys = require('./_object-keys');
 var gOPS = require('./_object-gops');
@@ -10645,7 +16118,7 @@ module.exports = function (it) {
   } return result;
 };
 
-},{"./_object-gops":76,"./_object-keys":79,"./_object-pie":80}],54:[function(require,module,exports){
+},{"./_object-gops":90,"./_object-keys":93,"./_object-pie":94}],68:[function(require,module,exports){
 var global = require('./_global');
 var core = require('./_core');
 var ctx = require('./_ctx');
@@ -10709,7 +16182,7 @@ $export.U = 64;  // safe
 $export.R = 128; // real proto method for `library`
 module.exports = $export;
 
-},{"./_core":47,"./_ctx":48,"./_global":56,"./_has":57,"./_hide":58}],55:[function(require,module,exports){
+},{"./_core":61,"./_ctx":62,"./_global":70,"./_has":71,"./_hide":72}],69:[function(require,module,exports){
 module.exports = function (exec) {
   try {
     return !!exec();
@@ -10718,7 +16191,7 @@ module.exports = function (exec) {
   }
 };
 
-},{}],56:[function(require,module,exports){
+},{}],70:[function(require,module,exports){
 // https://github.com/zloirock/core-js/issues/86#issuecomment-115759028
 var global = module.exports = typeof window != 'undefined' && window.Math == Math
   ? window : typeof self != 'undefined' && self.Math == Math ? self
@@ -10726,13 +16199,13 @@ var global = module.exports = typeof window != 'undefined' && window.Math == Mat
   : Function('return this')();
 if (typeof __g == 'number') __g = global; // eslint-disable-line no-undef
 
-},{}],57:[function(require,module,exports){
+},{}],71:[function(require,module,exports){
 var hasOwnProperty = {}.hasOwnProperty;
 module.exports = function (it, key) {
   return hasOwnProperty.call(it, key);
 };
 
-},{}],58:[function(require,module,exports){
+},{}],72:[function(require,module,exports){
 var dP = require('./_object-dp');
 var createDesc = require('./_property-desc');
 module.exports = require('./_descriptors') ? function (object, key, value) {
@@ -10742,16 +16215,16 @@ module.exports = require('./_descriptors') ? function (object, key, value) {
   return object;
 };
 
-},{"./_descriptors":50,"./_object-dp":71,"./_property-desc":81}],59:[function(require,module,exports){
+},{"./_descriptors":64,"./_object-dp":85,"./_property-desc":95}],73:[function(require,module,exports){
 var document = require('./_global').document;
 module.exports = document && document.documentElement;
 
-},{"./_global":56}],60:[function(require,module,exports){
+},{"./_global":70}],74:[function(require,module,exports){
 module.exports = !require('./_descriptors') && !require('./_fails')(function () {
   return Object.defineProperty(require('./_dom-create')('div'), 'a', { get: function () { return 7; } }).a != 7;
 });
 
-},{"./_descriptors":50,"./_dom-create":51,"./_fails":55}],61:[function(require,module,exports){
+},{"./_descriptors":64,"./_dom-create":65,"./_fails":69}],75:[function(require,module,exports){
 // fallback for non-array-like ES3 and non-enumerable old V8 strings
 var cof = require('./_cof');
 // eslint-disable-next-line no-prototype-builtins
@@ -10759,19 +16232,19 @@ module.exports = Object('z').propertyIsEnumerable(0) ? Object : function (it) {
   return cof(it) == 'String' ? it.split('') : Object(it);
 };
 
-},{"./_cof":46}],62:[function(require,module,exports){
+},{"./_cof":60}],76:[function(require,module,exports){
 // 7.2.2 IsArray(argument)
 var cof = require('./_cof');
 module.exports = Array.isArray || function isArray(arg) {
   return cof(arg) == 'Array';
 };
 
-},{"./_cof":46}],63:[function(require,module,exports){
+},{"./_cof":60}],77:[function(require,module,exports){
 module.exports = function (it) {
   return typeof it === 'object' ? it !== null : typeof it === 'function';
 };
 
-},{}],64:[function(require,module,exports){
+},{}],78:[function(require,module,exports){
 'use strict';
 var create = require('./_object-create');
 var descriptor = require('./_property-desc');
@@ -10786,7 +16259,7 @@ module.exports = function (Constructor, NAME, next) {
   setToStringTag(Constructor, NAME + ' Iterator');
 };
 
-},{"./_hide":58,"./_object-create":70,"./_property-desc":81,"./_set-to-string-tag":83,"./_wks":96}],65:[function(require,module,exports){
+},{"./_hide":72,"./_object-create":84,"./_property-desc":95,"./_set-to-string-tag":97,"./_wks":110}],79:[function(require,module,exports){
 'use strict';
 var LIBRARY = require('./_library');
 var $export = require('./_export');
@@ -10857,18 +16330,18 @@ module.exports = function (Base, NAME, Constructor, next, DEFAULT, IS_SET, FORCE
   return methods;
 };
 
-},{"./_export":54,"./_hide":58,"./_iter-create":64,"./_iterators":67,"./_library":68,"./_object-gpo":77,"./_redefine":82,"./_set-to-string-tag":83,"./_wks":96}],66:[function(require,module,exports){
+},{"./_export":68,"./_hide":72,"./_iter-create":78,"./_iterators":81,"./_library":82,"./_object-gpo":91,"./_redefine":96,"./_set-to-string-tag":97,"./_wks":110}],80:[function(require,module,exports){
 module.exports = function (done, value) {
   return { value: value, done: !!done };
 };
 
-},{}],67:[function(require,module,exports){
+},{}],81:[function(require,module,exports){
 module.exports = {};
 
-},{}],68:[function(require,module,exports){
+},{}],82:[function(require,module,exports){
 module.exports = true;
 
-},{}],69:[function(require,module,exports){
+},{}],83:[function(require,module,exports){
 var META = require('./_uid')('meta');
 var isObject = require('./_is-object');
 var has = require('./_has');
@@ -10923,7 +16396,7 @@ var meta = module.exports = {
   onFreeze: onFreeze
 };
 
-},{"./_fails":55,"./_has":57,"./_is-object":63,"./_object-dp":71,"./_uid":93}],70:[function(require,module,exports){
+},{"./_fails":69,"./_has":71,"./_is-object":77,"./_object-dp":85,"./_uid":107}],84:[function(require,module,exports){
 // 19.1.2.2 / 15.2.3.5 Object.create(O [, Properties])
 var anObject = require('./_an-object');
 var dPs = require('./_object-dps');
@@ -10966,7 +16439,7 @@ module.exports = Object.create || function create(O, Properties) {
   return Properties === undefined ? result : dPs(result, Properties);
 };
 
-},{"./_an-object":43,"./_dom-create":51,"./_enum-bug-keys":52,"./_html":59,"./_object-dps":72,"./_shared-key":84}],71:[function(require,module,exports){
+},{"./_an-object":57,"./_dom-create":65,"./_enum-bug-keys":66,"./_html":73,"./_object-dps":86,"./_shared-key":98}],85:[function(require,module,exports){
 var anObject = require('./_an-object');
 var IE8_DOM_DEFINE = require('./_ie8-dom-define');
 var toPrimitive = require('./_to-primitive');
@@ -10984,7 +16457,7 @@ exports.f = require('./_descriptors') ? Object.defineProperty : function defineP
   return O;
 };
 
-},{"./_an-object":43,"./_descriptors":50,"./_ie8-dom-define":60,"./_to-primitive":92}],72:[function(require,module,exports){
+},{"./_an-object":57,"./_descriptors":64,"./_ie8-dom-define":74,"./_to-primitive":106}],86:[function(require,module,exports){
 var dP = require('./_object-dp');
 var anObject = require('./_an-object');
 var getKeys = require('./_object-keys');
@@ -10999,7 +16472,7 @@ module.exports = require('./_descriptors') ? Object.defineProperties : function 
   return O;
 };
 
-},{"./_an-object":43,"./_descriptors":50,"./_object-dp":71,"./_object-keys":79}],73:[function(require,module,exports){
+},{"./_an-object":57,"./_descriptors":64,"./_object-dp":85,"./_object-keys":93}],87:[function(require,module,exports){
 var pIE = require('./_object-pie');
 var createDesc = require('./_property-desc');
 var toIObject = require('./_to-iobject');
@@ -11017,7 +16490,7 @@ exports.f = require('./_descriptors') ? gOPD : function getOwnPropertyDescriptor
   if (has(O, P)) return createDesc(!pIE.f.call(O, P), O[P]);
 };
 
-},{"./_descriptors":50,"./_has":57,"./_ie8-dom-define":60,"./_object-pie":80,"./_property-desc":81,"./_to-iobject":89,"./_to-primitive":92}],74:[function(require,module,exports){
+},{"./_descriptors":64,"./_has":71,"./_ie8-dom-define":74,"./_object-pie":94,"./_property-desc":95,"./_to-iobject":103,"./_to-primitive":106}],88:[function(require,module,exports){
 // fallback for IE11 buggy Object.getOwnPropertyNames with iframe and window
 var toIObject = require('./_to-iobject');
 var gOPN = require('./_object-gopn').f;
@@ -11038,7 +16511,7 @@ module.exports.f = function getOwnPropertyNames(it) {
   return windowNames && toString.call(it) == '[object Window]' ? getWindowNames(it) : gOPN(toIObject(it));
 };
 
-},{"./_object-gopn":75,"./_to-iobject":89}],75:[function(require,module,exports){
+},{"./_object-gopn":89,"./_to-iobject":103}],89:[function(require,module,exports){
 // 19.1.2.7 / 15.2.3.4 Object.getOwnPropertyNames(O)
 var $keys = require('./_object-keys-internal');
 var hiddenKeys = require('./_enum-bug-keys').concat('length', 'prototype');
@@ -11047,10 +16520,10 @@ exports.f = Object.getOwnPropertyNames || function getOwnPropertyNames(O) {
   return $keys(O, hiddenKeys);
 };
 
-},{"./_enum-bug-keys":52,"./_object-keys-internal":78}],76:[function(require,module,exports){
+},{"./_enum-bug-keys":66,"./_object-keys-internal":92}],90:[function(require,module,exports){
 exports.f = Object.getOwnPropertySymbols;
 
-},{}],77:[function(require,module,exports){
+},{}],91:[function(require,module,exports){
 // 19.1.2.9 / 15.2.3.2 Object.getPrototypeOf(O)
 var has = require('./_has');
 var toObject = require('./_to-object');
@@ -11065,7 +16538,7 @@ module.exports = Object.getPrototypeOf || function (O) {
   } return O instanceof Object ? ObjectProto : null;
 };
 
-},{"./_has":57,"./_shared-key":84,"./_to-object":91}],78:[function(require,module,exports){
+},{"./_has":71,"./_shared-key":98,"./_to-object":105}],92:[function(require,module,exports){
 var has = require('./_has');
 var toIObject = require('./_to-iobject');
 var arrayIndexOf = require('./_array-includes')(false);
@@ -11084,7 +16557,7 @@ module.exports = function (object, names) {
   return result;
 };
 
-},{"./_array-includes":44,"./_has":57,"./_shared-key":84,"./_to-iobject":89}],79:[function(require,module,exports){
+},{"./_array-includes":58,"./_has":71,"./_shared-key":98,"./_to-iobject":103}],93:[function(require,module,exports){
 // 19.1.2.14 / 15.2.3.14 Object.keys(O)
 var $keys = require('./_object-keys-internal');
 var enumBugKeys = require('./_enum-bug-keys');
@@ -11093,10 +16566,10 @@ module.exports = Object.keys || function keys(O) {
   return $keys(O, enumBugKeys);
 };
 
-},{"./_enum-bug-keys":52,"./_object-keys-internal":78}],80:[function(require,module,exports){
+},{"./_enum-bug-keys":66,"./_object-keys-internal":92}],94:[function(require,module,exports){
 exports.f = {}.propertyIsEnumerable;
 
-},{}],81:[function(require,module,exports){
+},{}],95:[function(require,module,exports){
 module.exports = function (bitmap, value) {
   return {
     enumerable: !(bitmap & 1),
@@ -11106,10 +16579,10 @@ module.exports = function (bitmap, value) {
   };
 };
 
-},{}],82:[function(require,module,exports){
+},{}],96:[function(require,module,exports){
 module.exports = require('./_hide');
 
-},{"./_hide":58}],83:[function(require,module,exports){
+},{"./_hide":72}],97:[function(require,module,exports){
 var def = require('./_object-dp').f;
 var has = require('./_has');
 var TAG = require('./_wks')('toStringTag');
@@ -11118,22 +16591,28 @@ module.exports = function (it, tag, stat) {
   if (it && !has(it = stat ? it : it.prototype, TAG)) def(it, TAG, { configurable: true, value: tag });
 };
 
-},{"./_has":57,"./_object-dp":71,"./_wks":96}],84:[function(require,module,exports){
+},{"./_has":71,"./_object-dp":85,"./_wks":110}],98:[function(require,module,exports){
 var shared = require('./_shared')('keys');
 var uid = require('./_uid');
 module.exports = function (key) {
   return shared[key] || (shared[key] = uid(key));
 };
 
-},{"./_shared":85,"./_uid":93}],85:[function(require,module,exports){
+},{"./_shared":99,"./_uid":107}],99:[function(require,module,exports){
+var core = require('./_core');
 var global = require('./_global');
 var SHARED = '__core-js_shared__';
 var store = global[SHARED] || (global[SHARED] = {});
-module.exports = function (key) {
-  return store[key] || (store[key] = {});
-};
 
-},{"./_global":56}],86:[function(require,module,exports){
+(module.exports = function (key, value) {
+  return store[key] || (store[key] = value !== undefined ? value : {});
+})('versions', []).push({
+  version: core.version,
+  mode: require('./_library') ? 'pure' : 'global',
+  copyright: '© 2018 Denis Pushkarev (zloirock.ru)'
+});
+
+},{"./_core":61,"./_global":70,"./_library":82}],100:[function(require,module,exports){
 var toInteger = require('./_to-integer');
 var defined = require('./_defined');
 // true  -> String#at
@@ -11152,7 +16631,7 @@ module.exports = function (TO_STRING) {
   };
 };
 
-},{"./_defined":49,"./_to-integer":88}],87:[function(require,module,exports){
+},{"./_defined":63,"./_to-integer":102}],101:[function(require,module,exports){
 var toInteger = require('./_to-integer');
 var max = Math.max;
 var min = Math.min;
@@ -11161,7 +16640,7 @@ module.exports = function (index, length) {
   return index < 0 ? max(index + length, 0) : min(index, length);
 };
 
-},{"./_to-integer":88}],88:[function(require,module,exports){
+},{"./_to-integer":102}],102:[function(require,module,exports){
 // 7.1.4 ToInteger
 var ceil = Math.ceil;
 var floor = Math.floor;
@@ -11169,7 +16648,7 @@ module.exports = function (it) {
   return isNaN(it = +it) ? 0 : (it > 0 ? floor : ceil)(it);
 };
 
-},{}],89:[function(require,module,exports){
+},{}],103:[function(require,module,exports){
 // to indexed object, toObject with fallback for non-array-like ES3 strings
 var IObject = require('./_iobject');
 var defined = require('./_defined');
@@ -11177,7 +16656,7 @@ module.exports = function (it) {
   return IObject(defined(it));
 };
 
-},{"./_defined":49,"./_iobject":61}],90:[function(require,module,exports){
+},{"./_defined":63,"./_iobject":75}],104:[function(require,module,exports){
 // 7.1.15 ToLength
 var toInteger = require('./_to-integer');
 var min = Math.min;
@@ -11185,14 +16664,14 @@ module.exports = function (it) {
   return it > 0 ? min(toInteger(it), 0x1fffffffffffff) : 0; // pow(2, 53) - 1 == 9007199254740991
 };
 
-},{"./_to-integer":88}],91:[function(require,module,exports){
+},{"./_to-integer":102}],105:[function(require,module,exports){
 // 7.1.13 ToObject(argument)
 var defined = require('./_defined');
 module.exports = function (it) {
   return Object(defined(it));
 };
 
-},{"./_defined":49}],92:[function(require,module,exports){
+},{"./_defined":63}],106:[function(require,module,exports){
 // 7.1.1 ToPrimitive(input [, PreferredType])
 var isObject = require('./_is-object');
 // instead of the ES6 spec version, we didn't implement @@toPrimitive case
@@ -11206,14 +16685,14 @@ module.exports = function (it, S) {
   throw TypeError("Can't convert object to primitive value");
 };
 
-},{"./_is-object":63}],93:[function(require,module,exports){
+},{"./_is-object":77}],107:[function(require,module,exports){
 var id = 0;
 var px = Math.random();
 module.exports = function (key) {
   return 'Symbol('.concat(key === undefined ? '' : key, ')_', (++id + px).toString(36));
 };
 
-},{}],94:[function(require,module,exports){
+},{}],108:[function(require,module,exports){
 var global = require('./_global');
 var core = require('./_core');
 var LIBRARY = require('./_library');
@@ -11224,10 +16703,10 @@ module.exports = function (name) {
   if (name.charAt(0) != '_' && !(name in $Symbol)) defineProperty($Symbol, name, { value: wksExt.f(name) });
 };
 
-},{"./_core":47,"./_global":56,"./_library":68,"./_object-dp":71,"./_wks-ext":95}],95:[function(require,module,exports){
+},{"./_core":61,"./_global":70,"./_library":82,"./_object-dp":85,"./_wks-ext":109}],109:[function(require,module,exports){
 exports.f = require('./_wks');
 
-},{"./_wks":96}],96:[function(require,module,exports){
+},{"./_wks":110}],110:[function(require,module,exports){
 var store = require('./_shared')('wks');
 var uid = require('./_uid');
 var Symbol = require('./_global').Symbol;
@@ -11240,7 +16719,7 @@ var $exports = module.exports = function (name) {
 
 $exports.store = store;
 
-},{"./_global":56,"./_shared":85,"./_uid":93}],97:[function(require,module,exports){
+},{"./_global":70,"./_shared":99,"./_uid":107}],111:[function(require,module,exports){
 var classof = require('./_classof');
 var ITERATOR = require('./_wks')('iterator');
 var Iterators = require('./_iterators');
@@ -11250,7 +16729,7 @@ module.exports = require('./_core').getIteratorMethod = function (it) {
     || Iterators[classof(it)];
 };
 
-},{"./_classof":45,"./_core":47,"./_iterators":67,"./_wks":96}],98:[function(require,module,exports){
+},{"./_classof":59,"./_core":61,"./_iterators":81,"./_wks":110}],112:[function(require,module,exports){
 var anObject = require('./_an-object');
 var get = require('./core.get-iterator-method');
 module.exports = require('./_core').getIterator = function (it) {
@@ -11259,7 +16738,7 @@ module.exports = require('./_core').getIterator = function (it) {
   return anObject(iterFn.call(it));
 };
 
-},{"./_an-object":43,"./_core":47,"./core.get-iterator-method":97}],99:[function(require,module,exports){
+},{"./_an-object":57,"./_core":61,"./core.get-iterator-method":111}],113:[function(require,module,exports){
 var classof = require('./_classof');
 var ITERATOR = require('./_wks')('iterator');
 var Iterators = require('./_iterators');
@@ -11271,7 +16750,7 @@ module.exports = require('./_core').isIterable = function (it) {
     || Iterators.hasOwnProperty(classof(O));
 };
 
-},{"./_classof":45,"./_core":47,"./_iterators":67,"./_wks":96}],100:[function(require,module,exports){
+},{"./_classof":59,"./_core":61,"./_iterators":81,"./_wks":110}],114:[function(require,module,exports){
 'use strict';
 var addToUnscopables = require('./_add-to-unscopables');
 var step = require('./_iter-step');
@@ -11307,9 +16786,9 @@ addToUnscopables('keys');
 addToUnscopables('values');
 addToUnscopables('entries');
 
-},{"./_add-to-unscopables":42,"./_iter-define":65,"./_iter-step":66,"./_iterators":67,"./_to-iobject":89}],101:[function(require,module,exports){
+},{"./_add-to-unscopables":56,"./_iter-define":79,"./_iter-step":80,"./_iterators":81,"./_to-iobject":103}],115:[function(require,module,exports){
 
-},{}],102:[function(require,module,exports){
+},{}],116:[function(require,module,exports){
 'use strict';
 var $at = require('./_string-at')(true);
 
@@ -11328,7 +16807,7 @@ require('./_iter-define')(String, 'String', function (iterated) {
   return { value: point, done: false };
 });
 
-},{"./_iter-define":65,"./_string-at":86}],103:[function(require,module,exports){
+},{"./_iter-define":79,"./_string-at":100}],117:[function(require,module,exports){
 'use strict';
 // ECMAScript 6 symbols shim
 var global = require('./_global');
@@ -11564,13 +17043,13 @@ setToStringTag(Math, 'Math', true);
 // 24.3.3 JSON[@@toStringTag]
 setToStringTag(global.JSON, 'JSON', true);
 
-},{"./_an-object":43,"./_descriptors":50,"./_enum-keys":53,"./_export":54,"./_fails":55,"./_global":56,"./_has":57,"./_hide":58,"./_is-array":62,"./_is-object":63,"./_library":68,"./_meta":69,"./_object-create":70,"./_object-dp":71,"./_object-gopd":73,"./_object-gopn":75,"./_object-gopn-ext":74,"./_object-gops":76,"./_object-keys":79,"./_object-pie":80,"./_property-desc":81,"./_redefine":82,"./_set-to-string-tag":83,"./_shared":85,"./_to-iobject":89,"./_to-primitive":92,"./_uid":93,"./_wks":96,"./_wks-define":94,"./_wks-ext":95}],104:[function(require,module,exports){
+},{"./_an-object":57,"./_descriptors":64,"./_enum-keys":67,"./_export":68,"./_fails":69,"./_global":70,"./_has":71,"./_hide":72,"./_is-array":76,"./_is-object":77,"./_library":82,"./_meta":83,"./_object-create":84,"./_object-dp":85,"./_object-gopd":87,"./_object-gopn":89,"./_object-gopn-ext":88,"./_object-gops":90,"./_object-keys":93,"./_object-pie":94,"./_property-desc":95,"./_redefine":96,"./_set-to-string-tag":97,"./_shared":99,"./_to-iobject":103,"./_to-primitive":106,"./_uid":107,"./_wks":110,"./_wks-define":108,"./_wks-ext":109}],118:[function(require,module,exports){
 require('./_wks-define')('asyncIterator');
 
-},{"./_wks-define":94}],105:[function(require,module,exports){
+},{"./_wks-define":108}],119:[function(require,module,exports){
 require('./_wks-define')('observable');
 
-},{"./_wks-define":94}],106:[function(require,module,exports){
+},{"./_wks-define":108}],120:[function(require,module,exports){
 require('./es6.array.iterator');
 var global = require('./_global');
 var hide = require('./_hide');
@@ -11591,7 +17070,7 @@ for (var i = 0; i < DOMIterables.length; i++) {
   Iterators[NAME] = Iterators.Array;
 }
 
-},{"./_global":56,"./_hide":58,"./_iterators":67,"./_wks":96,"./es6.array.iterator":100}],107:[function(require,module,exports){
+},{"./_global":70,"./_hide":72,"./_iterators":81,"./_wks":110,"./es6.array.iterator":114}],121:[function(require,module,exports){
 'use strict'
 var inherits = require('inherits')
 var MD5 = require('md5.js')
@@ -11623,14 +17102,14 @@ module.exports = function createHash (alg) {
   return new Hash(sha(alg))
 }
 
-},{"cipher-base":36,"inherits":153,"md5.js":157,"ripemd160":165,"sha.js":168}],108:[function(require,module,exports){
+},{"cipher-base":50,"inherits":167,"md5.js":171,"ripemd160":179,"sha.js":182}],122:[function(require,module,exports){
 var MD5 = require('md5.js')
 
 module.exports = function (buffer) {
   return new MD5().update(buffer).digest()
 }
 
-},{"md5.js":157}],109:[function(require,module,exports){
+},{"md5.js":171}],123:[function(require,module,exports){
 'use strict'
 var inherits = require('inherits')
 var Legacy = require('./legacy')
@@ -11694,7 +17173,7 @@ module.exports = function createHmac (alg, key) {
   return new Hmac(alg, key)
 }
 
-},{"./legacy":110,"cipher-base":36,"create-hash/md5":108,"inherits":153,"ripemd160":165,"safe-buffer":166,"sha.js":168}],110:[function(require,module,exports){
+},{"./legacy":124,"cipher-base":50,"create-hash/md5":122,"inherits":167,"ripemd160":179,"safe-buffer":180,"sha.js":182}],124:[function(require,module,exports){
 'use strict'
 var inherits = require('inherits')
 var Buffer = require('safe-buffer').Buffer
@@ -11742,7 +17221,7 @@ Hmac.prototype._final = function () {
 }
 module.exports = Hmac
 
-},{"cipher-base":36,"inherits":153,"safe-buffer":166}],111:[function(require,module,exports){
+},{"cipher-base":50,"inherits":167,"safe-buffer":180}],125:[function(require,module,exports){
 var assert = require('assert')
 var BigInteger = require('bigi')
 
@@ -11821,7 +17300,7 @@ Curve.prototype.validate = function (Q) {
 
 module.exports = Curve
 
-},{"./point":115,"assert":177,"bigi":12}],112:[function(require,module,exports){
+},{"./point":129,"assert":191,"bigi":26}],126:[function(require,module,exports){
 module.exports={
   "secp128r1": {
     "p": "fffffffdffffffffffffffffffffffff",
@@ -11888,7 +17367,7 @@ module.exports={
   }
 }
 
-},{}],113:[function(require,module,exports){
+},{}],127:[function(require,module,exports){
 var Point = require('./point')
 var Curve = require('./curve')
 
@@ -11900,7 +17379,7 @@ module.exports = {
   getCurveByName: getCurveByName
 }
 
-},{"./curve":111,"./names":114,"./point":115}],114:[function(require,module,exports){
+},{"./curve":125,"./names":128,"./point":129}],128:[function(require,module,exports){
 var BigInteger = require('bigi')
 
 var curves = require('./curves.json')
@@ -11923,7 +17402,7 @@ function getCurveByName (name) {
 
 module.exports = getCurveByName
 
-},{"./curve":111,"./curves.json":112,"bigi":12}],115:[function(require,module,exports){
+},{"./curve":125,"./curves.json":126,"bigi":26}],129:[function(require,module,exports){
 var assert = require('assert')
 var Buffer = require('safe-buffer').Buffer
 var BigInteger = require('bigi')
@@ -12169,7 +17648,7 @@ Point.prototype.toString = function () {
 
 module.exports = Point
 
-},{"assert":177,"bigi":12,"safe-buffer":166}],116:[function(require,module,exports){
+},{"assert":191,"bigi":26,"safe-buffer":180}],130:[function(require,module,exports){
 module.exports={
   "get_info": {
     "brief": "Return general network information.",
@@ -12195,6 +17674,16 @@ module.exports={
       "wasm": "string",
       "code_hash": "sha256",
       "abi": "optional<abi_def>"
+    }
+  },
+  "get_code_hash": {
+    "brief": "",
+    "params": {
+      "account_name": "name"
+    },
+    "results": {
+      "account_name": "name",
+      "code_hash": "sha256"
     }
   },
   "get_abi": {
@@ -12388,7 +17877,7 @@ module.exports={
   }
 }
 
-},{}],117:[function(require,module,exports){
+},{}],131:[function(require,module,exports){
 module.exports={
   "get_actions": {
     "params": {
@@ -12422,7 +17911,11 @@ module.exports={
     "brief": "Retrieve a transaction from the blockchain.",
     "params": {
       "id": "transaction_id_type",
-      "block_num_hint": "uint32?"
+      "block_num_hint": {
+        "type": "uint32?",
+        "default": 0,
+        "doc": "A non-zero block number allows shorter transaction IDs (8 hex, 4 bytes)"
+      }
     },
     "results": {
       "id": "transaction_id_type",
@@ -12451,14 +17944,14 @@ module.exports={
   }
 }
 
-},{}],118:[function(require,module,exports){
+},{}],132:[function(require,module,exports){
 'use strict';
 
 module.exports = {
   chain: require('./chain.json'),
   history: require('./history.json')
 };
-},{"./chain.json":116,"./history.json":117}],119:[function(require,module,exports){
+},{"./chain.json":130,"./history.json":131}],133:[function(require,module,exports){
 'use strict';
 
 require('isomorphic-fetch');
@@ -12647,7 +18140,7 @@ function usage(methodName, definition) {
 
   return usage;
 }
-},{"./exported-helpers":120,"./process-args":122,"camel-case":35,"isomorphic-fetch":154}],120:[function(require,module,exports){
+},{"./exported-helpers":134,"./process-args":136,"camel-case":49,"isomorphic-fetch":168}],134:[function(require,module,exports){
 'use strict';
 
 module.exports = {
@@ -12729,7 +18222,7 @@ var checkError = function checkError(parentErr, parrentRes) {
     }
   };
 };
-},{}],121:[function(require,module,exports){
+},{}],135:[function(require,module,exports){
 'use strict';
 
 var api = require('./api/v1');
@@ -12758,7 +18251,7 @@ Object.assign(EosApi, {
 });
 
 module.exports = EosApi;
-},{"./api/v1":118,"./apigen":119,"./process-args":122}],122:[function(require,module,exports){
+},{"./api/v1":132,"./apigen":133,"./process-args":136}],136:[function(require,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -12889,7 +18382,7 @@ function processArgs(args, defParams) {
   }
   return { params: params, options: options, callback: callback, returnPromise: returnPromise };
 }
-},{}],123:[function(require,module,exports){
+},{}],137:[function(require,module,exports){
 (function (Buffer){
 'use strict';
 
@@ -13059,7 +18552,7 @@ var toBinaryBuffer = function toBinaryBuffer(o) {
     return o ? Buffer.isBuffer(o) ? o : new Buffer(o, 'binary') : o;
 };
 }).call(this,require("buffer").Buffer)
-},{"./hash":129,"./key_private":131,"./key_public":132,"assert":177,"browserify-aes":17,"buffer":180,"bytebuffer":34,"randombytes":162}],124:[function(require,module,exports){
+},{"./hash":143,"./key_private":145,"./key_public":146,"assert":191,"browserify-aes":31,"buffer":194,"bytebuffer":48,"randombytes":176}],138:[function(require,module,exports){
 "use strict";
 
 var Aes = require("./aes");
@@ -13140,11 +18633,13 @@ var ecc = {
 
     /**
         @arg {pubkey} pubkey - like EOSKey..
-        @return {boolean} valid
+        @arg {string} [pubkey_prefix = 'EOS']
+         @return {boolean} valid
          @example ecc.isValidPublic(pubkey) === true
     */
     isValidPublic: function isValidPublic(pubkey) {
-        return PublicKey.isValid(pubkey);
+        var pubkey_prefix = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'EOS';
+        return PublicKey.isValid(pubkey, pubkey_prefix);
     },
 
     /**
@@ -13268,7 +18763,7 @@ var ecc = {
 };
 
 module.exports = ecc;
-},{"./aes":123,"./hash":129,"./key_private":131,"./key_public":132,"./key_utils":133,"./signature":135}],125:[function(require,module,exports){
+},{"./aes":137,"./hash":143,"./key_private":145,"./key_public":146,"./key_utils":147,"./signature":149}],139:[function(require,module,exports){
 "use strict";
 
 var Aes = require("./aes");
@@ -13281,7 +18776,7 @@ module.exports = {
     Aes: Aes, PrivateKey: PrivateKey, PublicKey: PublicKey,
     Signature: Signature, key_utils: key_utils
 };
-},{"./aes":123,"./key_private":131,"./key_public":132,"./key_utils":133,"./signature":135}],126:[function(require,module,exports){
+},{"./aes":137,"./key_private":145,"./key_public":146,"./key_utils":147,"./signature":149}],140:[function(require,module,exports){
 (function (Buffer){
 'use strict';
 
@@ -13503,7 +18998,7 @@ module.exports = {
   verifyRaw: verifyRaw
 };
 }).call(this,require("buffer").Buffer)
-},{"./ecsignature":127,"./enforce_types":128,"./hash":129,"assert":177,"bigi":12,"buffer":180}],127:[function(require,module,exports){
+},{"./ecsignature":141,"./enforce_types":142,"./hash":143,"assert":191,"bigi":26,"buffer":194}],141:[function(require,module,exports){
 (function (Buffer){
 'use strict';
 
@@ -13632,7 +19127,7 @@ ECSignature.parseScriptSignature = function (buffer) {
 
 module.exports = ECSignature;
 }).call(this,require("buffer").Buffer)
-},{"./enforce_types":128,"assert":177,"bigi":12,"buffer":180}],128:[function(require,module,exports){
+},{"./enforce_types":142,"assert":191,"bigi":26,"buffer":194}],142:[function(require,module,exports){
 (function (Buffer){
 'use strict';
 
@@ -13684,7 +19179,7 @@ function getName(fn) {
   return match ? match[1] : null;
 }
 }).call(this,{"isBuffer":require("../../../../../../../../../../../../../usr/local/lib/node_modules/browserify/node_modules/is-buffer/index.js")})
-},{"../../../../../../../../../../../../../usr/local/lib/node_modules/browserify/node_modules/is-buffer/index.js":185}],129:[function(require,module,exports){
+},{"../../../../../../../../../../../../../usr/local/lib/node_modules/browserify/node_modules/is-buffer/index.js":199}],143:[function(require,module,exports){
 'use strict';
 
 var createHash = require('create-hash');
@@ -13747,7 +19242,7 @@ module.exports = {
     // hash256: hash256,
     // HmacSHA512: HmacSHA512
 };
-},{"create-hash":107,"create-hmac":109}],130:[function(require,module,exports){
+},{"create-hash":121,"create-hmac":123}],144:[function(require,module,exports){
 'use strict';
 
 var commonApi = require('./api_common');
@@ -13756,7 +19251,7 @@ var objectApi = require('./api_object');
 var ecc = Object.assign({}, commonApi, objectApi);
 
 module.exports = ecc;
-},{"./api_common":124,"./api_object":125}],131:[function(require,module,exports){
+},{"./api_common":138,"./api_object":139}],145:[function(require,module,exports){
 (function (Buffer){
 'use strict';
 
@@ -14090,7 +19585,7 @@ var doesNotThrow = function doesNotThrow(cb, msg) {
     }
 };
 }).call(this,require("buffer").Buffer)
-},{"./hash":129,"./key_public":132,"./key_utils":133,"./promise-async":134,"assert":177,"bigi":12,"buffer":180,"create-hash":107,"ecurve":113}],132:[function(require,module,exports){
+},{"./hash":143,"./key_public":146,"./key_utils":147,"./promise-async":148,"assert":191,"bigi":26,"buffer":194,"create-hash":121,"ecurve":127}],146:[function(require,module,exports){
 (function (Buffer){
 'use strict';
 
@@ -14111,10 +19606,15 @@ var n = secp256k1.n;
 
 module.exports = PublicKey;
 
-/** @param {ecurve.Point} public key */
+/**
+  @param {string|Buffer|PublicKey|ecurve.Point} public key
+  @param {string} [pubkey_prefix = 'EOS']
+*/
 function PublicKey(Q) {
+    var pubkey_prefix = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'EOS';
+
     if (typeof Q === 'string') {
-        var publicKey = PublicKey.fromString(Q);
+        var publicKey = PublicKey.fromString(Q, pubkey_prefix);
         assert(publicKey != null, 'Invalid public key');
         return publicKey;
     } else if (Buffer.isBuffer(Q)) {
@@ -14198,9 +19698,15 @@ function PublicKey(Q) {
     };
 }
 
-PublicKey.isValid = function (text) {
+/**
+  @param {string|Buffer|PublicKey|ecurve.Point} pubkey - public key
+  @param {string} [pubkey_prefix = 'EOS']
+*/
+PublicKey.isValid = function (pubkey) {
+    var pubkey_prefix = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'EOS';
+
     try {
-        PublicKey(text);
+        PublicKey(pubkey, pubkey_prefix);
         return true;
     } catch (e) {
         return false;
@@ -14249,7 +19755,6 @@ PublicKey.fromStringOrThrow = function (public_key) {
     var match = public_key.match(/^PUB_([A-Za-z0-9]+)_([A-Za-z0-9]+)$/);
     if (match === null) {
         // legacy
-        // TELOS addition: support for variable public_key prefixes
         var prefix_match = new RegExp("^" + pubkey_prefix);
         if (prefix_match.test(public_key)) {
             public_key = public_key.substring(pubkey_prefix.length);
@@ -14274,7 +19779,7 @@ PublicKey.fromStringHex = function (hex) {
     return PublicKey.fromString(new Buffer(hex, 'hex'));
 };
 }).call(this,require("buffer").Buffer)
-},{"./hash":129,"./key_utils":133,"assert":177,"bigi":12,"buffer":180,"ecurve":113}],133:[function(require,module,exports){
+},{"./hash":143,"./key_utils":147,"assert":191,"bigi":26,"buffer":194,"ecurve":127}],147:[function(require,module,exports){
 (function (Buffer){
 'use strict';
 
@@ -14544,7 +20049,7 @@ function checkDecode(keyString) {
     return key;
 }
 }).call(this,require("buffer").Buffer)
-},{"./hash":129,"assert":177,"bs58":32,"buffer":180,"randombytes":162}],134:[function(require,module,exports){
+},{"./hash":143,"assert":191,"bs58":46,"buffer":194,"randombytes":176}],148:[function(require,module,exports){
 "use strict";
 
 /**
@@ -14573,7 +20078,7 @@ module.exports = function (func) {
     });
   };
 };
-},{}],135:[function(require,module,exports){
+},{}],149:[function(require,module,exports){
 (function (Buffer){
 'use strict';
 
@@ -14862,553 +20367,11 @@ Signature.from = function (o) {
     return signature;
 };
 }).call(this,require("buffer").Buffer)
-},{"./ecdsa":126,"./hash":129,"./key_private":131,"./key_public":132,"./key_utils":133,"assert":177,"bigi":12,"buffer":180,"ecurve":113}],136:[function(require,module,exports){
-(function (Buffer){
-'use strict';
-
-var _typeof2 = require('babel-runtime/helpers/typeof');
-
-var _typeof3 = _interopRequireDefault(_typeof2);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-var assert = require('assert');
-var Structs = require('./structs');
-
-module.exports = AbiCache;
-
-function AbiCache(network, config) {
-  config.abiCache = {
-    abiAsync: abiAsync,
-    abi: abi
-
-    // Help (or "usage") needs {defaults: true}
-  };var abiCacheConfig = Object.assign({}, { defaults: true }, config);
-
-  var cache = {};
-
-  /**
-    Asynchronously fetch and cache an ABI from the blockchain.
-     @arg {string} account - blockchain account with deployed contract
-    @arg {boolean} [force = true] false when ABI is immutable.
-  */
-  function abiAsync(account) {
-    var force = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
-
-    assert.equal(typeof account === 'undefined' ? 'undefined' : (0, _typeof3.default)(account), 'string', 'account string required');
-
-    if (force == false && cache[account] != null) {
-      return Promise.resolve(cache[account]);
-    }
-
-    if (network == null) {
-      var _abi = cache[account];
-      assert(_abi, 'Missing ABI for account: ' + account + ', provide httpEndpoint or add to abiCache');
-      return Promise.resolve(_abi);
-    }
-
-    return network.getAbi(account).then(function (code) {
-      assert(code.abi, 'Missing ABI for account: ' + account);
-      return abi(account, code.abi);
-    });
-  }
-
-  /**
-    Synchronously set or fetch an ABI from local cache.
-     @arg {string} account - blockchain account with deployed contract
-    @arg {string} [abi] - blockchain ABI json data.  Null to fetch or non-null to cache
-  */
-  function abi(account, abi) {
-    assert.equal(typeof account === 'undefined' ? 'undefined' : (0, _typeof3.default)(account), 'string', 'account string required');
-    if (abi) {
-      assert.equal(typeof abi === 'undefined' ? 'undefined' : (0, _typeof3.default)(abi), 'object', 'abi');
-      if (Buffer.isBuffer(abi)) {
-        abi = JSON.parse(abi);
-      }
-      var fcSchema = abiToFcSchema(abi, account);
-      var structs = Structs(abiCacheConfig, fcSchema); // returns {structs, types}
-      return cache[account] = Object.assign({ abi: abi, schema: fcSchema }, structs);
-    }
-    var c = cache[account];
-    if (c == null) {
-      throw new Error('Abi \'' + account + '\' is not cached');
-    }
-    return c;
-  }
-
-  return config.abiCache;
-}
-
-function abiToFcSchema(abi, account) {
-  // customTypes
-  // For FcBuffer
-  var abiSchema = {};
-
-  // convert abi types to Fcbuffer schema
-  if (abi.types) {
-    // aliases
-    abi.types.forEach(function (e) {
-      // "account_name" = "name"
-      abiSchema[e.new_type_name] = e.type;
-    });
-  }
-
-  if (abi.structs) {
-    // transaction_header = fields[actor, permission] extends base "transaction"
-    abi.structs.forEach(function (e) {
-      var fields = {};
-      var _iteratorNormalCompletion = true;
-      var _didIteratorError = false;
-      var _iteratorError = undefined;
-
-      try {
-        for (var _iterator = e.fields[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-          var field = _step.value;
-
-          fields[field.name] = field.type;
-        }
-      } catch (err) {
-        _didIteratorError = true;
-        _iteratorError = err;
-      } finally {
-        try {
-          if (!_iteratorNormalCompletion && _iterator.return) {
-            _iterator.return();
-          }
-        } finally {
-          if (_didIteratorError) {
-            throw _iteratorError;
-          }
-        }
-      }
-
-      abiSchema[e.name] = { base: e.base, fields: fields };
-      if (e.base === '') {
-        delete abiSchema[e.name].base;
-      }
-    });
-  }
-
-  if (abi.actions) {
-    // setprods = set_producers
-    abi.actions.forEach(function (action) {
-      // @example action = {name: 'setprods', type: 'set_producers'}
-      var type = abiSchema[action.type];
-      if (!type) {
-        console.error('Missing abiSchema type', action.type, account); //, abi, abiSchema)
-      } else {
-        type.action = {
-          name: action.name,
-          account: account
-        };
-      }
-    });
-    // console.log('abiSchema', abiSchema);
-  }
-
-  return abiSchema;
-}
-}).call(this,{"isBuffer":require("../../../../../../../../../../../../../usr/local/lib/node_modules/browserify/node_modules/is-buffer/index.js")})
-},{"../../../../../../../../../../../../../usr/local/lib/node_modules/browserify/node_modules/is-buffer/index.js":185,"./structs":144,"assert":177,"babel-runtime/helpers/typeof":7}],137:[function(require,module,exports){
-'use strict';
-
-var _slicedToArray2 = require('babel-runtime/helpers/slicedToArray');
-
-var _slicedToArray3 = _interopRequireDefault(_slicedToArray2);
-
-var _typeof2 = require('babel-runtime/helpers/typeof');
-
-var _typeof3 = _interopRequireDefault(_typeof2);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-var assert = require('assert');
-
-var _require = require('bytebuffer'),
-    Long = _require.Long;
-
-module.exports = {
-  ULong: ULong,
-  isName: isName,
-  encodeName: encodeName, // encode human readable name to uint64 (number string)
-  decodeName: decodeName, // decode from uint64 to human readable
-  encodeNameHex: function encodeNameHex(name) {
-    return Long.fromString(encodeName(name), true).toString(16);
-  },
-  decodeNameHex: function decodeNameHex(hex) {
-    var littleEndian = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
-    return decodeName(Long.fromString(hex, true, 16).toString(), littleEndian);
-  },
-  DecimalString: DecimalString,
-  DecimalPad: DecimalPad,
-  DecimalImply: DecimalImply,
-  DecimalUnimply: DecimalUnimply,
-  printAsset: printAsset,
-  parseAsset: parseAsset
-
-  /** @private */
-};var signed = function signed(fn) {
-  return function () {};
-};
-
-function ULong(value) {
-  var unsigned = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
-  var radix = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 10;
-
-  if (typeof value === 'number') {
-    // Some JSON libs use numbers for values under 53 bits or strings for larger.
-    // Accomidate but double-check it..
-    if (value > Number.MAX_SAFE_INTEGER) throw new TypeError('value parameter overflow');
-
-    value = Long.fromString(String(value), unsigned, radix);
-  } else if (typeof value === 'string') {
-    value = Long.fromString(value, unsigned, radix);
-  } else if (!Long.isLong(value)) {
-    throw new TypeError('value parameter is a requied Long, Number or String');
-  }
-  return value;
-}
-
-function isName(str, err) {
-  try {
-    encodeName(str);
-    return true;
-  } catch (error) {
-    if (err) {
-      err(error);
-    }
-    return false;
-  }
-}
-
-var charmap = '.12345abcdefghijklmnopqrstuvwxyz';
-var charidx = function charidx(ch) {
-  var idx = charmap.indexOf(ch);
-  if (idx === -1) throw new TypeError('Invalid character: \'' + ch + '\'');
-
-  return idx;
-};
-
-/** Original Name encode and decode logic is in github.com/eosio/eos  native.hpp */
-
-/**
-  Encode a name (a base32 string) to a number.
-
-  For performance reasons, the blockchain uses the numerical encoding of strings
-  for very common types like account names.
-
-  @see types.hpp string_to_name
-
-  @arg {string} name - A string to encode, up to 12 characters long.
-  @arg {string} [littleEndian = true] - Little or Bigendian encoding
-
-  @return {string<uint64>} - compressed string (from name arg).  A string is
-    always used because a number could exceed JavaScript's 52 bit limit.
-*/
-function encodeName(name) {
-  var littleEndian = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
-
-  if (typeof name !== 'string') throw new TypeError('name parameter is a required string');
-
-  if (name.length > 12) throw new TypeError('A name can be up to 12 characters long');
-
-  var bitstr = '';
-  for (var i = 0; i <= 12; i++) {
-    // process all 64 bits (even if name is short)
-    var c = i < name.length ? charidx(name[i]) : 0;
-    var bitlen = i < 12 ? 5 : 4;
-    var bits = Number(c).toString(2);
-    if (bits.length > bitlen) {
-      throw new TypeError('Invalid name ' + name);
-    }
-    bits = '0'.repeat(bitlen - bits.length) + bits;
-    bitstr += bits;
-  }
-
-  var value = Long.fromString(bitstr, true, 2);
-
-  // convert to LITTLE_ENDIAN
-  var leHex = '';
-  var bytes = littleEndian ? value.toBytesLE() : value.toBytesBE();
-  var _iteratorNormalCompletion = true;
-  var _didIteratorError = false;
-  var _iteratorError = undefined;
-
-  try {
-    for (var _iterator = bytes[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-      var b = _step.value;
-
-      var n = Number(b).toString(16);
-      leHex += (n.length === 1 ? '0' : '') + n;
-    }
-  } catch (err) {
-    _didIteratorError = true;
-    _iteratorError = err;
-  } finally {
-    try {
-      if (!_iteratorNormalCompletion && _iterator.return) {
-        _iterator.return();
-      }
-    } finally {
-      if (_didIteratorError) {
-        throw _iteratorError;
-      }
-    }
-  }
-
-  var ulName = Long.fromString(leHex, true, 16).toString();
-
-  // console.log('encodeName', name, value.toString(), ulName.toString(), JSON.stringify(bitstr.split(/(.....)/).slice(1)))
-
-  return ulName.toString();
-}
-
-/**
-  @arg {Long|String|number} value uint64
-  @arg {string} [littleEndian = true] - Little or Bigendian encoding
-
-  @return {string}
-*/
-function decodeName(value) {
-  var littleEndian = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
-
-  value = ULong(value);
-
-  // convert from LITTLE_ENDIAN
-  var beHex = '';
-  var bytes = littleEndian ? value.toBytesLE() : value.toBytesBE();
-  var _iteratorNormalCompletion2 = true;
-  var _didIteratorError2 = false;
-  var _iteratorError2 = undefined;
-
-  try {
-    for (var _iterator2 = bytes[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-      var b = _step2.value;
-
-      var n = Number(b).toString(16);
-      beHex += (n.length === 1 ? '0' : '') + n;
-    }
-  } catch (err) {
-    _didIteratorError2 = true;
-    _iteratorError2 = err;
-  } finally {
-    try {
-      if (!_iteratorNormalCompletion2 && _iterator2.return) {
-        _iterator2.return();
-      }
-    } finally {
-      if (_didIteratorError2) {
-        throw _iteratorError2;
-      }
-    }
-  }
-
-  beHex += '0'.repeat(16 - beHex.length);
-
-  var fiveBits = Long.fromNumber(0x1f, true);
-  var fourBits = Long.fromNumber(0x0f, true);
-  var beValue = Long.fromString(beHex, true, 16);
-
-  var str = '';
-  var tmp = beValue;
-
-  for (var i = 0; i <= 12; i++) {
-    var c = charmap[tmp.and(i === 0 ? fourBits : fiveBits)];
-    str = c + str;
-    tmp = tmp.shiftRight(i === 0 ? 4 : 5);
-  }
-  str = str.replace(/\.+$/, ''); // remove trailing dots (all of them)
-
-  // console.log('decodeName', str, beValue.toString(), value.toString(), JSON.stringify(beValue.toString(2).split(/(.....)/).slice(1)))
-
-  return str;
-}
-
-/**
-  Normalize and validate decimal string (potentially large values).  Should
-  avoid internationalization issues if possible but will be safe and
-  throw an error for an invalid number.
-
-  Normalization removes extra zeros or decimal.
-
-  @return {string} value
-*/
-function DecimalString(value) {
-  assert(value != null, 'value is required');
-  value = value === 'object' && value.toString ? value.toString() : String(value);
-
-  var neg = /^-/.test(value);
-  if (neg) {
-    value = value.substring(1);
-  }
-
-  if (value[0] === '.') {
-    value = '0' + value;
-  }
-
-  var part = value.split('.');
-  assert(part.length <= 2, 'invalid decimal ' + value);
-  assert(/^\d+(,?\d)*\d*$/.test(part[0]), 'invalid decimal ' + value);
-
-  if (part.length === 2) {
-    assert(/^\d*$/.test(part[1]), 'invalid decimal ' + value);
-    part[1] = part[1].replace(/0+$/, ''); // remove suffixing zeros
-    if (part[1] === '') {
-      part.pop();
-    }
-  }
-
-  part[0] = part[0].replace(/^0*/, ''); // remove leading zeros
-  if (part[0] === '') {
-    part[0] = '0';
-  }
-  return (neg ? '-' : '') + part.join('.');
-}
-
-/**
-  Ensure a fixed number of decimal places.  Safe for large numbers.
-
-  @see ./format.test.js
-
-  @example DecimalPad(10.2, 3) === '10.200'
-
-  @arg {number|string|object.toString} num
-  @arg {number} [precision = null] - number of decimal places.  Null skips
-    padding suffix but still applies number format normalization.
-  @return {string} decimal part is added and zero padded to match precision
-*/
-function DecimalPad(num, precision) {
-  var value = DecimalString(num);
-  if (precision == null) {
-    return value;
-  }
-
-  assert(precision >= 0 && precision <= 18, 'Precision should be 18 characters or less');
-
-  var part = value.split('.');
-
-  if (precision === 0 && part.length === 1) {
-    return part[0];
-  }
-
-  if (part.length === 1) {
-    return part[0] + '.' + '0'.repeat(precision);
-  } else {
-    var pad = precision - part[1].length;
-    assert(pad >= 0, 'decimal \'' + value + '\' exceeds precision ' + precision);
-    return part[0] + '.' + part[1] + '0'.repeat(pad);
-  }
-}
-
-/** Ensures proper trailing zeros then removes decimal place. */
-function DecimalImply(value, precision) {
-  return DecimalPad(value, precision).replace('.', '');
-}
-
-/**
-  Put the decimal place back in its position and return the normalized number
-  string (with any unnecessary zeros or an unnecessary decimal removed).
-
-  @arg {string|number|value.toString} value 10000
-  @arg {number} precision 4
-  @return {number} 1.0000
-*/
-function DecimalUnimply(value, precision) {
-  assert(value != null, 'value is required');
-  value = value === 'object' && value.toString ? value.toString() : String(value);
-  var neg = /^-/.test(value);
-  if (neg) {
-    value = value.substring(1);
-  }
-  assert(/^\d+$/.test(value), 'invalid whole number ' + value);
-  assert(precision != null, 'precision required');
-  assert(precision >= 0 && precision <= 18, 'Precision should be 18 characters or less');
-
-  // Ensure minimum length
-  var pad = precision - value.length;
-  if (pad > 0) {
-    value = '' + '0'.repeat(pad) + value;
-  }
-
-  var dotIdx = value.length - precision;
-  value = value.slice(0, dotIdx) + '.' + value.slice(dotIdx);
-  return (neg ? '-' : '') + DecimalPad(value, precision); // Normalize
-}
-
-/** @private for now, support for asset strings is limited
-*/
-function printAsset(_ref) {
-  var amount = _ref.amount,
-      precision = _ref.precision,
-      symbol = _ref.symbol,
-      contract = _ref.contract;
-
-  assert.equal(typeof symbol === 'undefined' ? 'undefined' : (0, _typeof3.default)(symbol), 'string', 'symbol is a required string');
-
-  if (amount != null && precision != null) {
-    amount = DecimalPad(amount, precision);
-  }
-
-  var join = function join(e1, e2) {
-    return e1 == null ? '' : e2 == null ? '' : e1 + e2;
-  };
-
-  if (amount != null) {
-    // the amount contains the precision
-    return join(amount, ' ') + symbol + join('@', contract);
-  }
-
-  return join(precision, ',') + symbol + join('@', contract);
-}
-
-/**
-  Attempts to parse all forms of the asset strings (symbol, asset, or extended
-  versions).  If the provided string contains any additional or appears to have
-  invalid information an error is thrown.
-
-  @return {object} {amount, precision, symbol, contract}
-  @throws AssertionError
-*/
-function parseAsset(str) {
-  var _str$split = str.split(' '),
-      _str$split2 = (0, _slicedToArray3.default)(_str$split, 1),
-      amountRaw = _str$split2[0];
-
-  var amountMatch = amountRaw.match(/^(-?[0-9]+(\.[0-9]+)?)( |$)/);
-  var amount = amountMatch ? amountMatch[1] : null;
-
-  var precisionMatch = str.match(/(^| )([0-9]+),([A-Z]+)(@|$)/);
-  var precisionSymbol = precisionMatch ? Number(precisionMatch[2]) : null;
-  var precisionAmount = amount ? (amount.split('.')[1] || '').length : null;
-  var precision = precisionSymbol != null ? precisionSymbol : precisionAmount;
-
-  var symbolMatch = str.match(/(^| |,)([A-Z]+)(@|$)/);
-  var symbol = symbolMatch ? symbolMatch[2] : null;
-
-  var _str$split3 = str.split('@'),
-      _str$split4 = (0, _slicedToArray3.default)(_str$split3, 2),
-      _str$split4$ = _str$split4[1],
-      contractRaw = _str$split4$ === undefined ? '' : _str$split4$;
-
-  var contract = /^[a-z0-5]+(\.[a-z0-5]+)*$/.test(contractRaw) ? contractRaw : null;
-
-  var check = printAsset({ amount: amount, precision: precision, symbol: symbol, contract: contract });
-
-  assert.equal(str, check, 'Invalid asset string: ' + str + ' !== ' + check);
-
-  if (precision != null) {
-    assert(precision >= 0 && precision <= 18, 'Precision should be 18 characters or less');
-  }
-  if (symbol != null) {
-    assert(symbol.length <= 7, 'Asset symbol is 7 characters or less');
-  }
-  if (contract != null) {
-    assert(contract.length <= 12, 'Contract is 12 characters or less');
-  }
-
-  return { amount: amount, precision: precision, symbol: symbol, contract: contract };
-}
-},{"assert":177,"babel-runtime/helpers/slicedToArray":6,"babel-runtime/helpers/typeof":7,"bytebuffer":34}],138:[function(require,module,exports){
+},{"./ecdsa":140,"./hash":143,"./key_private":145,"./key_public":146,"./key_utils":147,"assert":191,"bigi":26,"buffer":194,"ecurve":127}],150:[function(require,module,exports){
+arguments[4][2][0].apply(exports,arguments)
+},{"../../../../../../../../../../../../../usr/local/lib/node_modules/browserify/node_modules/is-buffer/index.js":199,"./structs":158,"assert":191,"babel-runtime/helpers/typeof":21,"dup":2}],151:[function(require,module,exports){
+arguments[4][3][0].apply(exports,arguments)
+},{"assert":191,"babel-runtime/helpers/slicedToArray":20,"babel-runtime/helpers/typeof":21,"bytebuffer":48,"dup":3}],152:[function(require,module,exports){
 'use strict';
 
 var _regenerator = require('babel-runtime/regenerator');
@@ -15565,7 +20528,7 @@ function createEos(config) {
 */
 function safeConfig(config) {
   // access control is shallow references only
-  var readOnly = new Set(['httpEndpoint', 'abiCache']);
+  var readOnly = new Set(['httpEndpoint', 'abiCache', 'chainId', 'expireInSeconds']);
   var readWrite = new Set(['verbose', 'debug', 'broadcast', 'logger', 'sign']);
   var protectedConfig = {};
 
@@ -15910,2604 +20873,21 @@ function checkChainId(network, chainId, logger) {
     }
   });
 }
-},{"./abi-cache":136,"./format":137,"./schema":143,"./schema/eosio.null.abi.json":140,"./schema/eosio.system.abi.json":141,"./schema/eosio.token.abi.json":142,"./structs":144,"./write-api":145,"assert":177,"babel-runtime/helpers/typeof":7,"babel-runtime/regenerator":8,"eosjs-api":121,"eosjs-ecc":130,"fcbuffer":148}],139:[function(require,module,exports){
-module.exports={
-  "name": "uint64",
-  "checksum160": "fixed_bytes20",
-  "checksum256": "fixed_bytes32",
-  "checksum512": "fixed_bytes64",
-  "signature": "fixed_bytes65",
-  "public_key": "fixed_bytes33",
-  "message_type": "fixed_string16",
-  "symbol": "uint64",
-  "symbol_code": "uint64",
-  "field_name": "string",
-  "account_name": "name",
-  "permission_name": "name",
-  "type_name": "string",
-  "token_name": "name",
-  "table_name": "name",
-  "scope_name": "name",
-  "action_name": "name",
-  "time_point": "int64",
-  "time_point_sec": "time",
-  "timestamp": "uint32",
-  "block_timestamp_type": "timestamp",
-  "block_id": "fixed_bytes32",
-  "checksum_type": "fixed_bytes32",
-  "checksum256_type": "fixed_bytes32",
-  "checksum512_type": "fixed_bytes64",
-  "checksum160_type": "fixed_bytes20",
-  "sha256": "fixed_bytes32",
-  "sha512": "fixed_bytes64",
-  "sha160": "fixed_bytes20",
-  "weight_type": "uint16",
-  "block_num_type": "uint32",
-  "share_type": "int64",
-  "digest_type": "checksum_type",
-  "context_free_type": "bytes",
-  "unsigned_int": "varuint32",
-  "bool": "uint8",
-
-  "extensions_type": {
-    "base": "",
-    "fields": {
-      "type": "uint16",
-      "data": "bytes"
-    }
-  },
-  "transaction_header": {
-    "base": "",
-    "fields": {
-      "expiration": "time",
-      "ref_block_num": "uint16",
-      "ref_block_prefix": "uint32",
-      "max_net_usage_words": "unsigned_int",
-      "max_cpu_usage_ms": "uint8",
-      "delay_sec": "unsigned_int"
-    }
-  },
-  "transaction": {
-    "base": "transaction_header",
-    "fields": {
-      "context_free_actions": "action[]",
-      "actions": "action[]",
-      "transaction_extensions": "extensions_type[]"
-    }
-  },
-  "signed_transaction": {
-    "base": "transaction",
-    "fields": {
-      "signatures": "signature[]",
-      "context_free_data": "bytes[]"
-    }
-  },
-  "fields": "field_def[]",
-  "field_def": {
-    "fields": {
-      "name": "field_name",
-      "type": "type_name"
-    }
-  },
-  "asset": {
-    "fields": {
-      "amount": "share_type",
-      "sym": "symbol"
-    }
-  },
-  "producer_key": {
-    "fields": {
-      "producer_name": "account_name",
-      "block_signing_key": "public_key"
-    }
-  },
-  "producer_schedule": {
-    "fields": {
-      "version": "uint32",
-      "producers": "producer_key[]"
-    }
-  },
-  "chain_config": {
-    "fields": {
-      "target_block_size": "uint32",
-      "max_block_size": "uint32",
-      "target_block_acts_per_scope": "uint32",
-      "max_block_acts_per_scope": "uint32",
-      "target_block_acts": "uint32",
-      "max_block_acts": "uint32",
-      "real_threads": "uint64",
-      "max_storage_size": "uint64",
-      "max_transaction_lifetime": "uint32",
-      "max_authority_depth": "uint16",
-      "max_transaction_exec_time": "uint32",
-      "max_inline_depth": "uint16",
-      "max_inline_action_size": "uint32",
-      "max_generated_transaction_size": "uint32"
-    }
-  },
-  "type_def": {
-    "base": "",
-    "fields": {
-      "new_type_name": "type_name",
-      "type": "type_name"
-    }
-  },
-  "struct_def": {
-    "base": "",
-    "fields": {
-      "name": "type_name",
-      "base": "type_name",
-      "fields": "field_def[]"
-    }
-  },
-  "clause_pair": {
-    "base": "",
-    "fields": {
-      "id": "string",
-      "body": "string"
-    }
-  },
-  "error_message": {
-    "base": "",
-    "fields": {
-      "error_code": "uint64",
-      "error_msg": "string"
-    }
-  },
-  "abi_def": {
-    "base": "",
-    "fields": {
-      "version": "string",
-      "types": "type_def[]",
-      "structs": "struct_def[]",
-      "actions": "action_def[]",
-      "tables": "table_def[]",
-      "ricardian_clauses": "clause_pair[]",
-      "error_messages": "error_message[]",
-      "abi_extensions": "extensions_type[]"
-    }
-  },
-  "table_def": {
-    "base": "",
-    "fields": {
-      "name": "table_name",
-      "index_type": "type_name",
-      "key_names": "field_name[]",
-      "key_types": "type_name[]",
-      "type": "type_name"
-    }
-  },
-  "permission_level": {
-    "base": "",
-    "fields": {
-      "actor": "account_name",
-      "permission": "permission_name"
-    }
-  },
-  "action": {
-    "base": "",
-    "fields": {
-      "account": "account_name",
-      "name": "action_name",
-      "authorization": "permission_level[]",
-      "data": "bytes"
-    }
-  },
-  "action_def": {
-    "base": "",
-    "fields": {
-      "name": "action_name",
-      "type": "type_name",
-      "ricardian_contract": "string"
-    }
-  },
-  "block_header": {
-    "base": "",
-    "fields": {
-      "previous": "checksum256",
-      "timestamp": "timestamp",
-      "transaction_mroot": "checksum256",
-      "action_mroot": "checksum256",
-      "block_mroot": "checksum256",
-      "producer": "account_name",
-      "schedule_version": "uint32",
-      "new_producers": "producer_schedule?"
-    }
-  },
-  "packed_transaction": {
-    "fields": {
-      "signatures": "signature[]",
-      "compression": "uint8",
-      "packed_context_free_data": "bytes",
-      "packed_trx": "bytes"
-    }
-  }
-}
-
-},{}],140:[function(require,module,exports){
-module.exports={
-  "version": "eosio::abi/1.0",
-  "types": [],
-  "structs": [{
-      "name": "nonce",
-      "base": "",
-      "fields": [
-        {"name":"value", "type":"string"}
-      ]
-    }
-  ],
-  "actions": [{
-      "name": "nonce",
-      "type": "nonce",
-      "ricardian_contract": ""
-    }
-  ],
-  "tables": [],
-  "ricardian_clauses": [],
-  "abi_extensions": []
-}
-
-},{}],141:[function(require,module,exports){
-module.exports={
-   "version": "eosio::abi/1.0",
-   "types": [{
-      "new_type_name": "account_name",
-      "type": "name"
-   },{
-      "new_type_name": "permission_name",
-      "type": "name"
-   },{
-      "new_type_name": "action_name",
-      "type": "name"
-   },{
-      "new_type_name": "transaction_id_type",
-      "type": "checksum256"
-   },{
-      "new_type_name": "weight_type",
-      "type": "uint16"
-   }],
-   "____comment": "eosio.bios structs: set_account_limits, setpriv, set_global_limits, producer_key, set_producers, require_auth are provided so abi available for deserialization in future.",
-   "structs": [{
-      "name": "permission_level",
-      "base": "",
-      "fields": [
-        {"name":"actor",      "type":"account_name"},
-        {"name":"permission", "type":"permission_name"}
-      ]
-    },{
-      "name": "key_weight",
-      "base": "",
-      "fields": [
-        {"name":"key",    "type":"public_key"},
-        {"name":"weight", "type":"weight_type"}
-      ]
-    },{
-      "name": "bidname",
-      "base": "",
-      "fields": [
-        {"name":"bidder",  "type":"account_name"},
-        {"name":"newname", "type":"account_name"},
-        {"name":"bid", "type":"asset"}
-      ]
-    },{
-      "name": "permission_level_weight",
-      "base": "",
-      "fields": [
-        {"name":"permission", "type":"permission_level"},
-        {"name":"weight",     "type":"weight_type"}
-      ]
-    },{
-      "name": "wait_weight",
-      "base": "",
-      "fields": [
-        {"name":"wait_sec", "type":"uint32"},
-        {"name":"weight",   "type":"weight_type"}
-      ]
-    },{
-      "name": "authority",
-      "base": "",
-      "fields": [
-        {"name":"threshold", "type":"uint32"},
-        {"name":"keys",      "type":"key_weight[]"},
-        {"name":"accounts",  "type":"permission_level_weight[]"},
-        {"name":"waits",     "type":"wait_weight[]"}
-      ]
-    },{
-      "name": "newaccount",
-      "base": "",
-      "fields": [
-        {"name":"creator", "type":"account_name"},
-        {"name":"name",    "type":"account_name"},
-        {"name":"owner",   "type":"authority"},
-        {"name":"active",  "type":"authority"}
-      ]
-    },{
-      "name": "setcode",
-      "base": "",
-      "fields": [
-        {"name":"account",   "type":"account_name"},
-        {"name":"vmtype",    "type":"uint8"},
-        {"name":"vmversion", "type":"uint8"},
-        {"name":"code",      "type":"bytes"}
-      ]
-    },{
-      "name": "setabi",
-      "base": "",
-      "fields": [
-        {"name":"account", "type":"account_name"},
-        {"name":"abi",     "type":"bytes"}
-      ]
-    },{
-      "name": "updateauth",
-      "base": "",
-      "fields": [
-        {"name":"account",    "type":"account_name"},
-        {"name":"permission", "type":"permission_name"},
-        {"name":"parent",     "type":"permission_name"},
-        {"name":"auth",       "type":"authority"}
-      ]
-    },{
-      "name": "deleteauth",
-      "base": "",
-      "fields": [
-        {"name":"account",    "type":"account_name"},
-        {"name":"permission", "type":"permission_name"}
-      ]
-    },{
-      "name": "linkauth",
-      "base": "",
-      "fields": [
-        {"name":"account",     "type":"account_name"},
-        {"name":"code",        "type":"account_name"},
-        {"name":"type",        "type":"action_name"},
-        {"name":"requirement", "type":"permission_name"}
-      ]
-    },{
-      "name": "unlinkauth",
-      "base": "",
-      "fields": [
-        {"name":"account",     "type":"account_name"},
-        {"name":"code",        "type":"account_name"},
-        {"name":"type",        "type":"action_name"}
-      ]
-    },{
-      "name": "canceldelay",
-      "base": "",
-      "fields": [
-        {"name":"canceling_auth", "type":"permission_level"},
-        {"name":"trx_id",         "type":"transaction_id_type"}
-      ]
-    },{
-      "name": "onerror",
-      "base": "",
-      "fields": [
-        {"name":"sender_id", "type":"uint128"},
-        {"name":"sent_trx",  "type":"bytes"}
-      ]
-    },{
-      "name": "buyrambytes",
-      "base": "",
-      "fields": [
-         {"name":"payer", "type":"account_name"},
-         {"name":"receiver", "type":"account_name"},
-         {"name":"bytes", "type":"uint32"}
-      ]
-    },{
-      "name": "sellram",
-      "base": "",
-      "fields": [
-         {"name":"account", "type":"account_name"},
-         {"name":"bytes", "type":"uint64"}
-      ]
-    },{
-      "name": "buyram",
-      "base": "",
-      "fields": [
-         {"name":"payer", "type":"account_name"},
-         {"name":"receiver", "type":"account_name"},
-         {"name":"quant", "type":"asset"}
-      ]
-    },{
-      "name": "delegatebw",
-      "base": "",
-      "fields": [
-         {"name":"from", "type":"account_name"},
-         {"name":"receiver", "type":"account_name"},
-         {"name":"stake_net_quantity", "type":"asset"},
-         {"name":"stake_cpu_quantity", "type":"asset"},
-         {"name":"transfer", "type":"bool"}
-      ]
-    },{
-      "name": "undelegatebw",
-      "base": "",
-      "fields": [
-         {"name":"from", "type":"account_name"},
-         {"name":"receiver", "type":"account_name"},
-         {"name":"unstake_net_quantity", "type":"asset"},
-         {"name":"unstake_cpu_quantity", "type":"asset"}
-      ]
-    },{
-      "name": "refund",
-      "base": "",
-      "fields": [
-         {"name":"owner", "type":"account_name"}
-      ]
-    },{
-      "name": "delegated_bandwidth",
-      "base": "",
-      "fields": [
-         {"name":"from", "type":"account_name"},
-         {"name":"to", "type":"account_name"},
-         {"name":"net_weight", "type":"asset"},
-         {"name":"cpu_weight", "type":"asset"}
-      ]
-    },{
-      "name": "user_resources",
-      "base": "",
-      "fields": [
-         {"name":"owner", "type":"account_name"},
-         {"name":"net_weight", "type":"asset"},
-         {"name":"cpu_weight", "type":"asset"},
-         {"name":"ram_bytes", "type":"uint64"}
-      ]
-    },{
-      "name": "total_resources",
-      "base": "",
-      "fields": [
-         {"name":"owner", "type":"account_name"},
-         {"name":"net_weight", "type":"asset"},
-         {"name":"cpu_weight", "type":"asset"},
-         {"name":"ram_bytes", "type":"uint64"}
-      ]
-    },{
-      "name": "refund_request",
-      "base": "",
-      "fields": [
-         {"name":"owner", "type":"account_name"},
-         {"name":"request_time", "type":"time_point_sec"},
-         {"name":"net_amount", "type":"asset"},
-         {"name":"cpu_amount", "type":"asset"}
-      ]
-    },{
-      "name": "blockchain_parameters",
-      "base": "",
-      "fields": [
-
-         {"name":"max_block_net_usage",                 "type":"uint64"},
-         {"name":"target_block_net_usage_pct",          "type":"uint32"},
-         {"name":"max_transaction_net_usage",           "type":"uint32"},
-         {"name":"base_per_transaction_net_usage",      "type":"uint32"},
-         {"name":"net_usage_leeway",                    "type":"uint32"},
-         {"name":"context_free_discount_net_usage_num", "type":"uint32"},
-         {"name":"context_free_discount_net_usage_den", "type":"uint32"},
-         {"name":"max_block_cpu_usage",                 "type":"uint32"},
-         {"name":"target_block_cpu_usage_pct",          "type":"uint32"},
-         {"name":"max_transaction_cpu_usage",           "type":"uint32"},
-         {"name":"min_transaction_cpu_usage",           "type":"uint32"},
-         {"name":"max_transaction_lifetime",            "type":"uint32"},
-         {"name":"deferred_trx_expiration_window",      "type":"uint32"},
-         {"name":"max_transaction_delay",               "type":"uint32"},
-         {"name":"max_inline_action_size",              "type":"uint32"},
-         {"name":"max_inline_action_depth",             "type":"uint16"},
-         {"name":"max_authority_depth",                 "type":"uint16"}
-
-      ]
-    },{
-      "name": "eosio_global_state",
-      "base": "blockchain_parameters",
-      "fields": [
-         {"name":"max_ram_size",                  "type":"uint64"},
-         {"name":"total_ram_bytes_reserved",      "type":"uint64"},
-         {"name":"total_ram_stake",               "type":"int64"},
-         {"name":"last_producer_schedule_update", "type":"block_timestamp_type"},
-         {"name":"last_pervote_bucket_fill",      "type":"uint64"},
-         {"name":"pervote_bucket",                "type":"int64"},
-         {"name":"perblock_bucket",               "type":"int64"},
-         {"name":"total_unpaid_blocks",           "type":"uint32"},
-         {"name":"total_activated_stake",         "type":"int64"},
-         {"name":"thresh_activated_stake_time",   "type":"uint64"},
-         {"name":"last_producer_schedule_size",   "type":"uint16"},
-         {"name":"total_producer_vote_weight",    "type":"float64"},
-         {"name":"last_name_close",               "type":"block_timestamp_type"}
-      ]
-    },{
-      "name": "producer_info",
-      "base": "",
-      "fields": [
-         {"name":"owner",           "type":"account_name"},
-         {"name":"total_votes",     "type":"float64"},
-         {"name":"producer_key",    "type":"public_key"},
-         {"name":"is_active",       "type":"bool"},
-         {"name":"url",             "type":"string"},
-         {"name":"unpaid_blocks",   "type":"uint32"},
-         {"name":"last_claim_time", "type":"uint64"},
-         {"name":"location",        "type":"uint16"}
-      ]
-    },{
-      "name": "regproducer",
-      "base": "",
-      "fields": [
-        {"name":"producer",     "type":"account_name"},
-        {"name":"producer_key", "type":"public_key"},
-        {"name":"url",          "type":"string"},
-        {"name":"location",     "type":"uint16"}
-      ]
-    },{
-      "name": "unregprod",
-      "base": "",
-      "fields": [
-        {"name":"producer",     "type":"account_name"}
-      ]
-    },{
-      "name": "setram",
-      "base": "",
-      "fields": [
-        {"name":"max_ram_size",     "type":"uint64"}
-      ]
-    },{
-      "name": "regproxy",
-      "base": "",
-      "fields": [
-        {"name":"proxy",     "type":"account_name"},
-        {"name":"isproxy",   "type":"bool"}
-      ]
-    },{
-      "name": "voteproducer",
-      "base": "",
-      "fields": [
-        {"name":"voter",     "type":"account_name"},
-        {"name":"proxy",     "type":"account_name"},
-        {"name":"producers", "type":"account_name[]"}
-      ]
-    },{
-      "name": "voter_info",
-      "base": "",
-      "fields": [
-        {"name":"owner",                "type":"account_name"},
-        {"name":"proxy",                "type":"account_name"},
-        {"name":"producers",            "type":"account_name[]"},
-        {"name":"staked",               "type":"int64"},
-        {"name":"last_vote_weight",     "type":"float64"},
-        {"name":"proxied_vote_weight",  "type":"float64"},
-        {"name":"is_proxy",             "type":"bool"}
-      ]
-    },{
-      "name": "claimrewards",
-      "base": "",
-      "fields": [
-        {"name":"owner",   "type":"account_name"}
-      ]
-    },{
-      "name": "setpriv",
-      "base": "",
-      "fields": [
-        {"name":"account",    "type":"account_name"},
-        {"name":"is_priv",    "type":"int8"}
-      ]
-    },{
-      "name": "rmvproducer",
-      "base": "",
-      "fields": [
-        {"name":"producer", "type":"account_name"}
-      ]
-    },{
-      "name": "set_account_limits",
-      "base": "",
-      "fields": [
-        {"name":"account",    "type":"account_name"},
-        {"name":"ram_bytes",  "type":"int64"},
-        {"name":"net_weight", "type":"int64"},
-        {"name":"cpu_weight", "type":"int64"}
-      ]
-    },{
-      "name": "set_global_limits",
-      "base": "",
-      "fields": [
-        {"name":"cpu_usec_per_period",    "type":"int64"}
-      ]
-    },{
-      "name": "producer_key",
-      "base": "",
-      "fields": [
-        {"name":"producer_name",      "type":"account_name"},
-        {"name":"block_signing_key",  "type":"public_key"}
-      ]
-    },{
-      "name": "set_producers",
-      "base": "",
-      "fields": [
-        {"name":"schedule",   "type":"producer_key[]"}
-      ]
-    },{
-      "name": "require_auth",
-      "base": "",
-      "fields": [
-        {"name":"from", "type":"account_name"}
-      ]
-    },{
-      "name": "setparams",
-      "base": "",
-      "fields": [
-        {"name":"params", "type":"blockchain_parameters"}
-      ]
-    },{
-      "name": "connector",
-      "base": "",
-      "fields": [
-        {"name":"balance", "type":"asset"},
-        {"name":"weight", "type":"float64"}
-      ]
-    },{
-      "name": "exchange_state",
-      "base": "",
-      "fields": [
-        {"name":"supply", "type":"asset"},
-        {"name":"base", "type":"connector"},
-        {"name":"quote", "type":"connector"}
-      ]
-    }, {
-       "name": "namebid_info",
-       "base": "",
-       "fields": [
-          {"name":"newname", "type":"account_name"},
-          {"name":"high_bidder", "type":"account_name"},
-          {"name":"high_bid", "type":"int64"},
-          {"name":"last_bid_time", "type":"uint64"}
-       ]
-    }
-   ],
-   "actions": [{
-     "name": "newaccount",
-     "type": "newaccount",
-     "ricardian_contract": ""
-   },{
-     "name": "setcode",
-     "type": "setcode",
-     "ricardian_contract": ""
-   },{
-     "name": "setabi",
-     "type": "setabi",
-     "ricardian_contract": ""
-   },{
-     "name": "updateauth",
-     "type": "updateauth",
-     "ricardian_contract": ""
-   },{
-     "name": "deleteauth",
-     "type": "deleteauth",
-     "ricardian_contract": ""
-   },{
-     "name": "linkauth",
-     "type": "linkauth",
-     "ricardian_contract": ""
-   },{
-     "name": "unlinkauth",
-     "type": "unlinkauth",
-     "ricardian_contract": ""
-   },{
-     "name": "canceldelay",
-     "type": "canceldelay",
-     "ricardian_contract": ""
-   },{
-     "name": "onerror",
-     "type": "onerror",
-     "ricardian_contract": ""
-   },{
-      "name": "buyrambytes",
-      "type": "buyrambytes",
-      "ricardian_contract": ""
-   },{
-      "name": "buyram",
-      "type": "buyram",
-      "ricardian_contract": ""
-   },{
-      "name": "sellram",
-      "type": "sellram",
-      "ricardian_contract": ""
-   },{
-      "name": "delegatebw",
-      "type": "delegatebw",
-      "ricardian_contract": ""
-   },{
-      "name": "undelegatebw",
-      "type": "undelegatebw",
-      "ricardian_contract": ""
-   },{
-      "name": "refund",
-      "type": "refund",
-      "ricardian_contract": ""
-   },{
-      "name": "regproducer",
-      "type": "regproducer",
-      "ricardian_contract": ""
-   },{
-      "name": "setram",
-      "type": "setram",
-      "ricardian_contract": ""
-   },{
-      "name": "bidname",
-      "type": "bidname",
-      "ricardian_contract": ""
-   },{
-      "name": "unregprod",
-      "type": "unregprod",
-      "ricardian_contract": ""
-   },{
-      "name": "regproxy",
-      "type": "regproxy",
-      "ricardian_contract": ""
-   },{
-      "name": "voteproducer",
-      "type": "voteproducer",
-      "ricardian_contract": ""
-   },{
-      "name": "claimrewards",
-      "type": "claimrewards",
-      "ricardian_contract": ""
-   },{
-      "name": "setpriv",
-      "type": "setpriv",
-      "ricardian_contract": ""
-   },{
-      "name": "rmvproducer",
-      "type": "rmvproducer",
-      "ricardian_contract": ""
-   },{
-      "name": "setalimits",
-      "type": "set_account_limits",
-      "ricardian_contract": ""
-    },{
-      "name": "setglimits",
-      "type": "set_global_limits",
-      "ricardian_contract": ""
-    },{
-      "name": "setprods",
-      "type": "set_producers",
-      "ricardian_contract": ""
-    },{
-      "name": "reqauth",
-      "type": "require_auth",
-      "ricardian_contract": ""
-    },{
-      "name": "setparams",
-      "type": "setparams",
-      "ricardian_contract": ""
-    }],
-   "tables": [{
-      "name": "producers",
-      "type": "producer_info",
-      "index_type": "i64",
-      "key_names" : ["owner"],
-      "key_types" : ["uint64"]
-    },{
-      "name": "global",
-      "type": "eosio_global_state",
-      "index_type": "i64",
-      "key_names" : [],
-      "key_types" : []
-    },{
-      "name": "voters",
-      "type": "voter_info",
-      "index_type": "i64",
-      "key_names" : ["owner"],
-      "key_types" : ["account_name"]
-    },{
-      "name": "userres",
-      "type": "user_resources",
-      "index_type": "i64",
-      "key_names" : ["owner"],
-      "key_types" : ["uint64"]
-    },{
-      "name": "delband",
-      "type": "delegated_bandwidth",
-      "index_type": "i64",
-      "key_names" : ["to"],
-      "key_types" : ["uint64"]
-    },{
-      "name": "rammarket",
-      "type": "exchange_state",
-      "index_type": "i64",
-      "key_names" : ["supply"],
-      "key_types" : ["uint64"]
-    },{
-      "name": "refunds",
-      "type": "refund_request",
-      "index_type": "i64",
-      "key_names" : ["owner"],
-      "key_types" : ["uint64"]
-    },{
-       "name": "namebids",
-       "type": "namebid_info",
-       "index_type": "i64",
-       "key_names" : ["newname"],
-       "key_types" : ["account_name"]
-    }
-   ],
-   "ricardian_clauses": [],
-   "abi_extensions": []
-}
-
-},{}],142:[function(require,module,exports){
-module.exports={
-   "version": "eosio::abi/1.0",
-   "types": [{
-      "new_type_name": "account_name",
-      "type": "name"
-   }],
-  "structs": [{
-      "name": "transfer",
-      "base": "",
-      "fields": [
-        {"name":"from", "type":"account_name"},
-        {"name":"to", "type":"account_name"},
-        {"name":"quantity", "type":"asset"},
-        {"name":"memo", "type":"string"}
-      ]
-    },{
-     "name": "create",
-     "base": "",
-     "fields": [
-        {"name":"issuer", "type":"account_name"},
-        {"name":"maximum_supply", "type":"asset"}
-     ]
-  },{
-     "name": "issue",
-     "base": "",
-     "fields": [
-        {"name":"to", "type":"account_name"},
-        {"name":"quantity", "type":"asset"},
-        {"name":"memo", "type":"string"}
-     ]
-  },{
-      "name": "account",
-      "base": "",
-      "fields": [
-        {"name":"balance", "type":"asset"}
-      ]
-    },{
-      "name": "currency_stats",
-      "base": "",
-      "fields": [
-        {"name":"supply", "type":"asset"},
-        {"name":"max_supply", "type":"asset"},
-        {"name":"issuer", "type":"account_name"}
-      ]
-    }
-  ],
-  "actions": [{
-      "name": "transfer",
-      "type": "transfer",
-      "ricardian_contract": ""
-    },{
-      "name": "issue",
-      "type": "issue",
-      "ricardian_contract": ""
-    }, {
-      "name": "create",
-      "type": "create",
-      "ricardian_contract": ""
-    }
-
-  ],
-  "tables": [{
-      "name": "accounts",
-      "type": "account",
-      "index_type": "i64",
-      "key_names" : ["currency"],
-      "key_types" : ["uint64"]
-    },{
-      "name": "stat",
-      "type": "currency_stats",
-      "index_type": "i64",
-      "key_names" : ["currency"],
-      "key_types" : ["uint64"]
-    }
-  ],
-  "ricardian_clauses": [],
-  "abi_extensions": []
-}
-
-},{}],143:[function(require,module,exports){
-'use strict';
-
-var schema = Object.assign({}, require('./chain_types.json'));
-
-module.exports = schema;
-},{"./chain_types.json":139}],144:[function(require,module,exports){
-(function (Buffer){
-'use strict';
-
-var _slicedToArray2 = require('babel-runtime/helpers/slicedToArray');
-
-var _slicedToArray3 = _interopRequireDefault(_slicedToArray2);
-
-var _typeof2 = require('babel-runtime/helpers/typeof');
-
-var _typeof3 = _interopRequireDefault(_typeof2);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-var _require = require('eosjs-ecc'),
-    Signature = _require.Signature,
-    PublicKey = _require.PublicKey;
-
-var Fcbuffer = require('fcbuffer');
-var ByteBuffer = require('bytebuffer');
-var assert = require('assert');
-
-var schema = require('./schema');
-
-var _require2 = require('./format'),
-    isName = _require2.isName,
-    encodeName = _require2.encodeName,
-    decodeName = _require2.decodeName,
-    DecimalPad = _require2.DecimalPad,
-    DecimalImply = _require2.DecimalImply,
-    DecimalUnimply = _require2.DecimalUnimply,
-    printAsset = _require2.printAsset,
-    parseAsset = _require2.parseAsset;
-
-/** Configures Fcbuffer for EOS specific structs and types. */
-
-
-module.exports = function () {
-  var config = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-  var extendedSchema = arguments[1];
-
-  var structLookup = function structLookup(lookupName, account) {
-    var cache = config.abiCache.abi(account);
-
-    // Lookup by ABI action "name"
-    var _iteratorNormalCompletion = true;
-    var _didIteratorError = false;
-    var _iteratorError = undefined;
-
-    try {
-      for (var _iterator = cache.abi.actions[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-        var action = _step.value;
-
-        if (action.name === lookupName) {
-          var _struct = cache.structs[action.type];
-          if (_struct != null) {
-            return _struct;
-          }
-        }
-      }
-
-      // Lookup struct by "type"
-    } catch (err) {
-      _didIteratorError = true;
-      _iteratorError = err;
-    } finally {
-      try {
-        if (!_iteratorNormalCompletion && _iterator.return) {
-          _iterator.return();
-        }
-      } finally {
-        if (_didIteratorError) {
-          throw _iteratorError;
-        }
-      }
-    }
-
-    var struct = cache.structs[lookupName];
-    if (struct != null) {
-      return struct;
-    }
-
-    throw new Error('Missing ABI action: ' + lookupName);
-  };
-
-  // If nodeos does not have an ABI setup for a certain action.type, it will throw
-  // an error: `Invalid cast from object_type to string` .. forceActionDataHex
-  // may be used to until native ABI is added or fixed.
-  var forceActionDataHex = config.forceActionDataHex != null ? config.forceActionDataHex : true;
-
-  var override = Object.assign({}, authorityOverride, abiOverride(structLookup), wasmCodeOverride(config), actionDataOverride(structLookup, forceActionDataHex), config.override);
-
-  var eosTypes = {
-    name: function name() {
-      return [Name];
-    },
-    public_key: function public_key() {
-      return [variant(PublicKeyEcc)];
-    },
-
-    symbol: function symbol() {
-      return [_Symbol];
-    },
-    symbol_code: function symbol_code() {
-      return [SymbolCode];
-    },
-    extended_symbol: function extended_symbol() {
-      return [ExtendedSymbol];
-    },
-
-    asset: function asset() {
-      return [Asset];
-    }, // After Symbol: amount, precision, symbol, contract
-    extended_asset: function extended_asset() {
-      return [ExtendedAsset];
-    }, // After Asset: amount, precision, symbol, contract
-
-    signature: function signature() {
-      return [variant(SignatureType)];
-    }
-  };
-
-  var customTypes = Object.assign({}, eosTypes, config.customTypes);
-  config = Object.assign({ override: override }, { customTypes: customTypes }, config);
-
-  // Do not sort transaction actions
-  config.sort = Object.assign({}, config.sort);
-  config.sort['action.authorization'] = true;
-  config.sort['signed_transaction.signature'] = true;
-  config.sort['authority.accounts'] = true;
-  config.sort['authority.keys'] = true;
-
-  var fullSchema = Object.assign({}, schema, extendedSchema);
-
-  var _Fcbuffer = Fcbuffer(fullSchema, config),
-      structs = _Fcbuffer.structs,
-      types = _Fcbuffer.types,
-      errors = _Fcbuffer.errors,
-      fromBuffer = _Fcbuffer.fromBuffer,
-      toBuffer = _Fcbuffer.toBuffer;
-
-  if (errors.length !== 0) {
-    throw new Error(JSON.stringify(errors, null, 4));
-  }
-
-  return { structs: structs, types: types, fromBuffer: fromBuffer, toBuffer: toBuffer };
-};
-
-/**
-  Name eos::types native.hpp
-*/
-var Name = function Name(validation) {
-  return {
-    fromByteBuffer: function fromByteBuffer(b) {
-      var n = decodeName(b.readUint64(), false); // b is already in littleEndian
-      // if(validation.debug) {
-      //   console.error(`${n}`, '(Name.fromByteBuffer)')
-      // }
-      return n;
-    },
-    appendByteBuffer: function appendByteBuffer(b, value) {
-      // if(validation.debug) {
-      //   console.error(`${value}`, (Name.appendByteBuffer))
-      // }
-      b.writeUint64(encodeName(value, false)); // b is already in littleEndian
-    },
-    fromObject: function fromObject(value) {
-      return value;
-    },
-    toObject: function toObject(value) {
-      if (validation.defaults && value == null) {
-        return '';
-      }
-      return value;
-    }
-  };
-};
-
-/**
-  A variant is like having a version of an object.  A varint comes
-  first and identifies which type of object this is.
-
-  @arg {Array} variantArray array of types
-*/
-var variant = function variant() {
-  for (var _len = arguments.length, variantArray = Array(_len), _key = 0; _key < _len; _key++) {
-    variantArray[_key] = arguments[_key];
-  }
-
-  return function (validation, baseTypes, customTypes) {
-    var variants = variantArray.map(function (Type) {
-      return Type(validation, baseTypes, customTypes);
-    });
-    var staticVariant = baseTypes.static_variant(variants);
-
-    return {
-      fromByteBuffer: function fromByteBuffer(b) {
-        return staticVariant.fromByteBuffer(b);
-      },
-      appendByteBuffer: function appendByteBuffer(b, value) {
-        if (!Array.isArray(value)) {
-          value = [0, value];
-        }
-        staticVariant.appendByteBuffer(b, value);
-      },
-      fromObject: function fromObject(value) {
-        if (!Array.isArray(value)) {
-          value = [0, value];
-        }
-        return staticVariant.fromObject(value)[1];
-      },
-      toObject: function toObject(value) {
-        if (!Array.isArray(value)) {
-          value = [0, value];
-        }
-        return staticVariant.toObject(value)[1];
-      }
-    };
-  };
-};
-
-var PublicKeyEcc = function PublicKeyEcc(validation) {
-  return {
-    fromByteBuffer: function fromByteBuffer(b) {
-      var bcopy = b.copy(b.offset, b.offset + 33);
-      b.skip(33);
-      var pubbuf = Buffer.from(bcopy.toBinary(), 'binary');
-      return PublicKey.fromBuffer(pubbuf).toString();
-    },
-    appendByteBuffer: function appendByteBuffer(b, value) {
-      // if(validation.debug) {
-      //   console.error(`${value}`, 'PublicKeyType.appendByteBuffer')
-      // }
-      var buf = PublicKey.fromStringOrThrow(value).toBuffer();
-      b.append(buf.toString('binary'), 'binary');
-    },
-    fromObject: function fromObject(value) {
-      return value;
-    },
-    toObject: function toObject(value) {
-      if (validation.defaults && value == null) {
-        return 'EOS6MRy..';
-      }
-      return value;
-    }
-  };
-};
-
-/**
-  Internal: precision, symbol
-  External: symbol
-  @example 'SYS'
-*/
-var _Symbol = function _Symbol(validation) {
-  return {
-    fromByteBuffer: function fromByteBuffer(b) {
-      var bcopy = b.copy(b.offset, b.offset + 8);
-      b.skip(8);
-
-      var precision = bcopy.readUint8();
-      var bin = bcopy.toBinary();
-
-      var symbol = '';
-      var _iteratorNormalCompletion2 = true;
-      var _didIteratorError2 = false;
-      var _iteratorError2 = undefined;
-
-      try {
-        for (var _iterator2 = bin[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-          var code = _step2.value;
-
-          if (code == '\0') {
-            break;
-          }
-          symbol += code;
-        }
-      } catch (err) {
-        _didIteratorError2 = true;
-        _iteratorError2 = err;
-      } finally {
-        try {
-          if (!_iteratorNormalCompletion2 && _iterator2.return) {
-            _iterator2.return();
-          }
-        } finally {
-          if (_didIteratorError2) {
-            throw _iteratorError2;
-          }
-        }
-      }
-
-      return precision + ',' + symbol;
-    },
-    appendByteBuffer: function appendByteBuffer(b, value) {
-      var _parseAsset = parseAsset(value),
-          symbol = _parseAsset.symbol,
-          precision = _parseAsset.precision;
-
-      assert(precision != null, 'Precision unknown for symbol: ' + value);
-      var pad = '\0'.repeat(7 - symbol.length);
-      b.append(String.fromCharCode(precision) + symbol + pad);
-    },
-    fromObject: function fromObject(value) {
-      assert(value != null, 'Symbol is required: ' + value);
-
-      var _parseAsset2 = parseAsset(value),
-          symbol = _parseAsset2.symbol,
-          precision = _parseAsset2.precision;
-
-      if (precision == null) {
-        return symbol;
-      } else {
-        // Internal object, this can have the precision prefix
-        return precision + ',' + symbol;
-      }
-    },
-    toObject: function toObject(value) {
-      if (validation.defaults && value == null) {
-        return 'SYS';
-      }
-      // symbol only (without precision prefix)
-      return parseAsset(value).symbol;
-    }
-  };
-};
-
-/** Symbol type without the precision */
-var SymbolCode = function SymbolCode(validation) {
-  return {
-    fromByteBuffer: function fromByteBuffer(b) {
-      var bcopy = b.copy(b.offset, b.offset + 8);
-      b.skip(8);
-
-      var bin = bcopy.toBinary();
-
-      var symbol = '';
-      var _iteratorNormalCompletion3 = true;
-      var _didIteratorError3 = false;
-      var _iteratorError3 = undefined;
-
-      try {
-        for (var _iterator3 = bin[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-          var code = _step3.value;
-
-          if (code == '\0') {
-            break;
-          }
-          symbol += code;
-        }
-      } catch (err) {
-        _didIteratorError3 = true;
-        _iteratorError3 = err;
-      } finally {
-        try {
-          if (!_iteratorNormalCompletion3 && _iterator3.return) {
-            _iterator3.return();
-          }
-        } finally {
-          if (_didIteratorError3) {
-            throw _iteratorError3;
-          }
-        }
-      }
-
-      return '' + symbol;
-    },
-    appendByteBuffer: function appendByteBuffer(b, value) {
-      var _parseAsset3 = parseAsset(value),
-          symbol = _parseAsset3.symbol;
-
-      var pad = '\0'.repeat(8 - symbol.length);
-      b.append(symbol + pad);
-    },
-    fromObject: function fromObject(value) {
-      assert(value != null, 'Symbol is required: ' + value);
-
-      var _parseAsset4 = parseAsset(value),
-          symbol = _parseAsset4.symbol;
-
-      return symbol;
-    },
-    toObject: function toObject(value) {
-      if (validation.defaults && value == null) {
-        return 'SYS';
-      }
-      return parseAsset(value).symbol;
-    }
-  };
-};
-
-/**
-  Internal: precision, symbol, contract
-  External: symbol, contract
-  @example 'SYS@contract'
-*/
-var ExtendedSymbol = function ExtendedSymbol(validation, baseTypes, customTypes) {
-  var symbolType = customTypes.symbol(validation);
-  var contractName = customTypes.name(validation);
-
-  return {
-    fromByteBuffer: function fromByteBuffer(b) {
-      var symbol = symbolType.fromByteBuffer(b);
-      var contract = contractName.fromByteBuffer(b);
-      return symbol + '@' + contract;
-    },
-    appendByteBuffer: function appendByteBuffer(b, value) {
-      assert.equal(typeof value === 'undefined' ? 'undefined' : (0, _typeof3.default)(value), 'string', 'Invalid extended symbol: ' + value);
-
-      var _value$split = value.split('@'),
-          _value$split2 = (0, _slicedToArray3.default)(_value$split, 2),
-          symbol = _value$split2[0],
-          contract = _value$split2[1];
-
-      assert(contract != null, 'Missing @contract suffix in extended symbol: ' + value);
-
-      symbolType.appendByteBuffer(b, symbol);
-      contractName.appendByteBuffer(b, contract);
-    },
-    fromObject: function fromObject(value) {
-      return value;
-    },
-    toObject: function toObject(value) {
-      if (validation.defaults && value == null) {
-        return 'SYS@contract';
-      }
-      return value;
-    }
-  };
-};
-
-/**
-  Internal: amount, precision, symbol, contract
-  @example '1.0000 SYS'
-*/
-var Asset = function Asset(validation, baseTypes, customTypes) {
-  var amountType = baseTypes.int64(validation);
-  var symbolType = customTypes.symbol(validation);
-
-  return {
-    fromByteBuffer: function fromByteBuffer(b) {
-      var amount = amountType.fromByteBuffer(b);
-      assert(amount != null, 'amount');
-
-      var sym = symbolType.fromByteBuffer(b);
-
-      var _parseAsset5 = parseAsset('' + sym),
-          precision = _parseAsset5.precision,
-          symbol = _parseAsset5.symbol;
-
-      assert(precision != null, 'precision');
-      assert(symbol != null, 'symbol');
-
-      return DecimalUnimply(amount, precision) + ' ' + symbol;
-    },
-    appendByteBuffer: function appendByteBuffer(b, value) {
-      var _parseAsset6 = parseAsset(value),
-          amount = _parseAsset6.amount,
-          precision = _parseAsset6.precision,
-          symbol = _parseAsset6.symbol;
-
-      assert(amount != null, 'amount');
-      assert(precision != null, 'precision');
-      assert(symbol != null, 'symbol');
-
-      amountType.appendByteBuffer(b, DecimalImply(amount, precision));
-      symbolType.appendByteBuffer(b, precision + ',' + symbol);
-    },
-    fromObject: function fromObject(value) {
-      var _parseAsset7 = parseAsset(value),
-          amount = _parseAsset7.amount,
-          precision = _parseAsset7.precision,
-          symbol = _parseAsset7.symbol;
-
-      assert(amount != null, 'amount');
-      assert(precision != null, 'precision');
-      assert(symbol != null, 'symbol');
-
-      return DecimalPad(amount, precision) + ' ' + symbol;
-    },
-    toObject: function toObject(value) {
-      if (validation.defaults && value == null) {
-        return '0.0001 SYS';
-      }
-
-      var _parseAsset8 = parseAsset(value),
-          amount = _parseAsset8.amount,
-          precision = _parseAsset8.precision,
-          symbol = _parseAsset8.symbol;
-
-      assert(amount != null, 'amount');
-      assert(precision != null, 'precision');
-      assert(symbol != null, 'symbol');
-
-      return DecimalPad(amount, precision) + ' ' + symbol;
-    }
-  };
-};
-
-/**
-  @example '1.0000 SYS@contract'
-*/
-var ExtendedAsset = function ExtendedAsset(validation, baseTypes, customTypes) {
-  var assetType = customTypes.asset(validation);
-  var contractName = customTypes.name(validation);
-
-  return {
-    fromByteBuffer: function fromByteBuffer(b) {
-      var asset = assetType.fromByteBuffer(b);
-      var contract = contractName.fromByteBuffer(b);
-      return parseAsset(asset + '@' + contract);
-    },
-    appendByteBuffer: function appendByteBuffer(b, value) {
-      assert.equal(typeof value === 'undefined' ? 'undefined' : (0, _typeof3.default)(value), 'object', 'expecting extended_asset object, got ' + (typeof value === 'undefined' ? 'undefined' : (0, _typeof3.default)(value)));
-
-      var asset = printAsset(value);
-
-      var _asset$split = asset.split('@'),
-          _asset$split2 = (0, _slicedToArray3.default)(_asset$split, 2),
-          contract = _asset$split2[1];
-
-      assert.equal(typeof contract === 'undefined' ? 'undefined' : (0, _typeof3.default)(contract), 'string', 'Invalid extended asset: ' + value);
-
-      // asset includes contract (assetType needs this)
-      assetType.appendByteBuffer(b, asset);
-      contractName.appendByteBuffer(b, contract);
-    },
-    fromObject: function fromObject(value) {
-      // like: 1.0000 SYS@contract or 1 SYS@contract
-      var asset = {};
-      if (typeof value === 'string') {
-        Object.assign(asset, parseAsset(value));
-      } else if ((typeof value === 'undefined' ? 'undefined' : (0, _typeof3.default)(value)) === 'object') {
-        Object.assign(asset, value);
-      } else {
-        assert(false, 'expecting extended_asset<object|string>, got: ' + (typeof value === 'undefined' ? 'undefined' : (0, _typeof3.default)(value)));
-      }
-
-      var amount = asset.amount,
-          precision = asset.precision,
-          symbol = asset.symbol,
-          contract = asset.contract;
-
-      assert(amount != null, 'missing amount');
-      assert(precision != null, 'missing precision');
-      assert(symbol != null, 'missing symbol');
-      assert(contract != null, 'missing contract');
-
-      return { amount: amount, precision: precision, symbol: symbol, contract: contract };
-    },
-    toObject: function toObject(value) {
-      if (validation.defaults && value == null) {
-        return {
-          amount: '1.0000',
-          precision: 4,
-          symbol: 'SYS',
-          contract: 'eosio.token'
-        };
-      }
-
-      assert.equal(typeof value === 'undefined' ? 'undefined' : (0, _typeof3.default)(value), 'object', 'expecting extended_asset object');
-      var amount = value.amount,
-          precision = value.precision,
-          symbol = value.symbol,
-          contract = value.contract;
-
-
-      return {
-        amount: DecimalPad(amount, precision),
-        precision: precision,
-        symbol: symbol,
-        contract: contract
-      };
-    }
-  };
-};
-
-var SignatureType = function SignatureType(validation, baseTypes) {
-  var signatureType = baseTypes.fixed_bytes65(validation);
-  return {
-    fromByteBuffer: function fromByteBuffer(b) {
-      var signatureBuffer = signatureType.fromByteBuffer(b);
-      var signature = Signature.from(signatureBuffer);
-      return signature.toString();
-    },
-    appendByteBuffer: function appendByteBuffer(b, value) {
-      var signature = Signature.from(value);
-      signatureType.appendByteBuffer(b, signature.toBuffer());
-    },
-    fromObject: function fromObject(value) {
-      var signature = Signature.from(value);
-      return signature.toString();
-    },
-    toObject: function toObject(value) {
-      if (validation.defaults && value == null) {
-        return 'SIG_K1_bas58signature..';
-      }
-      var signature = Signature.from(value);
-      return signature.toString();
-    }
-  };
-};
-
-var authorityOverride = {
-  /** shorthand `EOS6MRyAj..` */
-  'authority.fromObject': function authorityFromObject(value) {
-    if (PublicKey.fromString(value)) {
-      return {
-        threshold: 1,
-        keys: [{ key: value, weight: 1 }]
-      };
-    }
-    if (typeof value === 'string') {
-      var _value$split3 = value.split('@'),
-          _value$split4 = (0, _slicedToArray3.default)(_value$split3, 2),
-          account = _value$split4[0],
-          _value$split4$ = _value$split4[1],
-          permission = _value$split4$ === undefined ? 'active' : _value$split4$;
-
-      return {
-        threshold: 1,
-        accounts: [{
-          permission: {
-            actor: account,
-            permission: permission
-          },
-          weight: 1
-        }]
-      };
-    }
-  }
-};
-
-var abiOverride = function abiOverride(structLookup) {
-  return {
-    'abi_def.fromObject': function abi_defFromObject(value) {
-      if (typeof value === 'string') {
-        var json = Buffer.from(value, 'hex').toString();
-        if (json.length === 0) {
-          json = Buffer.from(value).toString();
-        }
-        return JSON.parse(json);
-      }
-      if (Buffer.isBuffer(value)) {
-        return JSON.parse(value.toString());
-      }
-      return null; // let the default type take care of it
-    },
-
-    'setabi.abi.appendByteBuffer': function setabiAbiAppendByteBuffer(_ref) {
-      var fields = _ref.fields,
-          object = _ref.object,
-          b = _ref.b;
-
-      var ser = structLookup('abi_def', 'eosio');
-      var b2 = new ByteBuffer(ByteBuffer.DEFAULT_CAPACITY, ByteBuffer.LITTLE_ENDIAN);
-
-      if (Buffer.isBuffer(object.abi)) {
-        b2.append(object.abi);
-      } else if ((0, _typeof3.default)(object.abi) == 'object') {
-        ser.appendByteBuffer(b2, object.abi);
-      }
-
-      b.writeVarint32(b2.offset); // length prefix
-      b.append(b2.copy(0, b2.offset), 'binary');
-    }
-  };
-};
-
-var wasmCodeOverride = function wasmCodeOverride(config) {
-  return {
-    'setcode.code.fromObject': function setcodeCodeFromObject(_ref2) {
-      var object = _ref2.object,
-          result = _ref2.result;
-
-      try {
-        var code = object.code.toString();
-        if (/^\s*\(module/.test(code)) {
-          var binaryen = config.binaryen;
-
-          assert(binaryen != null, 'required: config.binaryen = require("binaryen")');
-          if (config.debug) {
-            console.log('Assembling WASM..');
-          }
-          var wasm = Buffer.from(binaryen.parseText(code).emitBinary());
-          result.code = wasm;
-        } else {
-          result.code = object.code;
-        }
-      } catch (error) {
-        console.error(error, object.code);
-        throw error;
-      }
-    }
-  };
-};
-
-/**
-  Nested serialized structure.  Nested struct may be in HEX or object format.
-*/
-var actionDataOverride = function actionDataOverride(structLookup, forceActionDataHex) {
-  return {
-    'action.data.fromByteBuffer': function actionDataFromByteBuffer(_ref3) {
-      var fields = _ref3.fields,
-          object = _ref3.object,
-          b = _ref3.b,
-          config = _ref3.config;
-
-      var ser = (object.name || '') == '' ? fields.data : structLookup(object.name, object.account);
-      if (ser) {
-        b.readVarint32(); // length prefix (usefull if object.name is unknown)
-        object.data = ser.fromByteBuffer(b, config);
-      } else {
-        // console.log(`Unknown Action.name ${object.name}`)
-        var lenPrefix = b.readVarint32();
-        var bCopy = b.copy(b.offset, b.offset + lenPrefix);
-        b.skip(lenPrefix);
-        object.data = Buffer.from(bCopy.toBinary(), 'binary');
-      }
-    },
-
-    'action.data.appendByteBuffer': function actionDataAppendByteBuffer(_ref4) {
-      var fields = _ref4.fields,
-          object = _ref4.object,
-          b = _ref4.b;
-
-      var ser = (object.name || '') == '' ? fields.data : structLookup(object.name, object.account);
-      if (ser) {
-        var b2 = new ByteBuffer(ByteBuffer.DEFAULT_CAPACITY, ByteBuffer.LITTLE_ENDIAN);
-        ser.appendByteBuffer(b2, object.data);
-        b.writeVarint32(b2.offset);
-        b.append(b2.copy(0, b2.offset), 'binary');
-      } else {
-        // console.log(`Unknown Action.name ${object.name}`)
-        var data = typeof object.data === 'string' ? new Buffer(object.data, 'hex') : object.data;
-        if (!Buffer.isBuffer(data)) {
-          throw new TypeError('Unknown struct \'' + object.name + '\' for contract \'' + object.account + '\', locate this struct or provide serialized action.data');
-        }
-        b.writeVarint32(data.length);
-        b.append(data.toString('binary'), 'binary');
-      }
-    },
-
-    'action.data.fromObject': function actionDataFromObject(_ref5) {
-      var fields = _ref5.fields,
-          object = _ref5.object,
-          result = _ref5.result;
-      var data = object.data,
-          name = object.name;
-
-      var ser = (name || '') == '' ? fields.data : structLookup(name, object.account);
-      if (ser) {
-        if ((typeof data === 'undefined' ? 'undefined' : (0, _typeof3.default)(data)) === 'object') {
-          result.data = ser.fromObject(data); // resolve shorthand
-        } else if (typeof data === 'string') {
-          var buf = new Buffer(data, 'hex');
-          result.data = Fcbuffer.fromBuffer(ser, buf);
-        } else {
-          throw new TypeError('Expecting hex string or object in action.data');
-        }
-      } else {
-        // console.log(`Unknown Action.name ${object.name}`)
-        result.data = data;
-      }
-    },
-
-    'action.data.toObject': function actionDataToObject(_ref6) {
-      var fields = _ref6.fields,
-          object = _ref6.object,
-          result = _ref6.result,
-          config = _ref6.config;
-
-      var _ref7 = object || {},
-          data = _ref7.data,
-          name = _ref7.name;
-
-      var ser = (name || '') == '' ? fields.data : structLookup(name, object.account);
-      if (!ser) {
-        // Types without an ABI will accept hex
-        result.data = Buffer.isBuffer(data) ? data.toString('hex') : data;
-        return;
-      }
-
-      if (forceActionDataHex) {
-        var b2 = new ByteBuffer(ByteBuffer.DEFAULT_CAPACITY, ByteBuffer.LITTLE_ENDIAN);
-        if (data) {
-          ser.appendByteBuffer(b2, data);
-        }
-        result.data = b2.copy(0, b2.offset).toString('hex');
-        // console.log('result.data', result.data)
-        return;
-      }
-
-      // Serializable JSON
-      result.data = ser.toObject(data, config);
-    }
-  };
-};
-}).call(this,require("buffer").Buffer)
-},{"./format":137,"./schema":143,"assert":177,"babel-runtime/helpers/slicedToArray":6,"babel-runtime/helpers/typeof":7,"buffer":180,"bytebuffer":34,"eosjs-ecc":130,"fcbuffer":148}],145:[function(require,module,exports){
-(function (Buffer){
-'use strict';
-
-var _slicedToArray2 = require('babel-runtime/helpers/slicedToArray');
-
-var _slicedToArray3 = _interopRequireDefault(_slicedToArray2);
-
-var _regenerator = require('babel-runtime/regenerator');
-
-var _regenerator2 = _interopRequireDefault(_regenerator);
-
-var _typeof2 = require('babel-runtime/helpers/typeof');
-
-var _typeof3 = _interopRequireDefault(_typeof2);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-var assert = require('assert');
-var ecc = require('eosjs-ecc');
-var Fcbuffer = require('fcbuffer');
-var createHash = require('create-hash');
-
-var _require = require('eosjs-api'),
-    processArgs = _require.processArgs;
-
-var Structs = require('./structs');
-
-module.exports = writeApiGen;
-
-var sign = ecc.sign;
-
-
-function writeApiGen(Network, network, structs, config, abis) {
-  if (typeof config.chainId !== 'string') {
-    throw new TypeError('config.chainId is required');
-  }
-  var writeApi = WriteApi(Network, network, config, structs.transaction);
-  var reserveFunctions = new Set(['transaction', 'contract']);
-
-  var merge = {};
-  // sends transactions, can act as an action collecting wrapper
-  merge.transaction = writeApi.genTransaction(structs, merge);
-
-  // Immediate send operations automatically calls merge.transaction
-  var _iteratorNormalCompletion = true;
-  var _didIteratorError = false;
-  var _iteratorError = undefined;
-
-  try {
-    for (var _iterator = abis[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-      var abi = _step.value;
-
-      for (var type in abi.schema) {
-        var typeStruct = abi.schema[type];
-        if (typeof typeStruct === 'string') {
-          // skip types like; name, account_name, etc..
-          continue;
-        }
-
-        assert.equal(typeof typeStruct === 'undefined' ? 'undefined' : (0, _typeof3.default)(typeStruct), 'object', 'abi.schema[type = ' + type + ']');
-
-        var action = typeStruct.action;
-
-        if (action === undefined) {
-          // ABI private struct
-          continue;
-        }
-
-        if (reserveFunctions.has(action.name)) {
-          throw new TypeError('Conflicting Api function: ' + type);
-        }
-
-        var definition = schemaFields(abi.schema, type);
-        merge[action.name] = writeApi.genMethod(type, definition, merge.transaction, action.account, action.name);
-      }
-    }
-
-    /**
-      Immedate send contract actions.
-       @example eos.contract('mycontract', [options], [callback])
-      @example eos.contract('mycontract').then(mycontract => mycontract.myaction(...))
-    */
-  } catch (err) {
-    _didIteratorError = true;
-    _iteratorError = err;
-  } finally {
-    try {
-      if (!_iteratorNormalCompletion && _iterator.return) {
-        _iterator.return();
-      }
-    } finally {
-      if (_didIteratorError) {
-        throw _iteratorError;
-      }
-    }
-  }
-
-  merge.contract = function () {
-    for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-      args[_key] = arguments[_key];
-    }
-
-    var _processArgs = processArgs(args, ['account'], 'contract', optionsFormatter),
-        params = _processArgs.params,
-        options = _processArgs.options,
-        returnPromise = _processArgs.returnPromise,
-        callback = _processArgs.callback;
-
-    var account = params.account;
-
-    // sends transactions via its own transaction function
-
-    writeApi.genContractActions(account).then(function (r) {
-      callback(null, r);
-    }).catch(function (r) {
-      callback(r);
-    });
-
-    return returnPromise;
-  };
-
-  return merge;
-}
-
-function WriteApi(Network, network, config, Transaction) {
-  /**
-    @arg {array} [args.contracts]
-    @arg {callback|object} args.transaction tr => {tr.transfer .. }
-    @arg {object} [args.options]
-    @arg {function} [args.callback]
-  */
-  var genTransaction = function genTransaction(structs, merge) {
-    return function _callee() {
-      for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-        args[_key2] = arguments[_key2];
-      }
-
-      var contracts, options, callback, isContractArray, accounts, _iteratorNormalCompletion2, _didIteratorError2, _iteratorError2, _iterator2, _step2, action, abiPromises, cachedCode, arg, contractPromises, _iteratorNormalCompletion3, _didIteratorError3, _iteratorError3, _iterator3, _step3, account;
-
-      return _regenerator2.default.async(function _callee$(_context) {
-        while (1) {
-          switch (_context.prev = _context.next) {
-            case 0:
-              contracts = void 0, options = void 0, callback = void 0;
-
-
-              if (args[args.length - 1] == null) {
-                // callback may be undefined
-                args = args.slice(0, args.length - 1);
-              }
-
-              isContractArray = isStringArray(args[0]);
-
-              if (!isContractArray) {
-                _context.next = 8;
-                break;
-              }
-
-              contracts = args[0];
-              args = args.slice(1);
-              _context.next = 39;
-              break;
-
-            case 8:
-              if (!(typeof args[0] === 'string')) {
-                _context.next = 13;
-                break;
-              }
-
-              contracts = [args[0]];
-              args = args.slice(1);
-              _context.next = 39;
-              break;
-
-            case 13:
-              if (!((0, _typeof3.default)(args[0]) === 'object' && Array.isArray(args[0].actions))) {
-                _context.next = 39;
-                break;
-              }
-
-              // full transaction, lookup ABIs used by each action
-              accounts = new Set(); // make a unique list
-
-              // TODO: Add args[0].context_free_actions to accounts too?
-
-              _iteratorNormalCompletion2 = true;
-              _didIteratorError2 = false;
-              _iteratorError2 = undefined;
-              _context.prev = 18;
-              for (_iterator2 = args[0].actions[Symbol.iterator](); !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-                action = _step2.value;
-
-                accounts.add(action.account);
-              }
-
-              _context.next = 26;
-              break;
-
-            case 22:
-              _context.prev = 22;
-              _context.t0 = _context['catch'](18);
-              _didIteratorError2 = true;
-              _iteratorError2 = _context.t0;
-
-            case 26:
-              _context.prev = 26;
-              _context.prev = 27;
-
-              if (!_iteratorNormalCompletion2 && _iterator2.return) {
-                _iterator2.return();
-              }
-
-            case 29:
-              _context.prev = 29;
-
-              if (!_didIteratorError2) {
-                _context.next = 32;
-                break;
-              }
-
-              throw _iteratorError2;
-
-            case 32:
-              return _context.finish(29);
-
-            case 33:
-              return _context.finish(26);
-
-            case 34:
-              abiPromises = [];
-
-              // Eos contract operations are cached (efficient and offline transactions)
-
-              cachedCode = new Set(['eosio', 'eosio.token', 'eosio.null']);
-
-              accounts.forEach(function (account) {
-                if (!cachedCode.has(account)) {
-                  abiPromises.push(config.abiCache.abiAsync(account));
-                }
-              });
-              _context.next = 39;
-              return _regenerator2.default.awrap(Promise.all(abiPromises));
-
-            case 39:
-
-              if (args.length > 1 && typeof args[args.length - 1] === 'function') {
-                callback = args.pop();
-              }
-
-              if (args.length > 1 && (0, _typeof3.default)(args[args.length - 1]) === 'object') {
-                options = args.pop();
-              }
-
-              assert.equal(args.length, 1, 'transaction args: contracts<string|array>, transaction<callback|object>, [options], [callback]');
-              arg = args[0];
-
-              if (!contracts) {
-                _context.next = 67;
-                break;
-              }
-
-              assert(!callback, 'callback with contracts are not supported');
-              assert.equal('function', typeof arg === 'undefined' ? 'undefined' : (0, _typeof3.default)(arg), 'provide function callback following contracts array parameter');
-
-              contractPromises = [];
-              _iteratorNormalCompletion3 = true;
-              _didIteratorError3 = false;
-              _iteratorError3 = undefined;
-              _context.prev = 50;
-
-              for (_iterator3 = contracts[Symbol.iterator](); !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-                account = _step3.value;
-
-                // setup wrapper functions to collect contract api calls
-                contractPromises.push(genContractActions(account, merge.transaction));
-              }
-
-              _context.next = 58;
-              break;
-
-            case 54:
-              _context.prev = 54;
-              _context.t1 = _context['catch'](50);
-              _didIteratorError3 = true;
-              _iteratorError3 = _context.t1;
-
-            case 58:
-              _context.prev = 58;
-              _context.prev = 59;
-
-              if (!_iteratorNormalCompletion3 && _iterator3.return) {
-                _iterator3.return();
-              }
-
-            case 61:
-              _context.prev = 61;
-
-              if (!_didIteratorError3) {
-                _context.next = 64;
-                break;
-              }
-
-              throw _iteratorError3;
-
-            case 64:
-              return _context.finish(61);
-
-            case 65:
-              return _context.finish(58);
-
-            case 66:
-              return _context.abrupt('return', Promise.all(contractPromises).then(function (actions) {
-                var merges = {};
-                actions.forEach(function (m, i) {
-                  merges[contracts[i]] = m;
-                });
-                var param = isContractArray ? merges : merges[contracts[0]];
-                // collect and invoke api calls
-                return trMessageCollector(arg, options, param);
-              }));
-
-            case 67:
-              if (!(typeof arg === 'function')) {
-                _context.next = 69;
-                break;
-              }
-
-              return _context.abrupt('return', trMessageCollector(arg, options, merge));
-
-            case 69:
-              if (!((typeof arg === 'undefined' ? 'undefined' : (0, _typeof3.default)(arg)) === 'object')) {
-                _context.next = 71;
-                break;
-              }
-
-              return _context.abrupt('return', transaction(arg, options, callback));
-
-            case 71:
-              throw new Error('first transaction argument unrecognized', arg);
-
-            case 72:
-            case 'end':
-              return _context.stop();
-          }
-        }
-      }, null, this, [[18, 22, 26, 34], [27,, 29, 33], [50, 54, 58, 66], [59,, 61, 65]]);
-    };
-  };
-
-  function genContractActions(account) {
-    var transaction = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
-
-    return config.abiCache.abiAsync(account).then(function (cache) {
-      assert(Array.isArray(cache.abi.actions) && cache.abi.actions.length, 'No actions');
-
-      var contractMerge = {};
-      contractMerge.transaction = transaction ? transaction : genTransaction(cache.structs, contractMerge);
-
-      cache.abi.actions.forEach(function (_ref) {
-        var name = _ref.name,
-            type = _ref.type;
-
-        var definition = schemaFields(cache.schema, type);
-        contractMerge[name] = genMethod(type, definition, contractMerge.transaction, account, name);
-      });
-
-      contractMerge.fc = cache;
-
-      return contractMerge;
-    });
-  }
-
-  function genMethod(type, definition, transactionArg) {
-    var account = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 'eosio.token';
-    var name = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : type;
-
-    return function () {
-      for (var _len3 = arguments.length, args = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
-        args[_key3] = arguments[_key3];
-      }
-
-      if (args.length === 0) {
-        console.log(usage({ name: name, type: type }, definition, Network, account, config));
-        return;
-      }
-
-      // Special case like multi-action transactions where this lib needs
-      // to be sure the broadcast is off.
-      var optionOverrides = {};
-      var lastArg = args[args.length - 1];
-      if ((typeof lastArg === 'undefined' ? 'undefined' : (0, _typeof3.default)(lastArg)) === 'object' && (0, _typeof3.default)(lastArg.__optionOverrides) === 'object') {
-        // pop() fixes the args.length
-        Object.assign(optionOverrides, args.pop().__optionOverrides);
-      }
-
-      var processedArgs = processArgs(args, Object.keys(definition), type, optionsFormatter);
-
-      var options = processedArgs.options;
-      var params = processedArgs.params,
-          returnPromise = processedArgs.returnPromise,
-          callback = processedArgs.callback;
-
-
-      var optionDefaults = { // From config and configDefaults
-        broadcast: config.broadcast,
-        sign: config.sign
-
-        // internal options (ex: multi-action transaction)
-      };options = Object.assign({}, optionDefaults, options, optionOverrides);
-      if (optionOverrides.noCallback && !returnPromise) {
-        throw new Error('Callback during a transaction are not supported');
-      }
-
-      var authorization = [];
-      var providedAuth = options.authorization ? options.authorization : config.authorization;
-      var addDefaultAuths = providedAuth == null;
-
-      // Often if the first field in an action is an account name it is
-      // also the required authorization.
-      function firstAccount() {
-        var fieldKeys = Object.keys(definition);
-        var f1 = fieldKeys[0];
-
-        if (definition[f1] === 'account_name') {
-          return params[f1];
-        }
-      }
-
-      if (providedAuth) {
-        var authArray = void 0;
-        if (typeof providedAuth === 'string') {
-          authArray = [providedAuth];
-        } else if (Array.isArray(providedAuth)) {
-          authArray = providedAuth;
-        }
-
-        if (authArray) {
-          authArray.forEach(function (auth) {
-            if (typeof auth === 'string') {
-              var _auth$split = auth.split('@'),
-                  _auth$split2 = (0, _slicedToArray3.default)(_auth$split, 2),
-                  actor = _auth$split2[0],
-                  _auth$split2$ = _auth$split2[1],
-                  permission = _auth$split2$ === undefined ? 'active' : _auth$split2$;
-
-              if (actor === '') {
-                actor = firstAccount();
-              }
-              if (actor) {
-                authorization.push({ actor: actor, permission: permission });
-              }
-            } else if ((typeof auth === 'undefined' ? 'undefined' : (0, _typeof3.default)(auth)) === 'object') {
-              authorization.push(auth);
-            }
-          });
-        }
-
-        assert.equal(authorization.length, authArray.length, 'invalid authorization in: ' + JSON.stringify(providedAuth));
-      }
-
-      var tr = {
-        actions: [{
-          account: account,
-          name: name,
-          authorization: authorization,
-          data: params
-        }]
-      };
-
-      if (addDefaultAuths) {
-        var actor = firstAccount();
-        if (actor) {
-          // Default authorization (since user did not provide one)
-          tr.actions[0].authorization.push({
-            actor: actor,
-            permission: 'active'
-          });
-        }
-      }
-
-      tr.actions[0].authorization.sort(function (a, b) {
-        return a.actor > b.actor ? 1 : a.actor < b.actor ? -1 : 0;
-      });
-
-      // multi-action transaction support
-      if (!optionOverrides.messageOnly) {
-        transactionArg(tr, options, callback);
-      } else {
-        callback(null, tr);
-      }
-
-      return returnPromise;
-    };
-  }
-
-  /**
-    Transaction Message Collector
-     Wrap merge.functions adding optionOverrides that will suspend
-    transaction broadcast.
-  */
-  function trMessageCollector(trCallback) {
-    var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-    var merges = arguments[2];
-
-    assert.equal('function', typeof trCallback === 'undefined' ? 'undefined' : (0, _typeof3.default)(trCallback), 'trCallback');
-    assert.equal('object', typeof options === 'undefined' ? 'undefined' : (0, _typeof3.default)(options), 'options');
-    assert.equal('object', typeof merges === 'undefined' ? 'undefined' : (0, _typeof3.default)(merges), 'merges');
-    assert(!Array.isArray(merges), 'merges should not be an array');
-    assert.equal('function', typeof transaction === 'undefined' ? 'undefined' : (0, _typeof3.default)(transaction), 'transaction');
-
-    var messageList = [];
-    var messageCollector = {};
-
-    var wrap = function wrap(opFunction) {
-      return function () {
-        for (var _len4 = arguments.length, args = Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
-          args[_key4] = arguments[_key4];
-        }
-
-        // call the original function but force-disable a lot of stuff
-        var ret = opFunction.apply(undefined, args.concat([{
-          __optionOverrides: {
-            broadcast: false,
-            messageOnly: true,
-            noCallback: true
-          }
-        }]));
-        if (ret == null) {
-          // double-check (code can change)
-          throw new Error('Callbacks can not be used when creating a multi-action transaction');
-        }
-        messageList.push(ret);
-      };
-    };
-
-    // merges can be an object of functions (as in the main eos contract)
-    // or an object of contract names with functions under those
-    for (var key in merges) {
-      var value = merges[key];
-      var variableName = key.replace(/\./, '_');
-      if (typeof value === 'function') {
-        // Native operations (eos contract for example)
-        messageCollector[variableName] = wrap(value);
-      } else if ((typeof value === 'undefined' ? 'undefined' : (0, _typeof3.default)(value)) === 'object') {
-        // other contract(s) (currency contract for example)
-        if (messageCollector[variableName] == null) {
-          messageCollector[variableName] = {};
-        }
-        for (var key2 in value) {
-          if (key2 === 'transaction') {
-            continue;
-          }
-          messageCollector[variableName][key2] = wrap(value[key2]);
-        }
-      }
-    }
-
-    var promiseCollector = void 0;
-    try {
-      // caller will load this up with actions
-      promiseCollector = trCallback(messageCollector);
-    } catch (error) {
-      promiseCollector = Promise.reject(error);
-    }
-
-    return Promise.resolve(promiseCollector).then(function () {
-      return Promise.all(messageList).then(function (resolvedMessageList) {
-        var actions = [];
-        var _iteratorNormalCompletion4 = true;
-        var _didIteratorError4 = false;
-        var _iteratorError4 = undefined;
-
-        try {
-          for (var _iterator4 = resolvedMessageList[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
-            var m = _step4.value;
-
-            var _m$actions = (0, _slicedToArray3.default)(m.actions, 1),
-                action = _m$actions[0];
-
-            actions.push(action);
-          }
-        } catch (err) {
-          _didIteratorError4 = true;
-          _iteratorError4 = err;
-        } finally {
-          try {
-            if (!_iteratorNormalCompletion4 && _iterator4.return) {
-              _iterator4.return();
-            }
-          } finally {
-            if (_didIteratorError4) {
-              throw _iteratorError4;
-            }
-          }
-        }
-
-        var trObject = {};
-        trObject.actions = actions;
-        return transaction(trObject, options);
-      });
-    });
-  }
-
-  function transaction(arg, options, callback) {
-    var defaultExpiration = config.expireInSeconds ? config.expireInSeconds : 60;
-    var optionDefault = { expireInSeconds: defaultExpiration, broadcast: true, sign: true };
-    options = Object.assign({} /*clone*/, optionDefault, options);
-
-    var returnPromise = void 0;
-    if (typeof callback !== 'function') {
-      returnPromise = new Promise(function (resolve, reject) {
-        callback = function callback(err, result) {
-          if (err) {
-            reject(err);
-          } else {
-            resolve(result);
-          }
-        };
-      });
-    }
-
-    if ((typeof arg === 'undefined' ? 'undefined' : (0, _typeof3.default)(arg)) !== 'object') {
-      throw new TypeError('First transaction argument should be an object or function');
-    }
-
-    if (!Array.isArray(arg.actions)) {
-      throw new TypeError('Expecting actions array');
-    }
-
-    if (config.logger.log || config.logger.error) {
-      // wrap the callback with the logger
-      var superCallback = callback;
-      callback = function callback(error, tr) {
-        if (error && config.logger.error) {
-          config.logger.error(error);
-        }
-        if (config.logger.log) {
-          config.logger.log(JSON.stringify(tr));
-        }
-        superCallback(error, tr);
-      };
-    }
-
-    arg.actions.forEach(function (action) {
-      if (!Array.isArray(action.authorization)) {
-        throw new TypeError('Expecting action.authorization array', action);
-      }
-    });
-
-    if (options.sign && typeof config.signProvider !== 'function') {
-      throw new TypeError('Expecting config.signProvider function (disable using {sign: false})');
-    }
-
-    var argHeaders = null;
-    if ( // minimum required headers
-    arg.expiration != null && arg.ref_block_num != null && arg.ref_block_prefix != null) {
-      var expiration = arg.expiration,
-          ref_block_num = arg.ref_block_num,
-          ref_block_prefix = arg.ref_block_prefix;
-
-      argHeaders = {
-        expiration: expiration,
-        ref_block_num: ref_block_num,
-        ref_block_prefix: ref_block_prefix
-      };
-    }
-
-    var headers = void 0;
-    if (argHeaders) {
-      headers = function headers(expireInSeconds, callback) {
-        return callback(null, argHeaders);
-      };
-    } else if (config.transactionHeaders) {
-      if ((0, _typeof3.default)(config.transactionHeaders) === 'object') {
-        headers = function headers(exp, callback) {
-          return callback(null, config.transactionHeaders);
-        };
-      } else {
-        assert.equal((0, _typeof3.default)(config.transactionHeaders), 'function', 'config.transactionHeaders');
-        headers = config.transactionHeaders;
-      }
-    } else {
-      assert(network, 'Network is required, provide httpEndpoint or own transaction headers');
-      headers = network.createTransaction;
-    }
-
-    headers(options.expireInSeconds, checkError(callback, config.logger, function _callee2(rawTx) {
-      var defaultHeaders, txObject, buf, tr, transactionId, sigs, chainIdBuf, packedContextFreeData, signBuf;
-      return _regenerator2.default.async(function _callee2$(_context2) {
-        while (1) {
-          switch (_context2.prev = _context2.next) {
-            case 0:
-              // console.log('rawTx', rawTx)
-              assert.equal(typeof rawTx === 'undefined' ? 'undefined' : (0, _typeof3.default)(rawTx), 'object', 'expecting transaction header object');
-              assert.equal((0, _typeof3.default)(rawTx.expiration), 'string', 'expecting expiration: iso date time string');
-              assert.equal((0, _typeof3.default)(rawTx.ref_block_num), 'number', 'expecting ref_block_num number');
-              assert.equal((0, _typeof3.default)(rawTx.ref_block_prefix), 'number', 'expecting ref_block_prefix number');
-
-              defaultHeaders = {
-                max_net_usage_words: 0,
-                max_cpu_usage_ms: 0,
-                delay_sec: 0
-              };
-
-
-              rawTx = Object.assign({}, defaultHeaders, rawTx);
-              rawTx.context_free_actions = arg.context_free_actions;
-              rawTx.actions = arg.actions;
-              rawTx.transaction_extensions = arg.transaction_extensions;
-
-              // Resolve shorthand
-              txObject = Transaction.fromObject(rawTx);
-              buf = Fcbuffer.toBuffer(Transaction, txObject);
-              tr = Transaction.toObject(txObject);
-              transactionId = createHash('sha256').update(buf).digest().toString('hex');
-              sigs = [];
-
-              if (options.sign) {
-                chainIdBuf = new Buffer(config.chainId, 'hex');
-                packedContextFreeData = new Buffer(new Uint8Array(32)); // TODO
-
-                signBuf = Buffer.concat([chainIdBuf, buf, packedContextFreeData]);
-
-
-                sigs = config.signProvider({ transaction: tr, buf: signBuf, sign: sign,
-                  optionsKeyProvider: options.keyProvider });
-
-                if (!Array.isArray(sigs)) {
-                  sigs = [sigs];
-                }
-              }
-
-              // sigs can be strings or Promises
-              Promise.all(sigs).then(function (sigs) {
-                sigs = [].concat.apply([], sigs); // flatten arrays in array
-
-                for (var i = 0; i < sigs.length; i++) {
-                  var sig = sigs[i];
-                  // normalize (hex to base58 format for example)
-                  if (typeof sig === 'string' && sig.length === 130) {
-                    sigs[i] = ecc.Signature.from(sig).toString();
-                  }
-                }
-
-                var packedTr = {
-                  compression: 'none',
-                  transaction: tr,
-                  signatures: sigs
-                };
-
-                var mock = config.mockTransactions ? config.mockTransactions() : null;
-                if (mock != null) {
-                  assert(/pass|fail/.test(mock), 'mockTransactions should return a string: pass or fail');
-                  if (mock === 'pass') {
-                    callback(null, {
-                      transaction_id: transactionId,
-                      mockTransaction: true,
-                      broadcast: false,
-                      transaction: packedTr
-                    });
-                  }
-                  if (mock === 'fail') {
-                    var error = '[push_transaction mock error] \'fake error\', digest \'' + buf.toString('hex') + '\'';
-
-                    if (config.logger.error) {
-                      config.logger.error(error);
-                    }
-
-                    callback(error);
-                  }
-                  return;
-                }
-
-                if (!options.broadcast || !network) {
-                  callback(null, {
-                    transaction_id: transactionId,
-                    broadcast: false,
-                    transaction: packedTr
-                  });
-                } else {
-                  network.pushTransaction(packedTr, function (error, processedTransaction) {
-                    if (!error) {
-                      callback(null, Object.assign({
-                        broadcast: true,
-                        transaction: packedTr,
-                        transaction_id: transactionId
-                      }, processedTransaction));
-                    } else {
-                      if (config.logger.error) {
-                        config.logger.error('[push_transaction error] \'' + error.message + '\', transaction \'' + buf.toString('hex') + '\'');
-                      }
-                      callback(error.message);
-                    }
-                  });
-                }
-              }).catch(function (error) {
-                if (config.logger.error) {
-                  config.logger.error(error);
-                }
-                callback(error);
-              });
-
-            case 16:
-            case 'end':
-              return _context2.stop();
-          }
-        }
-      }, null, this);
-    }));
-    return returnPromise;
-  }
-
-  // return WriteApi
-  return {
-    genTransaction: genTransaction,
-    genContractActions: genContractActions,
-    genMethod: genMethod
-  };
-}
-
-var isStringArray = function isStringArray(o) {
-  return Array.isArray(o) && o.length > 0 && o.findIndex(function (o) {
-    return typeof o !== 'string';
-  }) === -1;
-};
-
-// Normalize the extra optional options argument
-var optionsFormatter = function optionsFormatter(option) {
-  if ((typeof option === 'undefined' ? 'undefined' : (0, _typeof3.default)(option)) === 'object') {
-    return option; // {debug, broadcast, etc} (etc my overwrite tr below)
-  }
-  if (typeof option === 'boolean') {
-    // broadcast argument as a true false value, back-end cli will use this shorthand
-    return { broadcast: option };
-  }
-};
-
-function usage(action, definition, Network, account, config) {
-  var usage = '';
-  var out = function out() {
-    var str = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
-
-    usage += str + '\n';
-  };
-  out('CONTRACT');
-  out(account);
-  out();
-
-  out('ACTION');
-  out(action.name);
-  out();
-
-  var cache = config.abiCache.abi(account);
-
-  out('PARAMETERS');
-  out(JSON.stringify(schemaFields(cache.schema, action.type), null, 4));
-  out();
-
-  var struct = cache.structs[action.type];
-
-  out('EXAMPLE');
-  out(account + '.' + action.name + '(' + JSON.stringify(struct.toObject(), null, 4) + ')');
-
-  return usage;
-}
-
-var checkError = function checkError(parentErr, logger, parrentRes) {
-  return function (error, result) {
-    if (error) {
-      if (logger.error) {
-        logger.error('error', error);
-      }
-      parentErr(error);
-    } else {
-      Promise.resolve(parrentRes(result)).catch(function (error) {
-        parentErr(error);
-      });
-    }
-  };
-};
-
-/** Collapse inheritance (via "base") putting all the fields in one object. */
-function schemaFields(schema, type) {
-  var _schema$type = schema[type],
-      base = _schema$type.base,
-      fields = _schema$type.fields;
-
-  var def = {};
-  if (base && base !== '') {
-    Object.assign(def, schemaFields(schema, base));
-  }
-  Object.assign(def, fields);
-  return def;
-}
-}).call(this,require("buffer").Buffer)
-},{"./structs":144,"assert":177,"babel-runtime/helpers/slicedToArray":6,"babel-runtime/helpers/typeof":7,"babel-runtime/regenerator":8,"buffer":180,"create-hash":107,"eosjs-api":121,"eosjs-ecc":130,"fcbuffer":148}],146:[function(require,module,exports){
+},{"./abi-cache":150,"./format":151,"./schema":157,"./schema/eosio.null.abi.json":154,"./schema/eosio.system.abi.json":155,"./schema/eosio.token.abi.json":156,"./structs":158,"./write-api":159,"assert":191,"babel-runtime/helpers/typeof":21,"babel-runtime/regenerator":22,"eosjs-api":135,"eosjs-ecc":144,"fcbuffer":162}],153:[function(require,module,exports){
+arguments[4][5][0].apply(exports,arguments)
+},{"dup":5}],154:[function(require,module,exports){
+arguments[4][6][0].apply(exports,arguments)
+},{"dup":6}],155:[function(require,module,exports){
+arguments[4][7][0].apply(exports,arguments)
+},{"dup":7}],156:[function(require,module,exports){
+arguments[4][8][0].apply(exports,arguments)
+},{"dup":8}],157:[function(require,module,exports){
+arguments[4][9][0].apply(exports,arguments)
+},{"./chain_types.json":153,"dup":9}],158:[function(require,module,exports){
+arguments[4][10][0].apply(exports,arguments)
+},{"./format":151,"./schema":157,"assert":191,"babel-runtime/helpers/slicedToArray":20,"babel-runtime/helpers/typeof":21,"buffer":194,"bytebuffer":48,"dup":10,"eosjs-ecc":144,"fcbuffer":162}],159:[function(require,module,exports){
+arguments[4][11][0].apply(exports,arguments)
+},{"./structs":158,"assert":191,"babel-runtime/helpers/slicedToArray":20,"babel-runtime/helpers/typeof":21,"babel-runtime/regenerator":22,"buffer":194,"create-hash":121,"dup":11,"eosjs-api":135,"eosjs-ecc":144,"fcbuffer":162}],160:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 var MD5 = require('md5.js')
 
@@ -18554,296 +20934,9 @@ function EVP_BytesToKey (password, salt, keyBits, ivLen) {
 
 module.exports = EVP_BytesToKey
 
-},{"md5.js":157,"safe-buffer":166}],147:[function(require,module,exports){
-(function (Buffer){
-'use strict';
-
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
-var ByteBuffer = require('bytebuffer');
-var Struct = require('./struct');
-
-module.exports = {
-  create: create,
-  toBuffer: toBuffer,
-  fromBuffer: fromBuffer
-
-  /**
-    @summary Create a serializer for each definition.
-    @return {CreateStruct}
-  */
-};function create(definitions, types) {
-  var config = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : types.config;
-
-  var errors = [];
-  if (!config.sort) {
-    config.sort = {};
-  }
-
-  // Basic structure validation
-  for (var key in definitions) {
-    var value = definitions[key];
-    var base = value.base,
-        fields = value.fields;
-
-    var typeOfValue = typeof value === 'undefined' ? 'undefined' : _typeof(value);
-    if (typeOfValue === 'object') {
-      if (!base && !fields) {
-        errors.push('Expecting ' + key + '.fields or ' + key + '.base');
-        continue;
-      }
-      if (base && typeof base !== 'string') {
-        errors.push('Expecting string ' + key + '.base');
-      }
-      if (fields) {
-        if ((typeof fields === 'undefined' ? 'undefined' : _typeof(fields)) !== 'object') {
-          errors.push('Expecting object ' + key + '.fields');
-        } else {
-          for (var field in fields) {
-            if (typeof fields[field] !== 'string') {
-              errors.push('Expecting string in ' + key + '.fields.' + field);
-            }
-          }
-        }
-      }
-    } else if (typeOfValue !== 'string') {
-      errors.push('Expecting object or string under ' + key + ', instead got ' + (typeof value === 'undefined' ? 'undefined' : _typeof(value)));
-      continue;
-    }
-  }
-
-  // Keys with objects are structs
-  var structs = {};
-  for (var _key in definitions) {
-    var _value = definitions[_key];
-    if ((typeof _value === 'undefined' ? 'undefined' : _typeof(_value)) === 'object') {
-      structs[_key] = Struct(_key, config);
-    }
-  }
-
-  // Resolve user-friendly typedef names pointing to a native type (or another typedef)
-  for (var _key2 in definitions) {
-    var _value2 = definitions[_key2];
-    if (typeof _value2 === 'string') {
-      var type = types[_value2];
-      if (type) {
-        types[_key2] = type;
-      } else {
-        // example: key === 'fields' && value === field[]
-        var struct = getTypeOrStruct(_key2, _value2); // type = vector(field)
-        if (struct) {
-          structs[_key2] = struct;
-        } else {
-          errors.push('Unrecognized type or struct ' + _key2 + '.' + _value2);
-        }
-      }
-    }
-  }
-
-  // Structs can inherit another struct, they will share the same instance
-  for (var _key3 in definitions) {
-    var thisStruct = structs[_key3];
-    if (!thisStruct) continue;
-    var _value3 = definitions[_key3];
-    if ((typeof _value3 === 'undefined' ? 'undefined' : _typeof(_value3)) === 'object' && _value3.base) {
-      var base = _value3.base;
-      var baseStruct = structs[base];
-      if (!baseStruct) {
-        errors.push('Missing ' + base + ' in ' + _key3 + '.base');
-        continue;
-      }
-      thisStruct.add('', structPtr(baseStruct));
-    }
-  }
-
-  // Create types from a string (ex vector[Type])
-  function getTypeOrStruct(key, Type, typeArgs, fieldName) {
-    var typeatty = parseType(Type);
-    if (!typeatty) return null;
-    var name = typeatty.name,
-        annotation = typeatty.annotation,
-        arrayType = typeatty.arrayType;
-
-    var ret = void 0;
-    if (annotation) {
-      // any_type<field_name, type_name>
-      var _type = types[name];
-      if (_type == null) {
-        errors.push('Missing ' + name + ' in ' + Type);
-        return null;
-      }
-      var annTypes = [];
-      var _iteratorNormalCompletion = true;
-      var _didIteratorError = false;
-      var _iteratorError = undefined;
-
-      try {
-        for (var _iterator = annotation[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-          var annTypeName = _step.value;
-
-          var annType = getTypeOrStruct(key, annTypeName, null, fieldName);
-          if (!annType) {
-            errors.push('Missing ' + annTypeName + ' in ' + Type);
-            return null;
-          }
-          annTypes.push(annType);
-        }
-      } catch (err) {
-        _didIteratorError = true;
-        _iteratorError = err;
-      } finally {
-        try {
-          if (!_iteratorNormalCompletion && _iterator.return) {
-            _iterator.return();
-          }
-        } finally {
-          if (_didIteratorError) {
-            throw _iteratorError;
-          }
-        }
-      }
-
-      ret = _type(annTypes);
-    } else if (arrayType == null) {
-      // AnyType
-      var fieldStruct = structs[name];
-      if (fieldStruct) {
-        return fieldStruct;
-      }
-
-      var _type2 = types[name];
-      if (!_type2) {
-        return null;
-      }
-
-      // types need to be instantiated
-      ret = _type2(typeArgs);
-    } else if (arrayType === '') {
-      // AnyType[]
-      var nameType = getTypeOrStruct(key, typeatty.name, null, fieldName);
-      if (!nameType) {
-        return null;
-      }
-
-      var sort = config.sort[key + '.' + fieldName] || false;
-      // console.log('sort?', `${key}.${fieldName}`, sort, config.sort)
-      ret = types.vector(nameType, sort);
-    } else if (arrayType.length > 0) {
-      // vector[Type]
-      var arrayTs = getTypeOrStruct(key, typeatty.arrayType, null, fieldName);
-      if (!arrayTs) {
-        errors.push('Missing ' + typeatty.arrayType + ' in ' + Type);
-        return null;
-      }
-      var baseTs = getTypeOrStruct(key, typeatty.name, arrayTs, fieldName);
-      if (!baseTs) {
-        errors.push('Missing ' + typeatty.name + ' in ' + Type);
-        return null;
-      }
-      ret = baseTs;
-    }
-    return typeatty.optional ? types.optional(ret) : ret;
-  }
-
-  // Add all the fields.  Thanks to structPtr no need to look at base types.
-  for (var _key4 in definitions) {
-    var _thisStruct = structs[_key4];
-    if (!_thisStruct) continue;
-    var _value4 = definitions[_key4];
-    if (!_value4.fields) continue;
-    var fields = _value4.fields;
-
-    for (var Field in fields) {
-      var Type = fields[Field];
-      var ts = getTypeOrStruct(_key4, Type, null, Field);
-      if (!ts) {
-        errors.push('Missing ' + Type + ' in ' + _key4 + '.fields.' + Field);
-        continue;
-      }
-      _thisStruct.add(Field, ts);
-    }
-  }
-
-  if (errors.length) {
-    // 'structs' could contain invalid references
-    return { errors: errors };
-  }
-
-  return { errors: errors, structs: structs };
-}
-
-var parseType = function parseType(name) {
-  if (!name || typeof name !== 'string') {
-    return null;
-  }
-
-  name = name.trim();
-
-  var annotationMatch = name.match(/<(.*)>/);
-  if (annotationMatch) {
-    var annotation = annotationMatch ? annotationMatch[1].replace(/ /g, '').split(',') : null;
-
-    name = name.replace(annotationMatch[0], '').trim();
-    return { name: name, annotation: annotation };
-  }
-
-  var arrayMatch = name.match(/\[(.*)\]/);
-  var arrayType = arrayMatch ? arrayMatch[1].trim() : null;
-
-  if (arrayMatch) {
-    name = name.replace(arrayMatch[0], '').trim();
-  }
-
-  var optional = false;
-  if (/\?$/.test(name)) {
-    name = name.substring(0, name.length - 1);
-    optional = true;
-  }
-  return { name: name, arrayType: arrayType, optional: optional };
-};
-
-/**
-  Base types all point to the same struct.
-
-  Note, appendByteBuffer has no return type.
-*/
-var structPtr = function structPtr(type) {
-  return {
-    fromByteBuffer: function fromByteBuffer(b) {
-      return type.fromByteBuffer(b);
-    },
-    appendByteBuffer: function appendByteBuffer(b, value) {
-      type.appendByteBuffer(b, value);
-    },
-    fromObject: function fromObject(value) {
-      return type.fromObject(value);
-    },
-    toObject: function toObject(value) {
-      return type.toObject(value);
-    }
-  };
-};
-
-function toBuffer(type, value) {
-  var struct = type.fromObject(value);
-  return Buffer.from(toByteBuffer(type, struct).toBinary(), 'binary');
-}
-
-function fromBuffer(type, buffer) {
-  var toObject = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : true;
-
-  var b = ByteBuffer.fromBinary(buffer.toString('binary'), ByteBuffer.LITTLE_ENDIAN);
-  var struct = type.fromByteBuffer(b);
-  return toObject ? type.toObject(struct) : struct;
-}
-
-function toByteBuffer(type, value) {
-  var b = new ByteBuffer(ByteBuffer.DEFAULT_CAPACITY, ByteBuffer.LITTLE_ENDIAN);
-  type.appendByteBuffer(b, value);
-  return b.copy(0, b.offset);
-}
-}).call(this,require("buffer").Buffer)
-},{"./struct":149,"buffer":180,"bytebuffer":34}],148:[function(require,module,exports){
+},{"md5.js":171,"safe-buffer":180}],161:[function(require,module,exports){
+arguments[4][12][0].apply(exports,arguments)
+},{"./struct":163,"buffer":194,"bytebuffer":48,"dup":12}],162:[function(require,module,exports){
 (function (Buffer){
 'use strict';
 
@@ -18962,9 +21055,9 @@ var fromBuffer = function fromBuffer(types, structs) {
 };
 
 var toBuffer = function toBuffer(types, structs) {
-  return function (typeName, object) {
+  return function (typeName, value) {
     assert.equal(typeof typeName === 'undefined' ? 'undefined' : _typeof(typeName), 'string', 'typeName (type or struct name)');
-    assert.equal(typeof object === 'undefined' ? 'undefined' : _typeof(object), 'object', 'object');
+    assert(value != null, 'value is required');
 
     var type = types[typeName];
     if (type) {
@@ -18973,241 +21066,16 @@ var toBuffer = function toBuffer(types, structs) {
       type = structs[typeName];
     }
     assert(type, 'missing type or struct: ' + typeName);
-    return Fcbuffer.toBuffer(type, object);
+    return Fcbuffer.toBuffer(type, value);
   };
 };
 
 module.exports.fromBuffer = Fcbuffer.fromBuffer;
 module.exports.toBuffer = Fcbuffer.toBuffer;
 }).call(this,require("buffer").Buffer)
-},{"./fcbuffer":147,"./types":150,"assert":177,"buffer":180}],149:[function(require,module,exports){
-'use strict';
-
-var ByteBuffer = require('bytebuffer');
-
-/**
-  @class Struct
-
-  @arg {object} config.override = {
-    'Message.data.appendByteBuffer': ({fields, object, b}) => {..}
-  }
-  Rare cases where specialized serilization is needed (ex A Message object has
-  'type' and 'data' fields where object.type === 'transfer' can define
-  serialization time Struct needed for 'data' .. This saves complexity for the
-  end-user's working with json.  See override unit test.
-*/
-module.exports = function (name) {
-  var config = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : { debug: false };
-
-  config = Object.assign({ override: {} }, config);
-  var fields = {};
-  var fieldOne = void 0,
-      fieldOneName = void 0;
-
-  return {
-    compare: function compare(a, b) {
-      var v1 = a[fieldOneName];
-      var v2 = b[fieldOneName];
-
-      if (!fieldOne || !fieldOne.compare) {
-        return v1 > v2 ? 1 : v1 < v2 ? -1 : 0;
-      }
-
-      return fieldOne.compare(v1, v2);
-    },
-
-
-    /** @private */
-    add: function add(fieldName, type) {
-      fields[fieldName] = type;
-      if (fieldOne == null) {
-        fieldOne = type;
-        fieldOneName = fieldName;
-      }
-    },
-
-
-    // Complete list of fields, after resolving "base" inheritance
-    fields: fields,
-
-    fromByteBuffer: function fromByteBuffer(b) {
-      var object = {};
-      var field = null;
-      try {
-        for (field in fields) {
-          var type = fields[field];
-          try {
-            var o1 = b.offset;
-            if (field === '') {
-              // structPtr
-              object = type.fromByteBuffer(b, config);
-            } else {
-              var fromByteBuffer = config.override[name + '.' + field + '.fromByteBuffer'];
-              if (fromByteBuffer) {
-                fromByteBuffer({ fields: fields, object: object, b: b, config: config });
-              } else {
-                object[field] = type.fromByteBuffer(b, config);
-              }
-            }
-            if (config.debug) {
-              if (type.struct) {
-                console.error(type.struct);
-              } else {
-                var value = void 0;
-                try {
-                  // human readable text
-                  value = type.toObject(field === '' ? object : object[field], config);
-                } catch (error) {
-                  // console.error('fromByteBuffer debug error:', error)
-                  value = '';
-                }
-                var _b = b.copy(o1, b.offset);
-                console.error('fromByteBuffer', name + '.' + field, '\'' + value + '\'', _b.toHex());
-              }
-            }
-          } catch (e) {
-            console.error(e + ' in ' + name + '.' + field);
-            b.printDebug();
-            throw e;
-          }
-        }
-      } catch (error) {
-        error.message += ' in ' + name + '.' + field;
-        throw error;
-      }
-      return object;
-    },
-    appendByteBuffer: function appendByteBuffer(b, object) {
-      var field = null;
-      try {
-        for (field in fields) {
-          var type = fields[field];
-          if (field === '') {
-            // structPtr
-            type.appendByteBuffer(b, object);
-          } else {
-            var appendByteBuffer = config.override[name + '.' + field + '.appendByteBuffer'];
-            if (appendByteBuffer) {
-              appendByteBuffer({ fields: fields, object: object, b: b });
-            } else {
-              type.appendByteBuffer(b, object[field]);
-            }
-          }
-        }
-      } catch (error) {
-        try {
-          error.message += ' ' + name + '.' + field + ' = ' + JSON.stringify(object[field]);
-        } catch (e) {
-          // circular ref
-          error.message += ' ' + name + '.' + field + ' = ' + object[field];
-        }
-        throw error;
-      }
-    },
-    fromObject: function fromObject(serializedObject) {
-      var fromObject_struct = config.override[name + '.fromObject'];
-      if (fromObject_struct) {
-        var ret = fromObject_struct(serializedObject);
-        if (ret != null) {
-          return ret;
-        }
-      }
-
-      var result = {};
-      var field = null;
-      try {
-        for (field in fields) {
-          // if(config.debug) {
-          //   console.error(name, field, '(fromObject)')
-          // }
-          var type = fields[field];
-          if (field === '') {
-            // structPtr
-            var object = type.fromObject(serializedObject);
-            Object.assign(result, object);
-          } else {
-            var fromObject = config.override[name + '.' + field + '.fromObject'];
-            if (fromObject) {
-              fromObject({ fields: fields, object: serializedObject, result: result });
-            } else {
-              var value = serializedObject[field];
-              var _object = type.fromObject(value);
-              result[field] = _object;
-            }
-          }
-        }
-      } catch (error) {
-        error.message += ' ' + name + '.' + field;
-        throw error;
-      }
-
-      return result;
-    },
-    toObject: function toObject() {
-      var serializedObject = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-
-      var toObject_struct = config.override[name + '.toObject'];
-      if (toObject_struct) {
-        var ret = toObject_struct(serializedObject);
-        if (ret != null) {
-          return ret;
-        }
-      }
-
-      var result = {};
-      var field = null;
-      try {
-        // if (!fields) { return result }
-
-        for (field in fields) {
-          var type = fields[field];
-
-          var toObject = config.override[name + '.' + field + '.toObject'];
-          if (toObject) {
-            toObject({ fields: fields, object: serializedObject, result: result, config: config });
-          } else {
-            if (field === '') {
-              // structPtr
-              var object = type.toObject(serializedObject, config);
-              Object.assign(result, object);
-            } else {
-              var _object2 = type.toObject(serializedObject ? serializedObject[field] : null, config);
-              result[field] = _object2;
-            }
-          }
-
-          if (config.debug) {
-            try {
-              var b = new ByteBuffer(ByteBuffer.DEFAULT_CAPACITY, ByteBuffer.LITTLE_ENDIAN);
-              if (serializedObject != null) {
-                var value = serializedObject[field];
-                if (value) {
-                  var appendByteBuffer = config.override[name + '.' + field + '.appendByteBuffer'];
-                  if (toObject && appendByteBuffer) {
-                    appendByteBuffer({ fields: fields, object: serializedObject, b: b });
-                  } else {
-                    type.appendByteBuffer(b, value);
-                  }
-                }
-              }
-              b = b.copy(0, b.offset);
-              console.error('toObject', name + '.' + field, '\'' + result[field] + '\'', b.toHex());
-            } catch (error) {
-              // work-around to prevent debug time crash
-              error.message = name + '.' + field + ' ' + error.message;
-              console.error(error);
-            }
-          }
-        }
-      } catch (error) {
-        error.message += ' ' + name + '.' + field;
-        throw error;
-      }
-      return result;
-    }
-  };
-};
-},{"bytebuffer":34}],150:[function(require,module,exports){
+},{"./fcbuffer":161,"./types":164,"assert":191,"buffer":194}],163:[function(require,module,exports){
+arguments[4][14][0].apply(exports,arguments)
+},{"bytebuffer":48,"dup":14}],164:[function(require,module,exports){
 (function (Buffer){
 'use strict';
 
@@ -19849,6 +21717,10 @@ var bytebuf = function bytebuf(validation) {
     fromObject: function fromObject(value) {
       if (typeof value === 'string') {
         value = Buffer.from(value, 'hex');
+      } else if (value instanceof Array) {
+        value = Buffer.from(value);
+      } else if (value instanceof Uint8Array) {
+        value = Buffer.from(value);
       }
 
       validate(value, validation);
@@ -20042,7 +21914,7 @@ var minSigned = function minSigned(bits) {
   return new BN(1).ishln(bits - 1).ineg();
 };
 }).call(this,require("buffer").Buffer)
-},{"assert":177,"bn.js":14,"buffer":180,"bytebuffer":34,"ieee-float":152}],151:[function(require,module,exports){
+},{"assert":191,"bn.js":28,"buffer":194,"bytebuffer":48,"ieee-float":166}],165:[function(require,module,exports){
 'use strict'
 var Buffer = require('safe-buffer').Buffer
 var Transform = require('stream').Transform
@@ -20139,7 +22011,7 @@ HashBase.prototype._digest = function () {
 
 module.exports = HashBase
 
-},{"inherits":153,"safe-buffer":166,"stream":203}],152:[function(require,module,exports){
+},{"inherits":167,"safe-buffer":180,"stream":217}],166:[function(require,module,exports){
 (function (Buffer){
 /**
  * pure javascript functions to read and write 32-bit and 64-bit IEEE 754 floating-point
@@ -20557,7 +22429,7 @@ function writeDouble( buf, v, offset, dirn ) {
 }).call(this);
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":180}],153:[function(require,module,exports){
+},{"buffer":194}],167:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -20582,7 +22454,7 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],154:[function(require,module,exports){
+},{}],168:[function(require,module,exports){
 // the whatwg-fetch polyfill installs the fetch() function
 // on the global object (window or self)
 //
@@ -20590,7 +22462,7 @@ if (typeof Object.create === 'function') {
 require('whatwg-fetch');
 module.exports = self.fetch.bind(self);
 
-},{"whatwg-fetch":176}],155:[function(require,module,exports){
+},{"whatwg-fetch":190}],169:[function(require,module,exports){
 /*
  Copyright 2013 Daniel Wirtz <dcode@dcode.io>
  Copyright 2009 The Closure Library Authors. All Rights Reserved.
@@ -21801,7 +23673,7 @@ module.exports = self.fetch.bind(self);
     return Long;
 });
 
-},{}],156:[function(require,module,exports){
+},{}],170:[function(require,module,exports){
 /**
  * Special language-specific overrides.
  *
@@ -21857,7 +23729,7 @@ module.exports = function (str, locale) {
   return str.toLowerCase()
 }
 
-},{}],157:[function(require,module,exports){
+},{}],171:[function(require,module,exports){
 (function (Buffer){
 'use strict'
 var inherits = require('inherits')
@@ -22006,7 +23878,7 @@ function fnI (a, b, c, d, m, k, s) {
 module.exports = MD5
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":180,"hash-base":151,"inherits":153}],158:[function(require,module,exports){
+},{"buffer":194,"hash-base":165,"inherits":167}],172:[function(require,module,exports){
 var lowerCase = require('lower-case')
 
 var NON_WORD_REGEXP = require('./vendor/non-word-regexp')
@@ -22048,16 +23920,16 @@ module.exports = function (str, locale, replacement) {
   return lowerCase(str, locale)
 }
 
-},{"./vendor/camel-case-regexp":159,"./vendor/camel-case-upper-regexp":160,"./vendor/non-word-regexp":161,"lower-case":156}],159:[function(require,module,exports){
+},{"./vendor/camel-case-regexp":173,"./vendor/camel-case-upper-regexp":174,"./vendor/non-word-regexp":175,"lower-case":170}],173:[function(require,module,exports){
 module.exports = /([a-z\xB5\xDF-\xF6\xF8-\xFF\u0101\u0103\u0105\u0107\u0109\u010B\u010D\u010F\u0111\u0113\u0115\u0117\u0119\u011B\u011D\u011F\u0121\u0123\u0125\u0127\u0129\u012B\u012D\u012F\u0131\u0133\u0135\u0137\u0138\u013A\u013C\u013E\u0140\u0142\u0144\u0146\u0148\u0149\u014B\u014D\u014F\u0151\u0153\u0155\u0157\u0159\u015B\u015D\u015F\u0161\u0163\u0165\u0167\u0169\u016B\u016D\u016F\u0171\u0173\u0175\u0177\u017A\u017C\u017E-\u0180\u0183\u0185\u0188\u018C\u018D\u0192\u0195\u0199-\u019B\u019E\u01A1\u01A3\u01A5\u01A8\u01AA\u01AB\u01AD\u01B0\u01B4\u01B6\u01B9\u01BA\u01BD-\u01BF\u01C6\u01C9\u01CC\u01CE\u01D0\u01D2\u01D4\u01D6\u01D8\u01DA\u01DC\u01DD\u01DF\u01E1\u01E3\u01E5\u01E7\u01E9\u01EB\u01ED\u01EF\u01F0\u01F3\u01F5\u01F9\u01FB\u01FD\u01FF\u0201\u0203\u0205\u0207\u0209\u020B\u020D\u020F\u0211\u0213\u0215\u0217\u0219\u021B\u021D\u021F\u0221\u0223\u0225\u0227\u0229\u022B\u022D\u022F\u0231\u0233-\u0239\u023C\u023F\u0240\u0242\u0247\u0249\u024B\u024D\u024F-\u0293\u0295-\u02AF\u0371\u0373\u0377\u037B-\u037D\u0390\u03AC-\u03CE\u03D0\u03D1\u03D5-\u03D7\u03D9\u03DB\u03DD\u03DF\u03E1\u03E3\u03E5\u03E7\u03E9\u03EB\u03ED\u03EF-\u03F3\u03F5\u03F8\u03FB\u03FC\u0430-\u045F\u0461\u0463\u0465\u0467\u0469\u046B\u046D\u046F\u0471\u0473\u0475\u0477\u0479\u047B\u047D\u047F\u0481\u048B\u048D\u048F\u0491\u0493\u0495\u0497\u0499\u049B\u049D\u049F\u04A1\u04A3\u04A5\u04A7\u04A9\u04AB\u04AD\u04AF\u04B1\u04B3\u04B5\u04B7\u04B9\u04BB\u04BD\u04BF\u04C2\u04C4\u04C6\u04C8\u04CA\u04CC\u04CE\u04CF\u04D1\u04D3\u04D5\u04D7\u04D9\u04DB\u04DD\u04DF\u04E1\u04E3\u04E5\u04E7\u04E9\u04EB\u04ED\u04EF\u04F1\u04F3\u04F5\u04F7\u04F9\u04FB\u04FD\u04FF\u0501\u0503\u0505\u0507\u0509\u050B\u050D\u050F\u0511\u0513\u0515\u0517\u0519\u051B\u051D\u051F\u0521\u0523\u0525\u0527\u0529\u052B\u052D\u052F\u0561-\u0587\u13F8-\u13FD\u1D00-\u1D2B\u1D6B-\u1D77\u1D79-\u1D9A\u1E01\u1E03\u1E05\u1E07\u1E09\u1E0B\u1E0D\u1E0F\u1E11\u1E13\u1E15\u1E17\u1E19\u1E1B\u1E1D\u1E1F\u1E21\u1E23\u1E25\u1E27\u1E29\u1E2B\u1E2D\u1E2F\u1E31\u1E33\u1E35\u1E37\u1E39\u1E3B\u1E3D\u1E3F\u1E41\u1E43\u1E45\u1E47\u1E49\u1E4B\u1E4D\u1E4F\u1E51\u1E53\u1E55\u1E57\u1E59\u1E5B\u1E5D\u1E5F\u1E61\u1E63\u1E65\u1E67\u1E69\u1E6B\u1E6D\u1E6F\u1E71\u1E73\u1E75\u1E77\u1E79\u1E7B\u1E7D\u1E7F\u1E81\u1E83\u1E85\u1E87\u1E89\u1E8B\u1E8D\u1E8F\u1E91\u1E93\u1E95-\u1E9D\u1E9F\u1EA1\u1EA3\u1EA5\u1EA7\u1EA9\u1EAB\u1EAD\u1EAF\u1EB1\u1EB3\u1EB5\u1EB7\u1EB9\u1EBB\u1EBD\u1EBF\u1EC1\u1EC3\u1EC5\u1EC7\u1EC9\u1ECB\u1ECD\u1ECF\u1ED1\u1ED3\u1ED5\u1ED7\u1ED9\u1EDB\u1EDD\u1EDF\u1EE1\u1EE3\u1EE5\u1EE7\u1EE9\u1EEB\u1EED\u1EEF\u1EF1\u1EF3\u1EF5\u1EF7\u1EF9\u1EFB\u1EFD\u1EFF-\u1F07\u1F10-\u1F15\u1F20-\u1F27\u1F30-\u1F37\u1F40-\u1F45\u1F50-\u1F57\u1F60-\u1F67\u1F70-\u1F7D\u1F80-\u1F87\u1F90-\u1F97\u1FA0-\u1FA7\u1FB0-\u1FB4\u1FB6\u1FB7\u1FBE\u1FC2-\u1FC4\u1FC6\u1FC7\u1FD0-\u1FD3\u1FD6\u1FD7\u1FE0-\u1FE7\u1FF2-\u1FF4\u1FF6\u1FF7\u210A\u210E\u210F\u2113\u212F\u2134\u2139\u213C\u213D\u2146-\u2149\u214E\u2184\u2C30-\u2C5E\u2C61\u2C65\u2C66\u2C68\u2C6A\u2C6C\u2C71\u2C73\u2C74\u2C76-\u2C7B\u2C81\u2C83\u2C85\u2C87\u2C89\u2C8B\u2C8D\u2C8F\u2C91\u2C93\u2C95\u2C97\u2C99\u2C9B\u2C9D\u2C9F\u2CA1\u2CA3\u2CA5\u2CA7\u2CA9\u2CAB\u2CAD\u2CAF\u2CB1\u2CB3\u2CB5\u2CB7\u2CB9\u2CBB\u2CBD\u2CBF\u2CC1\u2CC3\u2CC5\u2CC7\u2CC9\u2CCB\u2CCD\u2CCF\u2CD1\u2CD3\u2CD5\u2CD7\u2CD9\u2CDB\u2CDD\u2CDF\u2CE1\u2CE3\u2CE4\u2CEC\u2CEE\u2CF3\u2D00-\u2D25\u2D27\u2D2D\uA641\uA643\uA645\uA647\uA649\uA64B\uA64D\uA64F\uA651\uA653\uA655\uA657\uA659\uA65B\uA65D\uA65F\uA661\uA663\uA665\uA667\uA669\uA66B\uA66D\uA681\uA683\uA685\uA687\uA689\uA68B\uA68D\uA68F\uA691\uA693\uA695\uA697\uA699\uA69B\uA723\uA725\uA727\uA729\uA72B\uA72D\uA72F-\uA731\uA733\uA735\uA737\uA739\uA73B\uA73D\uA73F\uA741\uA743\uA745\uA747\uA749\uA74B\uA74D\uA74F\uA751\uA753\uA755\uA757\uA759\uA75B\uA75D\uA75F\uA761\uA763\uA765\uA767\uA769\uA76B\uA76D\uA76F\uA771-\uA778\uA77A\uA77C\uA77F\uA781\uA783\uA785\uA787\uA78C\uA78E\uA791\uA793-\uA795\uA797\uA799\uA79B\uA79D\uA79F\uA7A1\uA7A3\uA7A5\uA7A7\uA7A9\uA7B5\uA7B7\uA7FA\uAB30-\uAB5A\uAB60-\uAB65\uAB70-\uABBF\uFB00-\uFB06\uFB13-\uFB17\uFF41-\uFF5A0-9\xB2\xB3\xB9\xBC-\xBE\u0660-\u0669\u06F0-\u06F9\u07C0-\u07C9\u0966-\u096F\u09E6-\u09EF\u09F4-\u09F9\u0A66-\u0A6F\u0AE6-\u0AEF\u0B66-\u0B6F\u0B72-\u0B77\u0BE6-\u0BF2\u0C66-\u0C6F\u0C78-\u0C7E\u0CE6-\u0CEF\u0D66-\u0D75\u0DE6-\u0DEF\u0E50-\u0E59\u0ED0-\u0ED9\u0F20-\u0F33\u1040-\u1049\u1090-\u1099\u1369-\u137C\u16EE-\u16F0\u17E0-\u17E9\u17F0-\u17F9\u1810-\u1819\u1946-\u194F\u19D0-\u19DA\u1A80-\u1A89\u1A90-\u1A99\u1B50-\u1B59\u1BB0-\u1BB9\u1C40-\u1C49\u1C50-\u1C59\u2070\u2074-\u2079\u2080-\u2089\u2150-\u2182\u2185-\u2189\u2460-\u249B\u24EA-\u24FF\u2776-\u2793\u2CFD\u3007\u3021-\u3029\u3038-\u303A\u3192-\u3195\u3220-\u3229\u3248-\u324F\u3251-\u325F\u3280-\u3289\u32B1-\u32BF\uA620-\uA629\uA6E6-\uA6EF\uA830-\uA835\uA8D0-\uA8D9\uA900-\uA909\uA9D0-\uA9D9\uA9F0-\uA9F9\uAA50-\uAA59\uABF0-\uABF9\uFF10-\uFF19])([A-Z\xC0-\xD6\xD8-\xDE\u0100\u0102\u0104\u0106\u0108\u010A\u010C\u010E\u0110\u0112\u0114\u0116\u0118\u011A\u011C\u011E\u0120\u0122\u0124\u0126\u0128\u012A\u012C\u012E\u0130\u0132\u0134\u0136\u0139\u013B\u013D\u013F\u0141\u0143\u0145\u0147\u014A\u014C\u014E\u0150\u0152\u0154\u0156\u0158\u015A\u015C\u015E\u0160\u0162\u0164\u0166\u0168\u016A\u016C\u016E\u0170\u0172\u0174\u0176\u0178\u0179\u017B\u017D\u0181\u0182\u0184\u0186\u0187\u0189-\u018B\u018E-\u0191\u0193\u0194\u0196-\u0198\u019C\u019D\u019F\u01A0\u01A2\u01A4\u01A6\u01A7\u01A9\u01AC\u01AE\u01AF\u01B1-\u01B3\u01B5\u01B7\u01B8\u01BC\u01C4\u01C7\u01CA\u01CD\u01CF\u01D1\u01D3\u01D5\u01D7\u01D9\u01DB\u01DE\u01E0\u01E2\u01E4\u01E6\u01E8\u01EA\u01EC\u01EE\u01F1\u01F4\u01F6-\u01F8\u01FA\u01FC\u01FE\u0200\u0202\u0204\u0206\u0208\u020A\u020C\u020E\u0210\u0212\u0214\u0216\u0218\u021A\u021C\u021E\u0220\u0222\u0224\u0226\u0228\u022A\u022C\u022E\u0230\u0232\u023A\u023B\u023D\u023E\u0241\u0243-\u0246\u0248\u024A\u024C\u024E\u0370\u0372\u0376\u037F\u0386\u0388-\u038A\u038C\u038E\u038F\u0391-\u03A1\u03A3-\u03AB\u03CF\u03D2-\u03D4\u03D8\u03DA\u03DC\u03DE\u03E0\u03E2\u03E4\u03E6\u03E8\u03EA\u03EC\u03EE\u03F4\u03F7\u03F9\u03FA\u03FD-\u042F\u0460\u0462\u0464\u0466\u0468\u046A\u046C\u046E\u0470\u0472\u0474\u0476\u0478\u047A\u047C\u047E\u0480\u048A\u048C\u048E\u0490\u0492\u0494\u0496\u0498\u049A\u049C\u049E\u04A0\u04A2\u04A4\u04A6\u04A8\u04AA\u04AC\u04AE\u04B0\u04B2\u04B4\u04B6\u04B8\u04BA\u04BC\u04BE\u04C0\u04C1\u04C3\u04C5\u04C7\u04C9\u04CB\u04CD\u04D0\u04D2\u04D4\u04D6\u04D8\u04DA\u04DC\u04DE\u04E0\u04E2\u04E4\u04E6\u04E8\u04EA\u04EC\u04EE\u04F0\u04F2\u04F4\u04F6\u04F8\u04FA\u04FC\u04FE\u0500\u0502\u0504\u0506\u0508\u050A\u050C\u050E\u0510\u0512\u0514\u0516\u0518\u051A\u051C\u051E\u0520\u0522\u0524\u0526\u0528\u052A\u052C\u052E\u0531-\u0556\u10A0-\u10C5\u10C7\u10CD\u13A0-\u13F5\u1E00\u1E02\u1E04\u1E06\u1E08\u1E0A\u1E0C\u1E0E\u1E10\u1E12\u1E14\u1E16\u1E18\u1E1A\u1E1C\u1E1E\u1E20\u1E22\u1E24\u1E26\u1E28\u1E2A\u1E2C\u1E2E\u1E30\u1E32\u1E34\u1E36\u1E38\u1E3A\u1E3C\u1E3E\u1E40\u1E42\u1E44\u1E46\u1E48\u1E4A\u1E4C\u1E4E\u1E50\u1E52\u1E54\u1E56\u1E58\u1E5A\u1E5C\u1E5E\u1E60\u1E62\u1E64\u1E66\u1E68\u1E6A\u1E6C\u1E6E\u1E70\u1E72\u1E74\u1E76\u1E78\u1E7A\u1E7C\u1E7E\u1E80\u1E82\u1E84\u1E86\u1E88\u1E8A\u1E8C\u1E8E\u1E90\u1E92\u1E94\u1E9E\u1EA0\u1EA2\u1EA4\u1EA6\u1EA8\u1EAA\u1EAC\u1EAE\u1EB0\u1EB2\u1EB4\u1EB6\u1EB8\u1EBA\u1EBC\u1EBE\u1EC0\u1EC2\u1EC4\u1EC6\u1EC8\u1ECA\u1ECC\u1ECE\u1ED0\u1ED2\u1ED4\u1ED6\u1ED8\u1EDA\u1EDC\u1EDE\u1EE0\u1EE2\u1EE4\u1EE6\u1EE8\u1EEA\u1EEC\u1EEE\u1EF0\u1EF2\u1EF4\u1EF6\u1EF8\u1EFA\u1EFC\u1EFE\u1F08-\u1F0F\u1F18-\u1F1D\u1F28-\u1F2F\u1F38-\u1F3F\u1F48-\u1F4D\u1F59\u1F5B\u1F5D\u1F5F\u1F68-\u1F6F\u1FB8-\u1FBB\u1FC8-\u1FCB\u1FD8-\u1FDB\u1FE8-\u1FEC\u1FF8-\u1FFB\u2102\u2107\u210B-\u210D\u2110-\u2112\u2115\u2119-\u211D\u2124\u2126\u2128\u212A-\u212D\u2130-\u2133\u213E\u213F\u2145\u2183\u2C00-\u2C2E\u2C60\u2C62-\u2C64\u2C67\u2C69\u2C6B\u2C6D-\u2C70\u2C72\u2C75\u2C7E-\u2C80\u2C82\u2C84\u2C86\u2C88\u2C8A\u2C8C\u2C8E\u2C90\u2C92\u2C94\u2C96\u2C98\u2C9A\u2C9C\u2C9E\u2CA0\u2CA2\u2CA4\u2CA6\u2CA8\u2CAA\u2CAC\u2CAE\u2CB0\u2CB2\u2CB4\u2CB6\u2CB8\u2CBA\u2CBC\u2CBE\u2CC0\u2CC2\u2CC4\u2CC6\u2CC8\u2CCA\u2CCC\u2CCE\u2CD0\u2CD2\u2CD4\u2CD6\u2CD8\u2CDA\u2CDC\u2CDE\u2CE0\u2CE2\u2CEB\u2CED\u2CF2\uA640\uA642\uA644\uA646\uA648\uA64A\uA64C\uA64E\uA650\uA652\uA654\uA656\uA658\uA65A\uA65C\uA65E\uA660\uA662\uA664\uA666\uA668\uA66A\uA66C\uA680\uA682\uA684\uA686\uA688\uA68A\uA68C\uA68E\uA690\uA692\uA694\uA696\uA698\uA69A\uA722\uA724\uA726\uA728\uA72A\uA72C\uA72E\uA732\uA734\uA736\uA738\uA73A\uA73C\uA73E\uA740\uA742\uA744\uA746\uA748\uA74A\uA74C\uA74E\uA750\uA752\uA754\uA756\uA758\uA75A\uA75C\uA75E\uA760\uA762\uA764\uA766\uA768\uA76A\uA76C\uA76E\uA779\uA77B\uA77D\uA77E\uA780\uA782\uA784\uA786\uA78B\uA78D\uA790\uA792\uA796\uA798\uA79A\uA79C\uA79E\uA7A0\uA7A2\uA7A4\uA7A6\uA7A8\uA7AA-\uA7AD\uA7B0-\uA7B4\uA7B6\uFF21-\uFF3A])/g
 
-},{}],160:[function(require,module,exports){
+},{}],174:[function(require,module,exports){
 module.exports = /([A-Z\xC0-\xD6\xD8-\xDE\u0100\u0102\u0104\u0106\u0108\u010A\u010C\u010E\u0110\u0112\u0114\u0116\u0118\u011A\u011C\u011E\u0120\u0122\u0124\u0126\u0128\u012A\u012C\u012E\u0130\u0132\u0134\u0136\u0139\u013B\u013D\u013F\u0141\u0143\u0145\u0147\u014A\u014C\u014E\u0150\u0152\u0154\u0156\u0158\u015A\u015C\u015E\u0160\u0162\u0164\u0166\u0168\u016A\u016C\u016E\u0170\u0172\u0174\u0176\u0178\u0179\u017B\u017D\u0181\u0182\u0184\u0186\u0187\u0189-\u018B\u018E-\u0191\u0193\u0194\u0196-\u0198\u019C\u019D\u019F\u01A0\u01A2\u01A4\u01A6\u01A7\u01A9\u01AC\u01AE\u01AF\u01B1-\u01B3\u01B5\u01B7\u01B8\u01BC\u01C4\u01C7\u01CA\u01CD\u01CF\u01D1\u01D3\u01D5\u01D7\u01D9\u01DB\u01DE\u01E0\u01E2\u01E4\u01E6\u01E8\u01EA\u01EC\u01EE\u01F1\u01F4\u01F6-\u01F8\u01FA\u01FC\u01FE\u0200\u0202\u0204\u0206\u0208\u020A\u020C\u020E\u0210\u0212\u0214\u0216\u0218\u021A\u021C\u021E\u0220\u0222\u0224\u0226\u0228\u022A\u022C\u022E\u0230\u0232\u023A\u023B\u023D\u023E\u0241\u0243-\u0246\u0248\u024A\u024C\u024E\u0370\u0372\u0376\u037F\u0386\u0388-\u038A\u038C\u038E\u038F\u0391-\u03A1\u03A3-\u03AB\u03CF\u03D2-\u03D4\u03D8\u03DA\u03DC\u03DE\u03E0\u03E2\u03E4\u03E6\u03E8\u03EA\u03EC\u03EE\u03F4\u03F7\u03F9\u03FA\u03FD-\u042F\u0460\u0462\u0464\u0466\u0468\u046A\u046C\u046E\u0470\u0472\u0474\u0476\u0478\u047A\u047C\u047E\u0480\u048A\u048C\u048E\u0490\u0492\u0494\u0496\u0498\u049A\u049C\u049E\u04A0\u04A2\u04A4\u04A6\u04A8\u04AA\u04AC\u04AE\u04B0\u04B2\u04B4\u04B6\u04B8\u04BA\u04BC\u04BE\u04C0\u04C1\u04C3\u04C5\u04C7\u04C9\u04CB\u04CD\u04D0\u04D2\u04D4\u04D6\u04D8\u04DA\u04DC\u04DE\u04E0\u04E2\u04E4\u04E6\u04E8\u04EA\u04EC\u04EE\u04F0\u04F2\u04F4\u04F6\u04F8\u04FA\u04FC\u04FE\u0500\u0502\u0504\u0506\u0508\u050A\u050C\u050E\u0510\u0512\u0514\u0516\u0518\u051A\u051C\u051E\u0520\u0522\u0524\u0526\u0528\u052A\u052C\u052E\u0531-\u0556\u10A0-\u10C5\u10C7\u10CD\u13A0-\u13F5\u1E00\u1E02\u1E04\u1E06\u1E08\u1E0A\u1E0C\u1E0E\u1E10\u1E12\u1E14\u1E16\u1E18\u1E1A\u1E1C\u1E1E\u1E20\u1E22\u1E24\u1E26\u1E28\u1E2A\u1E2C\u1E2E\u1E30\u1E32\u1E34\u1E36\u1E38\u1E3A\u1E3C\u1E3E\u1E40\u1E42\u1E44\u1E46\u1E48\u1E4A\u1E4C\u1E4E\u1E50\u1E52\u1E54\u1E56\u1E58\u1E5A\u1E5C\u1E5E\u1E60\u1E62\u1E64\u1E66\u1E68\u1E6A\u1E6C\u1E6E\u1E70\u1E72\u1E74\u1E76\u1E78\u1E7A\u1E7C\u1E7E\u1E80\u1E82\u1E84\u1E86\u1E88\u1E8A\u1E8C\u1E8E\u1E90\u1E92\u1E94\u1E9E\u1EA0\u1EA2\u1EA4\u1EA6\u1EA8\u1EAA\u1EAC\u1EAE\u1EB0\u1EB2\u1EB4\u1EB6\u1EB8\u1EBA\u1EBC\u1EBE\u1EC0\u1EC2\u1EC4\u1EC6\u1EC8\u1ECA\u1ECC\u1ECE\u1ED0\u1ED2\u1ED4\u1ED6\u1ED8\u1EDA\u1EDC\u1EDE\u1EE0\u1EE2\u1EE4\u1EE6\u1EE8\u1EEA\u1EEC\u1EEE\u1EF0\u1EF2\u1EF4\u1EF6\u1EF8\u1EFA\u1EFC\u1EFE\u1F08-\u1F0F\u1F18-\u1F1D\u1F28-\u1F2F\u1F38-\u1F3F\u1F48-\u1F4D\u1F59\u1F5B\u1F5D\u1F5F\u1F68-\u1F6F\u1FB8-\u1FBB\u1FC8-\u1FCB\u1FD8-\u1FDB\u1FE8-\u1FEC\u1FF8-\u1FFB\u2102\u2107\u210B-\u210D\u2110-\u2112\u2115\u2119-\u211D\u2124\u2126\u2128\u212A-\u212D\u2130-\u2133\u213E\u213F\u2145\u2183\u2C00-\u2C2E\u2C60\u2C62-\u2C64\u2C67\u2C69\u2C6B\u2C6D-\u2C70\u2C72\u2C75\u2C7E-\u2C80\u2C82\u2C84\u2C86\u2C88\u2C8A\u2C8C\u2C8E\u2C90\u2C92\u2C94\u2C96\u2C98\u2C9A\u2C9C\u2C9E\u2CA0\u2CA2\u2CA4\u2CA6\u2CA8\u2CAA\u2CAC\u2CAE\u2CB0\u2CB2\u2CB4\u2CB6\u2CB8\u2CBA\u2CBC\u2CBE\u2CC0\u2CC2\u2CC4\u2CC6\u2CC8\u2CCA\u2CCC\u2CCE\u2CD0\u2CD2\u2CD4\u2CD6\u2CD8\u2CDA\u2CDC\u2CDE\u2CE0\u2CE2\u2CEB\u2CED\u2CF2\uA640\uA642\uA644\uA646\uA648\uA64A\uA64C\uA64E\uA650\uA652\uA654\uA656\uA658\uA65A\uA65C\uA65E\uA660\uA662\uA664\uA666\uA668\uA66A\uA66C\uA680\uA682\uA684\uA686\uA688\uA68A\uA68C\uA68E\uA690\uA692\uA694\uA696\uA698\uA69A\uA722\uA724\uA726\uA728\uA72A\uA72C\uA72E\uA732\uA734\uA736\uA738\uA73A\uA73C\uA73E\uA740\uA742\uA744\uA746\uA748\uA74A\uA74C\uA74E\uA750\uA752\uA754\uA756\uA758\uA75A\uA75C\uA75E\uA760\uA762\uA764\uA766\uA768\uA76A\uA76C\uA76E\uA779\uA77B\uA77D\uA77E\uA780\uA782\uA784\uA786\uA78B\uA78D\uA790\uA792\uA796\uA798\uA79A\uA79C\uA79E\uA7A0\uA7A2\uA7A4\uA7A6\uA7A8\uA7AA-\uA7AD\uA7B0-\uA7B4\uA7B6\uFF21-\uFF3A])([A-Z\xC0-\xD6\xD8-\xDE\u0100\u0102\u0104\u0106\u0108\u010A\u010C\u010E\u0110\u0112\u0114\u0116\u0118\u011A\u011C\u011E\u0120\u0122\u0124\u0126\u0128\u012A\u012C\u012E\u0130\u0132\u0134\u0136\u0139\u013B\u013D\u013F\u0141\u0143\u0145\u0147\u014A\u014C\u014E\u0150\u0152\u0154\u0156\u0158\u015A\u015C\u015E\u0160\u0162\u0164\u0166\u0168\u016A\u016C\u016E\u0170\u0172\u0174\u0176\u0178\u0179\u017B\u017D\u0181\u0182\u0184\u0186\u0187\u0189-\u018B\u018E-\u0191\u0193\u0194\u0196-\u0198\u019C\u019D\u019F\u01A0\u01A2\u01A4\u01A6\u01A7\u01A9\u01AC\u01AE\u01AF\u01B1-\u01B3\u01B5\u01B7\u01B8\u01BC\u01C4\u01C7\u01CA\u01CD\u01CF\u01D1\u01D3\u01D5\u01D7\u01D9\u01DB\u01DE\u01E0\u01E2\u01E4\u01E6\u01E8\u01EA\u01EC\u01EE\u01F1\u01F4\u01F6-\u01F8\u01FA\u01FC\u01FE\u0200\u0202\u0204\u0206\u0208\u020A\u020C\u020E\u0210\u0212\u0214\u0216\u0218\u021A\u021C\u021E\u0220\u0222\u0224\u0226\u0228\u022A\u022C\u022E\u0230\u0232\u023A\u023B\u023D\u023E\u0241\u0243-\u0246\u0248\u024A\u024C\u024E\u0370\u0372\u0376\u037F\u0386\u0388-\u038A\u038C\u038E\u038F\u0391-\u03A1\u03A3-\u03AB\u03CF\u03D2-\u03D4\u03D8\u03DA\u03DC\u03DE\u03E0\u03E2\u03E4\u03E6\u03E8\u03EA\u03EC\u03EE\u03F4\u03F7\u03F9\u03FA\u03FD-\u042F\u0460\u0462\u0464\u0466\u0468\u046A\u046C\u046E\u0470\u0472\u0474\u0476\u0478\u047A\u047C\u047E\u0480\u048A\u048C\u048E\u0490\u0492\u0494\u0496\u0498\u049A\u049C\u049E\u04A0\u04A2\u04A4\u04A6\u04A8\u04AA\u04AC\u04AE\u04B0\u04B2\u04B4\u04B6\u04B8\u04BA\u04BC\u04BE\u04C0\u04C1\u04C3\u04C5\u04C7\u04C9\u04CB\u04CD\u04D0\u04D2\u04D4\u04D6\u04D8\u04DA\u04DC\u04DE\u04E0\u04E2\u04E4\u04E6\u04E8\u04EA\u04EC\u04EE\u04F0\u04F2\u04F4\u04F6\u04F8\u04FA\u04FC\u04FE\u0500\u0502\u0504\u0506\u0508\u050A\u050C\u050E\u0510\u0512\u0514\u0516\u0518\u051A\u051C\u051E\u0520\u0522\u0524\u0526\u0528\u052A\u052C\u052E\u0531-\u0556\u10A0-\u10C5\u10C7\u10CD\u13A0-\u13F5\u1E00\u1E02\u1E04\u1E06\u1E08\u1E0A\u1E0C\u1E0E\u1E10\u1E12\u1E14\u1E16\u1E18\u1E1A\u1E1C\u1E1E\u1E20\u1E22\u1E24\u1E26\u1E28\u1E2A\u1E2C\u1E2E\u1E30\u1E32\u1E34\u1E36\u1E38\u1E3A\u1E3C\u1E3E\u1E40\u1E42\u1E44\u1E46\u1E48\u1E4A\u1E4C\u1E4E\u1E50\u1E52\u1E54\u1E56\u1E58\u1E5A\u1E5C\u1E5E\u1E60\u1E62\u1E64\u1E66\u1E68\u1E6A\u1E6C\u1E6E\u1E70\u1E72\u1E74\u1E76\u1E78\u1E7A\u1E7C\u1E7E\u1E80\u1E82\u1E84\u1E86\u1E88\u1E8A\u1E8C\u1E8E\u1E90\u1E92\u1E94\u1E9E\u1EA0\u1EA2\u1EA4\u1EA6\u1EA8\u1EAA\u1EAC\u1EAE\u1EB0\u1EB2\u1EB4\u1EB6\u1EB8\u1EBA\u1EBC\u1EBE\u1EC0\u1EC2\u1EC4\u1EC6\u1EC8\u1ECA\u1ECC\u1ECE\u1ED0\u1ED2\u1ED4\u1ED6\u1ED8\u1EDA\u1EDC\u1EDE\u1EE0\u1EE2\u1EE4\u1EE6\u1EE8\u1EEA\u1EEC\u1EEE\u1EF0\u1EF2\u1EF4\u1EF6\u1EF8\u1EFA\u1EFC\u1EFE\u1F08-\u1F0F\u1F18-\u1F1D\u1F28-\u1F2F\u1F38-\u1F3F\u1F48-\u1F4D\u1F59\u1F5B\u1F5D\u1F5F\u1F68-\u1F6F\u1FB8-\u1FBB\u1FC8-\u1FCB\u1FD8-\u1FDB\u1FE8-\u1FEC\u1FF8-\u1FFB\u2102\u2107\u210B-\u210D\u2110-\u2112\u2115\u2119-\u211D\u2124\u2126\u2128\u212A-\u212D\u2130-\u2133\u213E\u213F\u2145\u2183\u2C00-\u2C2E\u2C60\u2C62-\u2C64\u2C67\u2C69\u2C6B\u2C6D-\u2C70\u2C72\u2C75\u2C7E-\u2C80\u2C82\u2C84\u2C86\u2C88\u2C8A\u2C8C\u2C8E\u2C90\u2C92\u2C94\u2C96\u2C98\u2C9A\u2C9C\u2C9E\u2CA0\u2CA2\u2CA4\u2CA6\u2CA8\u2CAA\u2CAC\u2CAE\u2CB0\u2CB2\u2CB4\u2CB6\u2CB8\u2CBA\u2CBC\u2CBE\u2CC0\u2CC2\u2CC4\u2CC6\u2CC8\u2CCA\u2CCC\u2CCE\u2CD0\u2CD2\u2CD4\u2CD6\u2CD8\u2CDA\u2CDC\u2CDE\u2CE0\u2CE2\u2CEB\u2CED\u2CF2\uA640\uA642\uA644\uA646\uA648\uA64A\uA64C\uA64E\uA650\uA652\uA654\uA656\uA658\uA65A\uA65C\uA65E\uA660\uA662\uA664\uA666\uA668\uA66A\uA66C\uA680\uA682\uA684\uA686\uA688\uA68A\uA68C\uA68E\uA690\uA692\uA694\uA696\uA698\uA69A\uA722\uA724\uA726\uA728\uA72A\uA72C\uA72E\uA732\uA734\uA736\uA738\uA73A\uA73C\uA73E\uA740\uA742\uA744\uA746\uA748\uA74A\uA74C\uA74E\uA750\uA752\uA754\uA756\uA758\uA75A\uA75C\uA75E\uA760\uA762\uA764\uA766\uA768\uA76A\uA76C\uA76E\uA779\uA77B\uA77D\uA77E\uA780\uA782\uA784\uA786\uA78B\uA78D\uA790\uA792\uA796\uA798\uA79A\uA79C\uA79E\uA7A0\uA7A2\uA7A4\uA7A6\uA7A8\uA7AA-\uA7AD\uA7B0-\uA7B4\uA7B6\uFF21-\uFF3A][a-z\xB5\xDF-\xF6\xF8-\xFF\u0101\u0103\u0105\u0107\u0109\u010B\u010D\u010F\u0111\u0113\u0115\u0117\u0119\u011B\u011D\u011F\u0121\u0123\u0125\u0127\u0129\u012B\u012D\u012F\u0131\u0133\u0135\u0137\u0138\u013A\u013C\u013E\u0140\u0142\u0144\u0146\u0148\u0149\u014B\u014D\u014F\u0151\u0153\u0155\u0157\u0159\u015B\u015D\u015F\u0161\u0163\u0165\u0167\u0169\u016B\u016D\u016F\u0171\u0173\u0175\u0177\u017A\u017C\u017E-\u0180\u0183\u0185\u0188\u018C\u018D\u0192\u0195\u0199-\u019B\u019E\u01A1\u01A3\u01A5\u01A8\u01AA\u01AB\u01AD\u01B0\u01B4\u01B6\u01B9\u01BA\u01BD-\u01BF\u01C6\u01C9\u01CC\u01CE\u01D0\u01D2\u01D4\u01D6\u01D8\u01DA\u01DC\u01DD\u01DF\u01E1\u01E3\u01E5\u01E7\u01E9\u01EB\u01ED\u01EF\u01F0\u01F3\u01F5\u01F9\u01FB\u01FD\u01FF\u0201\u0203\u0205\u0207\u0209\u020B\u020D\u020F\u0211\u0213\u0215\u0217\u0219\u021B\u021D\u021F\u0221\u0223\u0225\u0227\u0229\u022B\u022D\u022F\u0231\u0233-\u0239\u023C\u023F\u0240\u0242\u0247\u0249\u024B\u024D\u024F-\u0293\u0295-\u02AF\u0371\u0373\u0377\u037B-\u037D\u0390\u03AC-\u03CE\u03D0\u03D1\u03D5-\u03D7\u03D9\u03DB\u03DD\u03DF\u03E1\u03E3\u03E5\u03E7\u03E9\u03EB\u03ED\u03EF-\u03F3\u03F5\u03F8\u03FB\u03FC\u0430-\u045F\u0461\u0463\u0465\u0467\u0469\u046B\u046D\u046F\u0471\u0473\u0475\u0477\u0479\u047B\u047D\u047F\u0481\u048B\u048D\u048F\u0491\u0493\u0495\u0497\u0499\u049B\u049D\u049F\u04A1\u04A3\u04A5\u04A7\u04A9\u04AB\u04AD\u04AF\u04B1\u04B3\u04B5\u04B7\u04B9\u04BB\u04BD\u04BF\u04C2\u04C4\u04C6\u04C8\u04CA\u04CC\u04CE\u04CF\u04D1\u04D3\u04D5\u04D7\u04D9\u04DB\u04DD\u04DF\u04E1\u04E3\u04E5\u04E7\u04E9\u04EB\u04ED\u04EF\u04F1\u04F3\u04F5\u04F7\u04F9\u04FB\u04FD\u04FF\u0501\u0503\u0505\u0507\u0509\u050B\u050D\u050F\u0511\u0513\u0515\u0517\u0519\u051B\u051D\u051F\u0521\u0523\u0525\u0527\u0529\u052B\u052D\u052F\u0561-\u0587\u13F8-\u13FD\u1D00-\u1D2B\u1D6B-\u1D77\u1D79-\u1D9A\u1E01\u1E03\u1E05\u1E07\u1E09\u1E0B\u1E0D\u1E0F\u1E11\u1E13\u1E15\u1E17\u1E19\u1E1B\u1E1D\u1E1F\u1E21\u1E23\u1E25\u1E27\u1E29\u1E2B\u1E2D\u1E2F\u1E31\u1E33\u1E35\u1E37\u1E39\u1E3B\u1E3D\u1E3F\u1E41\u1E43\u1E45\u1E47\u1E49\u1E4B\u1E4D\u1E4F\u1E51\u1E53\u1E55\u1E57\u1E59\u1E5B\u1E5D\u1E5F\u1E61\u1E63\u1E65\u1E67\u1E69\u1E6B\u1E6D\u1E6F\u1E71\u1E73\u1E75\u1E77\u1E79\u1E7B\u1E7D\u1E7F\u1E81\u1E83\u1E85\u1E87\u1E89\u1E8B\u1E8D\u1E8F\u1E91\u1E93\u1E95-\u1E9D\u1E9F\u1EA1\u1EA3\u1EA5\u1EA7\u1EA9\u1EAB\u1EAD\u1EAF\u1EB1\u1EB3\u1EB5\u1EB7\u1EB9\u1EBB\u1EBD\u1EBF\u1EC1\u1EC3\u1EC5\u1EC7\u1EC9\u1ECB\u1ECD\u1ECF\u1ED1\u1ED3\u1ED5\u1ED7\u1ED9\u1EDB\u1EDD\u1EDF\u1EE1\u1EE3\u1EE5\u1EE7\u1EE9\u1EEB\u1EED\u1EEF\u1EF1\u1EF3\u1EF5\u1EF7\u1EF9\u1EFB\u1EFD\u1EFF-\u1F07\u1F10-\u1F15\u1F20-\u1F27\u1F30-\u1F37\u1F40-\u1F45\u1F50-\u1F57\u1F60-\u1F67\u1F70-\u1F7D\u1F80-\u1F87\u1F90-\u1F97\u1FA0-\u1FA7\u1FB0-\u1FB4\u1FB6\u1FB7\u1FBE\u1FC2-\u1FC4\u1FC6\u1FC7\u1FD0-\u1FD3\u1FD6\u1FD7\u1FE0-\u1FE7\u1FF2-\u1FF4\u1FF6\u1FF7\u210A\u210E\u210F\u2113\u212F\u2134\u2139\u213C\u213D\u2146-\u2149\u214E\u2184\u2C30-\u2C5E\u2C61\u2C65\u2C66\u2C68\u2C6A\u2C6C\u2C71\u2C73\u2C74\u2C76-\u2C7B\u2C81\u2C83\u2C85\u2C87\u2C89\u2C8B\u2C8D\u2C8F\u2C91\u2C93\u2C95\u2C97\u2C99\u2C9B\u2C9D\u2C9F\u2CA1\u2CA3\u2CA5\u2CA7\u2CA9\u2CAB\u2CAD\u2CAF\u2CB1\u2CB3\u2CB5\u2CB7\u2CB9\u2CBB\u2CBD\u2CBF\u2CC1\u2CC3\u2CC5\u2CC7\u2CC9\u2CCB\u2CCD\u2CCF\u2CD1\u2CD3\u2CD5\u2CD7\u2CD9\u2CDB\u2CDD\u2CDF\u2CE1\u2CE3\u2CE4\u2CEC\u2CEE\u2CF3\u2D00-\u2D25\u2D27\u2D2D\uA641\uA643\uA645\uA647\uA649\uA64B\uA64D\uA64F\uA651\uA653\uA655\uA657\uA659\uA65B\uA65D\uA65F\uA661\uA663\uA665\uA667\uA669\uA66B\uA66D\uA681\uA683\uA685\uA687\uA689\uA68B\uA68D\uA68F\uA691\uA693\uA695\uA697\uA699\uA69B\uA723\uA725\uA727\uA729\uA72B\uA72D\uA72F-\uA731\uA733\uA735\uA737\uA739\uA73B\uA73D\uA73F\uA741\uA743\uA745\uA747\uA749\uA74B\uA74D\uA74F\uA751\uA753\uA755\uA757\uA759\uA75B\uA75D\uA75F\uA761\uA763\uA765\uA767\uA769\uA76B\uA76D\uA76F\uA771-\uA778\uA77A\uA77C\uA77F\uA781\uA783\uA785\uA787\uA78C\uA78E\uA791\uA793-\uA795\uA797\uA799\uA79B\uA79D\uA79F\uA7A1\uA7A3\uA7A5\uA7A7\uA7A9\uA7B5\uA7B7\uA7FA\uAB30-\uAB5A\uAB60-\uAB65\uAB70-\uABBF\uFB00-\uFB06\uFB13-\uFB17\uFF41-\uFF5A])/g
 
-},{}],161:[function(require,module,exports){
+},{}],175:[function(require,module,exports){
 module.exports = /[^A-Za-z\xAA\xB5\xBA\xC0-\xD6\xD8-\xF6\xF8-\u02C1\u02C6-\u02D1\u02E0-\u02E4\u02EC\u02EE\u0370-\u0374\u0376\u0377\u037A-\u037D\u037F\u0386\u0388-\u038A\u038C\u038E-\u03A1\u03A3-\u03F5\u03F7-\u0481\u048A-\u052F\u0531-\u0556\u0559\u0561-\u0587\u05D0-\u05EA\u05F0-\u05F2\u0620-\u064A\u066E\u066F\u0671-\u06D3\u06D5\u06E5\u06E6\u06EE\u06EF\u06FA-\u06FC\u06FF\u0710\u0712-\u072F\u074D-\u07A5\u07B1\u07CA-\u07EA\u07F4\u07F5\u07FA\u0800-\u0815\u081A\u0824\u0828\u0840-\u0858\u08A0-\u08B4\u0904-\u0939\u093D\u0950\u0958-\u0961\u0971-\u0980\u0985-\u098C\u098F\u0990\u0993-\u09A8\u09AA-\u09B0\u09B2\u09B6-\u09B9\u09BD\u09CE\u09DC\u09DD\u09DF-\u09E1\u09F0\u09F1\u0A05-\u0A0A\u0A0F\u0A10\u0A13-\u0A28\u0A2A-\u0A30\u0A32\u0A33\u0A35\u0A36\u0A38\u0A39\u0A59-\u0A5C\u0A5E\u0A72-\u0A74\u0A85-\u0A8D\u0A8F-\u0A91\u0A93-\u0AA8\u0AAA-\u0AB0\u0AB2\u0AB3\u0AB5-\u0AB9\u0ABD\u0AD0\u0AE0\u0AE1\u0AF9\u0B05-\u0B0C\u0B0F\u0B10\u0B13-\u0B28\u0B2A-\u0B30\u0B32\u0B33\u0B35-\u0B39\u0B3D\u0B5C\u0B5D\u0B5F-\u0B61\u0B71\u0B83\u0B85-\u0B8A\u0B8E-\u0B90\u0B92-\u0B95\u0B99\u0B9A\u0B9C\u0B9E\u0B9F\u0BA3\u0BA4\u0BA8-\u0BAA\u0BAE-\u0BB9\u0BD0\u0C05-\u0C0C\u0C0E-\u0C10\u0C12-\u0C28\u0C2A-\u0C39\u0C3D\u0C58-\u0C5A\u0C60\u0C61\u0C85-\u0C8C\u0C8E-\u0C90\u0C92-\u0CA8\u0CAA-\u0CB3\u0CB5-\u0CB9\u0CBD\u0CDE\u0CE0\u0CE1\u0CF1\u0CF2\u0D05-\u0D0C\u0D0E-\u0D10\u0D12-\u0D3A\u0D3D\u0D4E\u0D5F-\u0D61\u0D7A-\u0D7F\u0D85-\u0D96\u0D9A-\u0DB1\u0DB3-\u0DBB\u0DBD\u0DC0-\u0DC6\u0E01-\u0E30\u0E32\u0E33\u0E40-\u0E46\u0E81\u0E82\u0E84\u0E87\u0E88\u0E8A\u0E8D\u0E94-\u0E97\u0E99-\u0E9F\u0EA1-\u0EA3\u0EA5\u0EA7\u0EAA\u0EAB\u0EAD-\u0EB0\u0EB2\u0EB3\u0EBD\u0EC0-\u0EC4\u0EC6\u0EDC-\u0EDF\u0F00\u0F40-\u0F47\u0F49-\u0F6C\u0F88-\u0F8C\u1000-\u102A\u103F\u1050-\u1055\u105A-\u105D\u1061\u1065\u1066\u106E-\u1070\u1075-\u1081\u108E\u10A0-\u10C5\u10C7\u10CD\u10D0-\u10FA\u10FC-\u1248\u124A-\u124D\u1250-\u1256\u1258\u125A-\u125D\u1260-\u1288\u128A-\u128D\u1290-\u12B0\u12B2-\u12B5\u12B8-\u12BE\u12C0\u12C2-\u12C5\u12C8-\u12D6\u12D8-\u1310\u1312-\u1315\u1318-\u135A\u1380-\u138F\u13A0-\u13F5\u13F8-\u13FD\u1401-\u166C\u166F-\u167F\u1681-\u169A\u16A0-\u16EA\u16F1-\u16F8\u1700-\u170C\u170E-\u1711\u1720-\u1731\u1740-\u1751\u1760-\u176C\u176E-\u1770\u1780-\u17B3\u17D7\u17DC\u1820-\u1877\u1880-\u18A8\u18AA\u18B0-\u18F5\u1900-\u191E\u1950-\u196D\u1970-\u1974\u1980-\u19AB\u19B0-\u19C9\u1A00-\u1A16\u1A20-\u1A54\u1AA7\u1B05-\u1B33\u1B45-\u1B4B\u1B83-\u1BA0\u1BAE\u1BAF\u1BBA-\u1BE5\u1C00-\u1C23\u1C4D-\u1C4F\u1C5A-\u1C7D\u1CE9-\u1CEC\u1CEE-\u1CF1\u1CF5\u1CF6\u1D00-\u1DBF\u1E00-\u1F15\u1F18-\u1F1D\u1F20-\u1F45\u1F48-\u1F4D\u1F50-\u1F57\u1F59\u1F5B\u1F5D\u1F5F-\u1F7D\u1F80-\u1FB4\u1FB6-\u1FBC\u1FBE\u1FC2-\u1FC4\u1FC6-\u1FCC\u1FD0-\u1FD3\u1FD6-\u1FDB\u1FE0-\u1FEC\u1FF2-\u1FF4\u1FF6-\u1FFC\u2071\u207F\u2090-\u209C\u2102\u2107\u210A-\u2113\u2115\u2119-\u211D\u2124\u2126\u2128\u212A-\u212D\u212F-\u2139\u213C-\u213F\u2145-\u2149\u214E\u2183\u2184\u2C00-\u2C2E\u2C30-\u2C5E\u2C60-\u2CE4\u2CEB-\u2CEE\u2CF2\u2CF3\u2D00-\u2D25\u2D27\u2D2D\u2D30-\u2D67\u2D6F\u2D80-\u2D96\u2DA0-\u2DA6\u2DA8-\u2DAE\u2DB0-\u2DB6\u2DB8-\u2DBE\u2DC0-\u2DC6\u2DC8-\u2DCE\u2DD0-\u2DD6\u2DD8-\u2DDE\u2E2F\u3005\u3006\u3031-\u3035\u303B\u303C\u3041-\u3096\u309D-\u309F\u30A1-\u30FA\u30FC-\u30FF\u3105-\u312D\u3131-\u318E\u31A0-\u31BA\u31F0-\u31FF\u3400-\u4DB5\u4E00-\u9FD5\uA000-\uA48C\uA4D0-\uA4FD\uA500-\uA60C\uA610-\uA61F\uA62A\uA62B\uA640-\uA66E\uA67F-\uA69D\uA6A0-\uA6E5\uA717-\uA71F\uA722-\uA788\uA78B-\uA7AD\uA7B0-\uA7B7\uA7F7-\uA801\uA803-\uA805\uA807-\uA80A\uA80C-\uA822\uA840-\uA873\uA882-\uA8B3\uA8F2-\uA8F7\uA8FB\uA8FD\uA90A-\uA925\uA930-\uA946\uA960-\uA97C\uA984-\uA9B2\uA9CF\uA9E0-\uA9E4\uA9E6-\uA9EF\uA9FA-\uA9FE\uAA00-\uAA28\uAA40-\uAA42\uAA44-\uAA4B\uAA60-\uAA76\uAA7A\uAA7E-\uAAAF\uAAB1\uAAB5\uAAB6\uAAB9-\uAABD\uAAC0\uAAC2\uAADB-\uAADD\uAAE0-\uAAEA\uAAF2-\uAAF4\uAB01-\uAB06\uAB09-\uAB0E\uAB11-\uAB16\uAB20-\uAB26\uAB28-\uAB2E\uAB30-\uAB5A\uAB5C-\uAB65\uAB70-\uABE2\uAC00-\uD7A3\uD7B0-\uD7C6\uD7CB-\uD7FB\uF900-\uFA6D\uFA70-\uFAD9\uFB00-\uFB06\uFB13-\uFB17\uFB1D\uFB1F-\uFB28\uFB2A-\uFB36\uFB38-\uFB3C\uFB3E\uFB40\uFB41\uFB43\uFB44\uFB46-\uFBB1\uFBD3-\uFD3D\uFD50-\uFD8F\uFD92-\uFDC7\uFDF0-\uFDFB\uFE70-\uFE74\uFE76-\uFEFC\uFF21-\uFF3A\uFF41-\uFF5A\uFF66-\uFFBE\uFFC2-\uFFC7\uFFCA-\uFFCF\uFFD2-\uFFD7\uFFDA-\uFFDC0-9\xB2\xB3\xB9\xBC-\xBE\u0660-\u0669\u06F0-\u06F9\u07C0-\u07C9\u0966-\u096F\u09E6-\u09EF\u09F4-\u09F9\u0A66-\u0A6F\u0AE6-\u0AEF\u0B66-\u0B6F\u0B72-\u0B77\u0BE6-\u0BF2\u0C66-\u0C6F\u0C78-\u0C7E\u0CE6-\u0CEF\u0D66-\u0D75\u0DE6-\u0DEF\u0E50-\u0E59\u0ED0-\u0ED9\u0F20-\u0F33\u1040-\u1049\u1090-\u1099\u1369-\u137C\u16EE-\u16F0\u17E0-\u17E9\u17F0-\u17F9\u1810-\u1819\u1946-\u194F\u19D0-\u19DA\u1A80-\u1A89\u1A90-\u1A99\u1B50-\u1B59\u1BB0-\u1BB9\u1C40-\u1C49\u1C50-\u1C59\u2070\u2074-\u2079\u2080-\u2089\u2150-\u2182\u2185-\u2189\u2460-\u249B\u24EA-\u24FF\u2776-\u2793\u2CFD\u3007\u3021-\u3029\u3038-\u303A\u3192-\u3195\u3220-\u3229\u3248-\u324F\u3251-\u325F\u3280-\u3289\u32B1-\u32BF\uA620-\uA629\uA6E6-\uA6EF\uA830-\uA835\uA8D0-\uA8D9\uA900-\uA909\uA9D0-\uA9D9\uA9F0-\uA9F9\uAA50-\uAA59\uABF0-\uABF9\uFF10-\uFF19]+/g
 
-},{}],162:[function(require,module,exports){
+},{}],176:[function(require,module,exports){
 (function (process,global){
 'use strict'
 
@@ -22099,7 +23971,7 @@ function randomBytes (size, cb) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":188,"safe-buffer":166}],163:[function(require,module,exports){
+},{"_process":202,"safe-buffer":180}],177:[function(require,module,exports){
 /**
  * Copyright (c) 2014-present, Facebook, Inc.
  *
@@ -22136,7 +24008,7 @@ if (hadRuntime) {
   }
 }
 
-},{"./runtime":164}],164:[function(require,module,exports){
+},{"./runtime":178}],178:[function(require,module,exports){
 /**
  * Copyright (c) 2014-present, Facebook, Inc.
  *
@@ -22865,7 +24737,7 @@ if (hadRuntime) {
   (function() { return this })() || Function("return this")()
 );
 
-},{}],165:[function(require,module,exports){
+},{}],179:[function(require,module,exports){
 'use strict'
 var Buffer = require('buffer').Buffer
 var inherits = require('inherits')
@@ -23030,7 +24902,7 @@ function fn5 (a, b, c, d, e, m, k, s) {
 
 module.exports = RIPEMD160
 
-},{"buffer":180,"hash-base":151,"inherits":153}],166:[function(require,module,exports){
+},{"buffer":194,"hash-base":165,"inherits":167}],180:[function(require,module,exports){
 /* eslint-disable node/no-deprecated-api */
 var buffer = require('buffer')
 var Buffer = buffer.Buffer
@@ -23094,7 +24966,7 @@ SafeBuffer.allocUnsafeSlow = function (size) {
   return buffer.SlowBuffer(size)
 }
 
-},{"buffer":180}],167:[function(require,module,exports){
+},{"buffer":194}],181:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 
 // prototype class for hash functions
@@ -23177,7 +25049,7 @@ Hash.prototype._update = function () {
 
 module.exports = Hash
 
-},{"safe-buffer":166}],168:[function(require,module,exports){
+},{"safe-buffer":180}],182:[function(require,module,exports){
 var exports = module.exports = function SHA (algorithm) {
   algorithm = algorithm.toLowerCase()
 
@@ -23194,7 +25066,7 @@ exports.sha256 = require('./sha256')
 exports.sha384 = require('./sha384')
 exports.sha512 = require('./sha512')
 
-},{"./sha":169,"./sha1":170,"./sha224":171,"./sha256":172,"./sha384":173,"./sha512":174}],169:[function(require,module,exports){
+},{"./sha":183,"./sha1":184,"./sha224":185,"./sha256":186,"./sha384":187,"./sha512":188}],183:[function(require,module,exports){
 /*
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-0, as defined
  * in FIPS PUB 180-1
@@ -23290,7 +25162,7 @@ Sha.prototype._hash = function () {
 
 module.exports = Sha
 
-},{"./hash":167,"inherits":153,"safe-buffer":166}],170:[function(require,module,exports){
+},{"./hash":181,"inherits":167,"safe-buffer":180}],184:[function(require,module,exports){
 /*
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-1, as defined
  * in FIPS PUB 180-1
@@ -23391,7 +25263,7 @@ Sha1.prototype._hash = function () {
 
 module.exports = Sha1
 
-},{"./hash":167,"inherits":153,"safe-buffer":166}],171:[function(require,module,exports){
+},{"./hash":181,"inherits":167,"safe-buffer":180}],185:[function(require,module,exports){
 /**
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-256, as defined
  * in FIPS 180-2
@@ -23446,7 +25318,7 @@ Sha224.prototype._hash = function () {
 
 module.exports = Sha224
 
-},{"./hash":167,"./sha256":172,"inherits":153,"safe-buffer":166}],172:[function(require,module,exports){
+},{"./hash":181,"./sha256":186,"inherits":167,"safe-buffer":180}],186:[function(require,module,exports){
 /**
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-256, as defined
  * in FIPS 180-2
@@ -23583,7 +25455,7 @@ Sha256.prototype._hash = function () {
 
 module.exports = Sha256
 
-},{"./hash":167,"inherits":153,"safe-buffer":166}],173:[function(require,module,exports){
+},{"./hash":181,"inherits":167,"safe-buffer":180}],187:[function(require,module,exports){
 var inherits = require('inherits')
 var SHA512 = require('./sha512')
 var Hash = require('./hash')
@@ -23642,7 +25514,7 @@ Sha384.prototype._hash = function () {
 
 module.exports = Sha384
 
-},{"./hash":167,"./sha512":174,"inherits":153,"safe-buffer":166}],174:[function(require,module,exports){
+},{"./hash":181,"./sha512":188,"inherits":167,"safe-buffer":180}],188:[function(require,module,exports){
 var inherits = require('inherits')
 var Hash = require('./hash')
 var Buffer = require('safe-buffer').Buffer
@@ -23904,7 +25776,7 @@ Sha512.prototype._hash = function () {
 
 module.exports = Sha512
 
-},{"./hash":167,"inherits":153,"safe-buffer":166}],175:[function(require,module,exports){
+},{"./hash":181,"inherits":167,"safe-buffer":180}],189:[function(require,module,exports){
 /**
  * Special language-specific overrides.
  *
@@ -23956,27 +25828,33 @@ module.exports = function (str, locale) {
   return str.toUpperCase()
 }
 
-},{}],176:[function(require,module,exports){
-(function(self) {
-  'use strict';
-
-  if (self.fetch) {
-    return
-  }
+},{}],190:[function(require,module,exports){
+(function (global, factory) {
+  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
+  typeof define === 'function' && define.amd ? define(['exports'], factory) :
+  (factory((global.WHATWGFetch = {})));
+}(this, (function (exports) { 'use strict';
 
   var support = {
     searchParams: 'URLSearchParams' in self,
     iterable: 'Symbol' in self && 'iterator' in Symbol,
-    blob: 'FileReader' in self && 'Blob' in self && (function() {
-      try {
-        new Blob()
-        return true
-      } catch(e) {
-        return false
-      }
-    })(),
+    blob:
+      'FileReader' in self &&
+      'Blob' in self &&
+      (function() {
+        try {
+          new Blob();
+          return true
+        } catch (e) {
+          return false
+        }
+      })(),
     formData: 'FormData' in self,
     arrayBuffer: 'ArrayBuffer' in self
+  };
+
+  function isDataView(obj) {
+    return obj && DataView.prototype.isPrototypeOf(obj)
   }
 
   if (support.arrayBuffer) {
@@ -23990,22 +25868,20 @@ module.exports = function (str, locale) {
       '[object Uint32Array]',
       '[object Float32Array]',
       '[object Float64Array]'
-    ]
+    ];
 
-    var isDataView = function(obj) {
-      return obj && DataView.prototype.isPrototypeOf(obj)
-    }
-
-    var isArrayBufferView = ArrayBuffer.isView || function(obj) {
-      return obj && viewClasses.indexOf(Object.prototype.toString.call(obj)) > -1
-    }
+    var isArrayBufferView =
+      ArrayBuffer.isView ||
+      function(obj) {
+        return obj && viewClasses.indexOf(Object.prototype.toString.call(obj)) > -1
+      };
   }
 
   function normalizeName(name) {
     if (typeof name !== 'string') {
-      name = String(name)
+      name = String(name);
     }
-    if (/[^a-z0-9\-#$%&'*+.\^_`|~]/i.test(name)) {
+    if (/[^a-z0-9\-#$%&'*+.^_`|~]/i.test(name)) {
       throw new TypeError('Invalid character in header field name')
     }
     return name.toLowerCase()
@@ -24013,7 +25889,7 @@ module.exports = function (str, locale) {
 
   function normalizeValue(value) {
     if (typeof value !== 'string') {
-      value = String(value)
+      value = String(value);
     }
     return value
   }
@@ -24022,130 +25898,136 @@ module.exports = function (str, locale) {
   function iteratorFor(items) {
     var iterator = {
       next: function() {
-        var value = items.shift()
+        var value = items.shift();
         return {done: value === undefined, value: value}
       }
-    }
+    };
 
     if (support.iterable) {
       iterator[Symbol.iterator] = function() {
         return iterator
-      }
+      };
     }
 
     return iterator
   }
 
   function Headers(headers) {
-    this.map = {}
+    this.map = {};
 
     if (headers instanceof Headers) {
       headers.forEach(function(value, name) {
-        this.append(name, value)
-      }, this)
+        this.append(name, value);
+      }, this);
     } else if (Array.isArray(headers)) {
       headers.forEach(function(header) {
-        this.append(header[0], header[1])
-      }, this)
+        this.append(header[0], header[1]);
+      }, this);
     } else if (headers) {
       Object.getOwnPropertyNames(headers).forEach(function(name) {
-        this.append(name, headers[name])
-      }, this)
+        this.append(name, headers[name]);
+      }, this);
     }
   }
 
   Headers.prototype.append = function(name, value) {
-    name = normalizeName(name)
-    value = normalizeValue(value)
-    var oldValue = this.map[name]
-    this.map[name] = oldValue ? oldValue+','+value : value
-  }
+    name = normalizeName(name);
+    value = normalizeValue(value);
+    var oldValue = this.map[name];
+    this.map[name] = oldValue ? oldValue + ', ' + value : value;
+  };
 
   Headers.prototype['delete'] = function(name) {
-    delete this.map[normalizeName(name)]
-  }
+    delete this.map[normalizeName(name)];
+  };
 
   Headers.prototype.get = function(name) {
-    name = normalizeName(name)
+    name = normalizeName(name);
     return this.has(name) ? this.map[name] : null
-  }
+  };
 
   Headers.prototype.has = function(name) {
     return this.map.hasOwnProperty(normalizeName(name))
-  }
+  };
 
   Headers.prototype.set = function(name, value) {
-    this.map[normalizeName(name)] = normalizeValue(value)
-  }
+    this.map[normalizeName(name)] = normalizeValue(value);
+  };
 
   Headers.prototype.forEach = function(callback, thisArg) {
     for (var name in this.map) {
       if (this.map.hasOwnProperty(name)) {
-        callback.call(thisArg, this.map[name], name, this)
+        callback.call(thisArg, this.map[name], name, this);
       }
     }
-  }
+  };
 
   Headers.prototype.keys = function() {
-    var items = []
-    this.forEach(function(value, name) { items.push(name) })
+    var items = [];
+    this.forEach(function(value, name) {
+      items.push(name);
+    });
     return iteratorFor(items)
-  }
+  };
 
   Headers.prototype.values = function() {
-    var items = []
-    this.forEach(function(value) { items.push(value) })
+    var items = [];
+    this.forEach(function(value) {
+      items.push(value);
+    });
     return iteratorFor(items)
-  }
+  };
 
   Headers.prototype.entries = function() {
-    var items = []
-    this.forEach(function(value, name) { items.push([name, value]) })
+    var items = [];
+    this.forEach(function(value, name) {
+      items.push([name, value]);
+    });
     return iteratorFor(items)
-  }
+  };
 
   if (support.iterable) {
-    Headers.prototype[Symbol.iterator] = Headers.prototype.entries
+    Headers.prototype[Symbol.iterator] = Headers.prototype.entries;
   }
 
   function consumed(body) {
     if (body.bodyUsed) {
       return Promise.reject(new TypeError('Already read'))
     }
-    body.bodyUsed = true
+    body.bodyUsed = true;
   }
 
   function fileReaderReady(reader) {
     return new Promise(function(resolve, reject) {
       reader.onload = function() {
-        resolve(reader.result)
-      }
+        resolve(reader.result);
+      };
       reader.onerror = function() {
-        reject(reader.error)
-      }
+        reject(reader.error);
+      };
     })
   }
 
   function readBlobAsArrayBuffer(blob) {
-    var reader = new FileReader()
-    var promise = fileReaderReady(reader)
-    reader.readAsArrayBuffer(blob)
+    var reader = new FileReader();
+    var promise = fileReaderReady(reader);
+    reader.readAsArrayBuffer(blob);
     return promise
   }
 
   function readBlobAsText(blob) {
-    var reader = new FileReader()
-    var promise = fileReaderReady(reader)
-    reader.readAsText(blob)
+    var reader = new FileReader();
+    var promise = fileReaderReady(reader);
+    reader.readAsText(blob);
     return promise
   }
 
   function readArrayBufferAsText(buf) {
-    var view = new Uint8Array(buf)
-    var chars = new Array(view.length)
+    var view = new Uint8Array(buf);
+    var chars = new Array(view.length);
 
     for (var i = 0; i < view.length; i++) {
-      chars[i] = String.fromCharCode(view[i])
+      chars[i] = String.fromCharCode(view[i]);
     }
     return chars.join('')
   }
@@ -24154,51 +26036,51 @@ module.exports = function (str, locale) {
     if (buf.slice) {
       return buf.slice(0)
     } else {
-      var view = new Uint8Array(buf.byteLength)
-      view.set(new Uint8Array(buf))
+      var view = new Uint8Array(buf.byteLength);
+      view.set(new Uint8Array(buf));
       return view.buffer
     }
   }
 
   function Body() {
-    this.bodyUsed = false
+    this.bodyUsed = false;
 
     this._initBody = function(body) {
-      this._bodyInit = body
+      this._bodyInit = body;
       if (!body) {
-        this._bodyText = ''
+        this._bodyText = '';
       } else if (typeof body === 'string') {
-        this._bodyText = body
+        this._bodyText = body;
       } else if (support.blob && Blob.prototype.isPrototypeOf(body)) {
-        this._bodyBlob = body
+        this._bodyBlob = body;
       } else if (support.formData && FormData.prototype.isPrototypeOf(body)) {
-        this._bodyFormData = body
+        this._bodyFormData = body;
       } else if (support.searchParams && URLSearchParams.prototype.isPrototypeOf(body)) {
-        this._bodyText = body.toString()
+        this._bodyText = body.toString();
       } else if (support.arrayBuffer && support.blob && isDataView(body)) {
-        this._bodyArrayBuffer = bufferClone(body.buffer)
+        this._bodyArrayBuffer = bufferClone(body.buffer);
         // IE 10-11 can't handle a DataView body.
-        this._bodyInit = new Blob([this._bodyArrayBuffer])
+        this._bodyInit = new Blob([this._bodyArrayBuffer]);
       } else if (support.arrayBuffer && (ArrayBuffer.prototype.isPrototypeOf(body) || isArrayBufferView(body))) {
-        this._bodyArrayBuffer = bufferClone(body)
+        this._bodyArrayBuffer = bufferClone(body);
       } else {
-        throw new Error('unsupported BodyInit type')
+        this._bodyText = body = Object.prototype.toString.call(body);
       }
 
       if (!this.headers.get('content-type')) {
         if (typeof body === 'string') {
-          this.headers.set('content-type', 'text/plain;charset=UTF-8')
+          this.headers.set('content-type', 'text/plain;charset=UTF-8');
         } else if (this._bodyBlob && this._bodyBlob.type) {
-          this.headers.set('content-type', this._bodyBlob.type)
+          this.headers.set('content-type', this._bodyBlob.type);
         } else if (support.searchParams && URLSearchParams.prototype.isPrototypeOf(body)) {
-          this.headers.set('content-type', 'application/x-www-form-urlencoded;charset=UTF-8')
+          this.headers.set('content-type', 'application/x-www-form-urlencoded;charset=UTF-8');
         }
       }
-    }
+    };
 
     if (support.blob) {
       this.blob = function() {
-        var rejected = consumed(this)
+        var rejected = consumed(this);
         if (rejected) {
           return rejected
         }
@@ -24212,7 +26094,7 @@ module.exports = function (str, locale) {
         } else {
           return Promise.resolve(new Blob([this._bodyText]))
         }
-      }
+      };
 
       this.arrayBuffer = function() {
         if (this._bodyArrayBuffer) {
@@ -24220,11 +26102,11 @@ module.exports = function (str, locale) {
         } else {
           return this.blob().then(readBlobAsArrayBuffer)
         }
-      }
+      };
     }
 
     this.text = function() {
-      var rejected = consumed(this)
+      var rejected = consumed(this);
       if (rejected) {
         return rejected
       }
@@ -24238,116 +26120,121 @@ module.exports = function (str, locale) {
       } else {
         return Promise.resolve(this._bodyText)
       }
-    }
+    };
 
     if (support.formData) {
       this.formData = function() {
         return this.text().then(decode)
-      }
+      };
     }
 
     this.json = function() {
       return this.text().then(JSON.parse)
-    }
+    };
 
     return this
   }
 
   // HTTP methods whose capitalization should be normalized
-  var methods = ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'POST', 'PUT']
+  var methods = ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'POST', 'PUT'];
 
   function normalizeMethod(method) {
-    var upcased = method.toUpperCase()
-    return (methods.indexOf(upcased) > -1) ? upcased : method
+    var upcased = method.toUpperCase();
+    return methods.indexOf(upcased) > -1 ? upcased : method
   }
 
   function Request(input, options) {
-    options = options || {}
-    var body = options.body
+    options = options || {};
+    var body = options.body;
 
     if (input instanceof Request) {
       if (input.bodyUsed) {
         throw new TypeError('Already read')
       }
-      this.url = input.url
-      this.credentials = input.credentials
+      this.url = input.url;
+      this.credentials = input.credentials;
       if (!options.headers) {
-        this.headers = new Headers(input.headers)
+        this.headers = new Headers(input.headers);
       }
-      this.method = input.method
-      this.mode = input.mode
+      this.method = input.method;
+      this.mode = input.mode;
+      this.signal = input.signal;
       if (!body && input._bodyInit != null) {
-        body = input._bodyInit
-        input.bodyUsed = true
+        body = input._bodyInit;
+        input.bodyUsed = true;
       }
     } else {
-      this.url = String(input)
+      this.url = String(input);
     }
 
-    this.credentials = options.credentials || this.credentials || 'omit'
+    this.credentials = options.credentials || this.credentials || 'same-origin';
     if (options.headers || !this.headers) {
-      this.headers = new Headers(options.headers)
+      this.headers = new Headers(options.headers);
     }
-    this.method = normalizeMethod(options.method || this.method || 'GET')
-    this.mode = options.mode || this.mode || null
-    this.referrer = null
+    this.method = normalizeMethod(options.method || this.method || 'GET');
+    this.mode = options.mode || this.mode || null;
+    this.signal = options.signal || this.signal;
+    this.referrer = null;
 
     if ((this.method === 'GET' || this.method === 'HEAD') && body) {
       throw new TypeError('Body not allowed for GET or HEAD requests')
     }
-    this._initBody(body)
+    this._initBody(body);
   }
 
   Request.prototype.clone = function() {
-    return new Request(this, { body: this._bodyInit })
-  }
+    return new Request(this, {body: this._bodyInit})
+  };
 
   function decode(body) {
-    var form = new FormData()
-    body.trim().split('&').forEach(function(bytes) {
-      if (bytes) {
-        var split = bytes.split('=')
-        var name = split.shift().replace(/\+/g, ' ')
-        var value = split.join('=').replace(/\+/g, ' ')
-        form.append(decodeURIComponent(name), decodeURIComponent(value))
-      }
-    })
+    var form = new FormData();
+    body
+      .trim()
+      .split('&')
+      .forEach(function(bytes) {
+        if (bytes) {
+          var split = bytes.split('=');
+          var name = split.shift().replace(/\+/g, ' ');
+          var value = split.join('=').replace(/\+/g, ' ');
+          form.append(decodeURIComponent(name), decodeURIComponent(value));
+        }
+      });
     return form
   }
 
   function parseHeaders(rawHeaders) {
-    var headers = new Headers()
+    var headers = new Headers();
     // Replace instances of \r\n and \n followed by at least one space or horizontal tab with a space
     // https://tools.ietf.org/html/rfc7230#section-3.2
-    var preProcessedHeaders = rawHeaders.replace(/\r?\n[\t ]+/g, ' ')
+    var preProcessedHeaders = rawHeaders.replace(/\r?\n[\t ]+/g, ' ');
     preProcessedHeaders.split(/\r?\n/).forEach(function(line) {
-      var parts = line.split(':')
-      var key = parts.shift().trim()
+      var parts = line.split(':');
+      var key = parts.shift().trim();
       if (key) {
-        var value = parts.join(':').trim()
-        headers.append(key, value)
+        var value = parts.join(':').trim();
+        headers.append(key, value);
       }
-    })
+    });
     return headers
   }
 
-  Body.call(Request.prototype)
+  Body.call(Request.prototype);
 
   function Response(bodyInit, options) {
     if (!options) {
-      options = {}
+      options = {};
     }
 
-    this.type = 'default'
-    this.status = options.status === undefined ? 200 : options.status
-    this.ok = this.status >= 200 && this.status < 300
-    this.statusText = 'statusText' in options ? options.statusText : 'OK'
-    this.headers = new Headers(options.headers)
-    this.url = options.url || ''
-    this._initBody(bodyInit)
+    this.type = 'default';
+    this.status = options.status === undefined ? 200 : options.status;
+    this.ok = this.status >= 200 && this.status < 300;
+    this.statusText = 'statusText' in options ? options.statusText : 'OK';
+    this.headers = new Headers(options.headers);
+    this.url = options.url || '';
+    this._initBody(bodyInit);
   }
 
-  Body.call(Response.prototype)
+  Body.call(Response.prototype);
 
   Response.prototype.clone = function() {
     return new Response(this._bodyInit, {
@@ -24356,15 +26243,15 @@ module.exports = function (str, locale) {
       headers: new Headers(this.headers),
       url: this.url
     })
-  }
+  };
 
   Response.error = function() {
-    var response = new Response(null, {status: 0, statusText: ''})
-    response.type = 'error'
+    var response = new Response(null, {status: 0, statusText: ''});
+    response.type = 'error';
     return response
-  }
+  };
 
-  var redirectStatuses = [301, 302, 303, 307, 308]
+  var redirectStatuses = [301, 302, 303, 307, 308];
 
   Response.redirect = function(url, status) {
     if (redirectStatuses.indexOf(status) === -1) {
@@ -24372,59 +26259,109 @@ module.exports = function (str, locale) {
     }
 
     return new Response(null, {status: status, headers: {location: url}})
+  };
+
+  exports.DOMException = self.DOMException;
+  try {
+    new exports.DOMException();
+  } catch (err) {
+    exports.DOMException = function(message, name) {
+      this.message = message;
+      this.name = name;
+      var error = Error(message);
+      this.stack = error.stack;
+    };
+    exports.DOMException.prototype = Object.create(Error.prototype);
+    exports.DOMException.prototype.constructor = exports.DOMException;
   }
 
-  self.Headers = Headers
-  self.Request = Request
-  self.Response = Response
-
-  self.fetch = function(input, init) {
+  function fetch(input, init) {
     return new Promise(function(resolve, reject) {
-      var request = new Request(input, init)
-      var xhr = new XMLHttpRequest()
+      var request = new Request(input, init);
+
+      if (request.signal && request.signal.aborted) {
+        return reject(new exports.DOMException('Aborted', 'AbortError'))
+      }
+
+      var xhr = new XMLHttpRequest();
+
+      function abortXhr() {
+        xhr.abort();
+      }
 
       xhr.onload = function() {
         var options = {
           status: xhr.status,
           statusText: xhr.statusText,
           headers: parseHeaders(xhr.getAllResponseHeaders() || '')
-        }
-        options.url = 'responseURL' in xhr ? xhr.responseURL : options.headers.get('X-Request-URL')
-        var body = 'response' in xhr ? xhr.response : xhr.responseText
-        resolve(new Response(body, options))
-      }
+        };
+        options.url = 'responseURL' in xhr ? xhr.responseURL : options.headers.get('X-Request-URL');
+        var body = 'response' in xhr ? xhr.response : xhr.responseText;
+        resolve(new Response(body, options));
+      };
 
       xhr.onerror = function() {
-        reject(new TypeError('Network request failed'))
-      }
+        reject(new TypeError('Network request failed'));
+      };
 
       xhr.ontimeout = function() {
-        reject(new TypeError('Network request failed'))
-      }
+        reject(new TypeError('Network request failed'));
+      };
 
-      xhr.open(request.method, request.url, true)
+      xhr.onabort = function() {
+        reject(new exports.DOMException('Aborted', 'AbortError'));
+      };
+
+      xhr.open(request.method, request.url, true);
 
       if (request.credentials === 'include') {
-        xhr.withCredentials = true
+        xhr.withCredentials = true;
       } else if (request.credentials === 'omit') {
-        xhr.withCredentials = false
+        xhr.withCredentials = false;
       }
 
       if ('responseType' in xhr && support.blob) {
-        xhr.responseType = 'blob'
+        xhr.responseType = 'blob';
       }
 
       request.headers.forEach(function(value, name) {
-        xhr.setRequestHeader(name, value)
-      })
+        xhr.setRequestHeader(name, value);
+      });
 
-      xhr.send(typeof request._bodyInit === 'undefined' ? null : request._bodyInit)
+      if (request.signal) {
+        request.signal.addEventListener('abort', abortXhr);
+
+        xhr.onreadystatechange = function() {
+          // DONE (success or failure)
+          if (xhr.readyState === 4) {
+            request.signal.removeEventListener('abort', abortXhr);
+          }
+        };
+      }
+
+      xhr.send(typeof request._bodyInit === 'undefined' ? null : request._bodyInit);
     })
   }
-  self.fetch.polyfill = true
-})(typeof self !== 'undefined' ? self : this);
 
-},{}],177:[function(require,module,exports){
+  fetch.polyfill = true;
+
+  if (!self.fetch) {
+    self.fetch = fetch;
+    self.Headers = Headers;
+    self.Request = Request;
+    self.Response = Response;
+  }
+
+  exports.Headers = Headers;
+  exports.Request = Request;
+  exports.Response = Response;
+  exports.fetch = fetch;
+
+  Object.defineProperty(exports, '__esModule', { value: true });
+
+})));
+
+},{}],191:[function(require,module,exports){
 (function (global){
 'use strict';
 
@@ -24918,7 +26855,7 @@ var objectKeys = Object.keys || function (obj) {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"util/":208}],178:[function(require,module,exports){
+},{"util/":222}],192:[function(require,module,exports){
 'use strict'
 
 exports.byteLength = byteLength
@@ -25071,9 +27008,9 @@ function fromByteArray (uint8) {
   return parts.join('')
 }
 
-},{}],179:[function(require,module,exports){
-arguments[4][101][0].apply(exports,arguments)
-},{"dup":101}],180:[function(require,module,exports){
+},{}],193:[function(require,module,exports){
+arguments[4][115][0].apply(exports,arguments)
+},{"dup":115}],194:[function(require,module,exports){
 /*!
  * The buffer module from node.js, for the browser.
  *
@@ -26811,7 +28748,7 @@ function numberIsNaN (obj) {
   return obj !== obj // eslint-disable-line no-self-compare
 }
 
-},{"base64-js":178,"ieee754":183}],181:[function(require,module,exports){
+},{"base64-js":192,"ieee754":197}],195:[function(require,module,exports){
 (function (Buffer){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -26922,7 +28859,7 @@ function objectToString(o) {
 }
 
 }).call(this,{"isBuffer":require("../../is-buffer/index.js")})
-},{"../../is-buffer/index.js":185}],182:[function(require,module,exports){
+},{"../../is-buffer/index.js":199}],196:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -27443,7 +29380,7 @@ function functionBindPolyfill(context) {
   };
 }
 
-},{}],183:[function(require,module,exports){
+},{}],197:[function(require,module,exports){
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m
   var eLen = (nBytes * 8) - mLen - 1
@@ -27529,9 +29466,9 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128
 }
 
-},{}],184:[function(require,module,exports){
-arguments[4][153][0].apply(exports,arguments)
-},{"dup":153}],185:[function(require,module,exports){
+},{}],198:[function(require,module,exports){
+arguments[4][167][0].apply(exports,arguments)
+},{"dup":167}],199:[function(require,module,exports){
 /*!
  * Determine if an object is a Buffer
  *
@@ -27554,14 +29491,14 @@ function isSlowBuffer (obj) {
   return typeof obj.readFloatLE === 'function' && typeof obj.slice === 'function' && isBuffer(obj.slice(0, 0))
 }
 
-},{}],186:[function(require,module,exports){
+},{}],200:[function(require,module,exports){
 var toString = {}.toString;
 
 module.exports = Array.isArray || function (arr) {
   return toString.call(arr) == '[object Array]';
 };
 
-},{}],187:[function(require,module,exports){
+},{}],201:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -27609,7 +29546,7 @@ function nextTick(fn, arg1, arg2, arg3) {
 
 
 }).call(this,require('_process'))
-},{"_process":188}],188:[function(require,module,exports){
+},{"_process":202}],202:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -27795,10 +29732,10 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],189:[function(require,module,exports){
+},{}],203:[function(require,module,exports){
 module.exports = require('./lib/_stream_duplex.js');
 
-},{"./lib/_stream_duplex.js":190}],190:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":204}],204:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -27930,7 +29867,7 @@ Duplex.prototype._destroy = function (err, cb) {
 
   pna.nextTick(cb, err);
 };
-},{"./_stream_readable":192,"./_stream_writable":194,"core-util-is":181,"inherits":184,"process-nextick-args":187}],191:[function(require,module,exports){
+},{"./_stream_readable":206,"./_stream_writable":208,"core-util-is":195,"inherits":198,"process-nextick-args":201}],205:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -27978,7 +29915,7 @@ function PassThrough(options) {
 PassThrough.prototype._transform = function (chunk, encoding, cb) {
   cb(null, chunk);
 };
-},{"./_stream_transform":193,"core-util-is":181,"inherits":184}],192:[function(require,module,exports){
+},{"./_stream_transform":207,"core-util-is":195,"inherits":198}],206:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -29000,7 +30937,7 @@ function indexOf(xs, x) {
   return -1;
 }
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./_stream_duplex":190,"./internal/streams/BufferList":195,"./internal/streams/destroy":196,"./internal/streams/stream":197,"_process":188,"core-util-is":181,"events":182,"inherits":184,"isarray":186,"process-nextick-args":187,"safe-buffer":202,"string_decoder/":204,"util":179}],193:[function(require,module,exports){
+},{"./_stream_duplex":204,"./internal/streams/BufferList":209,"./internal/streams/destroy":210,"./internal/streams/stream":211,"_process":202,"core-util-is":195,"events":196,"inherits":198,"isarray":200,"process-nextick-args":201,"safe-buffer":216,"string_decoder/":218,"util":193}],207:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -29215,7 +31152,7 @@ function done(stream, er, data) {
 
   return stream.push(null);
 }
-},{"./_stream_duplex":190,"core-util-is":181,"inherits":184}],194:[function(require,module,exports){
+},{"./_stream_duplex":204,"core-util-is":195,"inherits":198}],208:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -29905,7 +31842,7 @@ Writable.prototype._destroy = function (err, cb) {
   cb(err);
 };
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./_stream_duplex":190,"./internal/streams/destroy":196,"./internal/streams/stream":197,"_process":188,"core-util-is":181,"inherits":184,"process-nextick-args":187,"safe-buffer":202,"util-deprecate":205}],195:[function(require,module,exports){
+},{"./_stream_duplex":204,"./internal/streams/destroy":210,"./internal/streams/stream":211,"_process":202,"core-util-is":195,"inherits":198,"process-nextick-args":201,"safe-buffer":216,"util-deprecate":219}],209:[function(require,module,exports){
 'use strict';
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -29985,7 +31922,7 @@ if (util && util.inspect && util.inspect.custom) {
     return this.constructor.name + ' ' + obj;
   };
 }
-},{"safe-buffer":202,"util":179}],196:[function(require,module,exports){
+},{"safe-buffer":216,"util":193}],210:[function(require,module,exports){
 'use strict';
 
 /*<replacement>*/
@@ -30060,13 +31997,13 @@ module.exports = {
   destroy: destroy,
   undestroy: undestroy
 };
-},{"process-nextick-args":187}],197:[function(require,module,exports){
+},{"process-nextick-args":201}],211:[function(require,module,exports){
 module.exports = require('events').EventEmitter;
 
-},{"events":182}],198:[function(require,module,exports){
+},{"events":196}],212:[function(require,module,exports){
 module.exports = require('./readable').PassThrough
 
-},{"./readable":199}],199:[function(require,module,exports){
+},{"./readable":213}],213:[function(require,module,exports){
 exports = module.exports = require('./lib/_stream_readable.js');
 exports.Stream = exports;
 exports.Readable = exports;
@@ -30075,15 +32012,15 @@ exports.Duplex = require('./lib/_stream_duplex.js');
 exports.Transform = require('./lib/_stream_transform.js');
 exports.PassThrough = require('./lib/_stream_passthrough.js');
 
-},{"./lib/_stream_duplex.js":190,"./lib/_stream_passthrough.js":191,"./lib/_stream_readable.js":192,"./lib/_stream_transform.js":193,"./lib/_stream_writable.js":194}],200:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":204,"./lib/_stream_passthrough.js":205,"./lib/_stream_readable.js":206,"./lib/_stream_transform.js":207,"./lib/_stream_writable.js":208}],214:[function(require,module,exports){
 module.exports = require('./readable').Transform
 
-},{"./readable":199}],201:[function(require,module,exports){
+},{"./readable":213}],215:[function(require,module,exports){
 module.exports = require('./lib/_stream_writable.js');
 
-},{"./lib/_stream_writable.js":194}],202:[function(require,module,exports){
-arguments[4][166][0].apply(exports,arguments)
-},{"buffer":180,"dup":166}],203:[function(require,module,exports){
+},{"./lib/_stream_writable.js":208}],216:[function(require,module,exports){
+arguments[4][180][0].apply(exports,arguments)
+},{"buffer":194,"dup":180}],217:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -30212,7 +32149,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"events":182,"inherits":184,"readable-stream/duplex.js":189,"readable-stream/passthrough.js":198,"readable-stream/readable.js":199,"readable-stream/transform.js":200,"readable-stream/writable.js":201}],204:[function(require,module,exports){
+},{"events":196,"inherits":198,"readable-stream/duplex.js":203,"readable-stream/passthrough.js":212,"readable-stream/readable.js":213,"readable-stream/transform.js":214,"readable-stream/writable.js":215}],218:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -30509,7 +32446,7 @@ function simpleWrite(buf) {
 function simpleEnd(buf) {
   return buf && buf.length ? this.write(buf) : '';
 }
-},{"safe-buffer":202}],205:[function(require,module,exports){
+},{"safe-buffer":216}],219:[function(require,module,exports){
 (function (global){
 
 /**
@@ -30580,16 +32517,16 @@ function config (name) {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],206:[function(require,module,exports){
-arguments[4][153][0].apply(exports,arguments)
-},{"dup":153}],207:[function(require,module,exports){
+},{}],220:[function(require,module,exports){
+arguments[4][167][0].apply(exports,arguments)
+},{"dup":167}],221:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],208:[function(require,module,exports){
+},{}],222:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -31179,4 +33116,4 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":207,"_process":188,"inherits":206}]},{},[1]);
+},{"./support/isBuffer":221,"_process":202,"inherits":220}]},{},[1]);

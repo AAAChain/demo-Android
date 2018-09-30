@@ -32,14 +32,8 @@ import static android.app.Activity.RESULT_OK;
 
 public class UploadHomeFragment extends BaseFragment {
 
-    private RelativeLayout rlBirthday;
-    private RelativeLayout rlCompany;
-
-    private RadioGroup rgSex;
     private RadioButton rbFemale;
     private RadioButton rbMale;
-    private RelativeLayout rlStartTime;
-    private Button btnNext;
 
     private TextView tvStartTime;
     private TextView tvBirthday;
@@ -48,6 +42,7 @@ public class UploadHomeFragment extends BaseFragment {
     private JSONObject object = new JSONObject();
     private ExtraEntity extraEntity;
     private SearchResponseEntity searchResponseEntity;
+    private boolean isRefresh = true;
 
     @Override public int initLayout() {
         return R.layout.fragment_upload_home;
@@ -56,7 +51,7 @@ public class UploadHomeFragment extends BaseFragment {
     @Override public void getViewById() {
 
         ((BaseActivity) Objects.requireNonNull(getActivity())).setTitleName(getResources().getString(R.string.upload_home));
-        rgSex = $(R.id.rg_sex);
+        RadioGroup rgSex = $(R.id.rg_sex);
         rbFemale = $(R.id.rb_female);
         rbMale = $(R.id.rb_male);
         tvStartTime = $(R.id.tv_start_time);
@@ -99,19 +94,19 @@ public class UploadHomeFragment extends BaseFragment {
             }
         });
 
-        rlStartTime = $(R.id.rl_start_time);
-        rlBirthday = $(R.id.rl_birthday);
-        rlCompany = $(R.id.rl_company);
+        RelativeLayout rlStartTime = $(R.id.rl_start_time);
+        RelativeLayout rlBirthday = $(R.id.rl_birthday);
+        RelativeLayout rlCompany = $(R.id.rl_company);
         rlStartTime.setOnClickListener(this);
         rlBirthday.setOnClickListener(this);
         rlCompany.setOnClickListener(this);
-        btnNext = $(R.id.btn_next);
+        Button btnNext = $(R.id.btn_next);
         btnNext.setOnClickListener(this);
     }
 
     @Override public void onResume() {
         super.onResume();
-        if (searchResponseEntity != null) {
+        if (searchResponseEntity != null && isRefresh) {
             extraEntity = ChainApplication.getInstance().getBaseInfo().getDocs().get(0).getExtra();
             String sex = extraEntity.getSex();
             if ("male".equals(sex)) {
@@ -248,6 +243,7 @@ public class UploadHomeFragment extends BaseFragment {
         if (RESULT_OK == resultCode && requestCode == 1000) {
             String info = data.getExtras().getString("updateinfo");
             tvCompany.setText(info);
+            isRefresh = false;
         }
     }
 }

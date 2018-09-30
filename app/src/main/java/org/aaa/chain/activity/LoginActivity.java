@@ -16,28 +16,19 @@ import android.widget.ListPopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 import com.squareup.leakcanary.RefWatcher;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.SecureRandom;
-import java.security.Security;
 import java.util.Locale;
 import org.aaa.chain.ChainApplication;
+import org.aaa.chain.Constant;
 import org.aaa.chain.R;
-import org.aaa.chain.utils.FileUtils;
-import org.spongycastle.jce.ECNamedCurveTable;
-import org.spongycastle.jce.interfaces.ECPrivateKey;
-import org.spongycastle.jce.interfaces.ECPublicKey;
-import org.spongycastle.jce.spec.ECNamedCurveParameterSpec;
 
 public class LoginActivity extends BaseActivity {
 
     private TextView tvKey;
     private EditText etKey;
-    private Button btnLogin;
     private ListPopupWindow listPopupWindow;
 
-    private String[] keysName = { ChainApplication.account1, ChainApplication.account2 };
-    private String[] keys = { ChainApplication.publicKey1, ChainApplication.publicKey2 };
+    private String[] keysName = { Constant.getAccount(), Constant.getAnotherAccount() };
+    private String[] keys = { Constant.getPublicKey(), Constant.getAnotherPublicKey() };
 
     @Override public int initLayout() {
         return R.layout.activity_login;
@@ -46,7 +37,7 @@ public class LoginActivity extends BaseActivity {
     @Override public void getViewById() {
         tvKey = $(R.id.tv_key);
         etKey = $(R.id.et_key);
-        btnLogin = $(R.id.btn_login);
+        Button btnLogin = $(R.id.btn_login);
 
         Locale locale;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -65,7 +56,7 @@ public class LoginActivity extends BaseActivity {
         tvKey.setOnClickListener(this);
         btnLogin.setOnClickListener(this);
         listPopupWindow = new ListPopupWindow(this);
-        ArrayAdapter adapter = new ArrayAdapter(this, R.layout.listpopupwindow_item, keysName);
+        ArrayAdapter adapter = new ArrayAdapter<>(this, R.layout.listpopupwindow_item, keysName);
         listPopupWindow.setAdapter(adapter);
         listPopupWindow.setWidth(LinearLayout.LayoutParams.WRAP_CONTENT);
         listPopupWindow.setHeight(LinearLayout.LayoutParams.WRAP_CONTENT);
@@ -101,33 +92,7 @@ public class LoginActivity extends BaseActivity {
                 } else {
                     Toast.makeText(LoginActivity.this, getResources().getString(R.string.input_secret_key), Toast.LENGTH_SHORT).show();
                 }
-                test();
                 break;
-        }
-    }
-
-    private void test() {
-        Security.insertProviderAt(new org.spongycastle.jce.provider.BouncyCastleProvider(), 1);
-
-        try {
-            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("ECIES", "SC");
-            ECNamedCurveParameterSpec ecNamedCurveTable = ECNamedCurveTable.getParameterSpec("secp256k1");
-            keyPairGenerator.initialize(ecNamedCurveTable, new SecureRandom());
-            KeyPair keyPair = keyPairGenerator.generateKeyPair();
-            ECPublicKey publicKey = (ECPublicKey) keyPair.getPublic();
-            ECPrivateKey privateKey = (ECPrivateKey) keyPair.getPrivate();
-
-            System.out.println("public key 1---------:" + publicKey);
-            ECPublicKey ecPublicKey = FileUtils.decodePublicKey(privateKey);
-            System.out.println("public key 2 ----------:" + ecPublicKey);
-
-            //ECPrivateKey privateKey = FileUtils.decodePrivateKey("5JtXJkmDcMhKAXSB3YonH4jCtNbSELUAPGpExZhn8upLs54oej7");
-            //ECPublicKey publicKey = FileUtils.decodePublicKey(privateKey);
-            byte[] bytes = FileUtils.encrypt("hello ni hao ".getBytes(), publicKey);
-            System.out.println("encrypt111 content:" + new String(bytes));
-            FileUtils.decrypt(bytes, privateKey);
-        } catch (Exception e) {
-            System.out.println("无法初始化算法" + e);
         }
     }
 

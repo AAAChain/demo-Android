@@ -19,7 +19,6 @@ public class MyHomeDetailActivity extends BaseActivity {
     private List<ResumeRequestEntity> dataEntities = new ArrayList<>();
     private TextView tvBalance;
     ProgressDialog dialog = null;
-    private TextView tvMyResumeTitle;
 
     @Override public int initLayout() {
         return R.layout.activity_my_home_detail;
@@ -34,6 +33,8 @@ public class MyHomeDetailActivity extends BaseActivity {
         if (getResources().getString(R.string.myAccount).equals(title)) {
             $(R.id.cl_my_home_detail_account).setVisibility(View.VISIBLE);
             $(R.id.tv_change_phone_number).setOnClickListener(this);
+            TextView account = $(R.id.tv_account_name);
+            account.setText(ChainApplication.getInstance().getBaseInfo().getDocs().get(0).getAccount());
         } else if (getResources().getString(R.string.myWallet).equals(title)) {
             $(R.id.cl_my_home_detail_wallet).setVisibility(View.VISIBLE);
             tvBalance = $(R.id.tv_available_balance);
@@ -56,7 +57,7 @@ public class MyHomeDetailActivity extends BaseActivity {
                 }
             });
 
-            tvMyResumeTitle = $(R.id.tv_my_resume_title);
+            TextView tvMyResumeTitle = $(R.id.tv_my_resume_title);
             tvMyResumeTitle.setText(String.format(getResources().getString(R.string.my_resume_title),
                     ChainApplication.getInstance().getBaseInfo().getDocs().get(0).getExtra().getJobType()));
 

@@ -12,7 +12,7 @@ import java.util.List;
 import org.aaa.chain.ChainApplication;
 import org.aaa.chain.JSInteraction;
 import org.aaa.chain.R;
-import org.aaa.chain.entities.TabItem;
+import org.aaa.chain.adapter.TabItem;
 import org.aaa.chain.permissions.PermissionsManager;
 import org.aaa.chain.permissions.PermissionsResultAction;
 

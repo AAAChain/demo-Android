@@ -28,8 +28,6 @@ import org.aaa.chain.utils.HttpUtils;
 
 public class TransactionResourceFragment extends BaseFragment implements BindViewHolderInterface<OrderDataEntity> {
 
-    private RecyclerView recyclerView;
-
     private SwipeRefreshLayout swipeRefreshLayout;
 
     private BaseRecyclerViewAdapter adapter;
@@ -41,7 +39,7 @@ public class TransactionResourceFragment extends BaseFragment implements BindVie
 
     @Override public void getViewById() {
         $(R.id.iv_search_icon).setVisibility(View.GONE);
-        recyclerView = $(R.id.recycleView);
+        RecyclerView recyclerView = $(R.id.recycleView);
         swipeRefreshLayout = $(R.id.swiperefreshlayout);
         LinearLayoutManager manager = new LinearLayoutManager(getActivity());
         manager.setOrientation(LinearLayoutManager.VERTICAL);
@@ -61,6 +59,8 @@ public class TransactionResourceFragment extends BaseFragment implements BindVie
         });
     }
 
+    OrderResponseEntity orderResponseEntity = null;
+
     private void initRecyclerView() {
 
         HttpUtils.getInstance().getOrderList(new HttpUtils.ServerCallBack() {
@@ -72,8 +72,6 @@ public class TransactionResourceFragment extends BaseFragment implements BindVie
                     }
                 });
             }
-
-            OrderResponseEntity orderResponseEntity = null;
 
             @Override public void onResponse(Call call, Response response) {
 
@@ -88,8 +86,8 @@ public class TransactionResourceFragment extends BaseFragment implements BindVie
                             swipeRefreshLayout.setRefreshing(false);
                             Toast.makeText(getActivity(), "order refresh successful:" + response.code(), Toast.LENGTH_SHORT).show();
                             for (OrderDataEntity orderDataEntity : orderResponseEntity.getData()) {
-                                if (orderDataEntity.getSeller().equals(Constant.getAccount()) || orderDataEntity.getBuyer()
-                                        .equals(Constant.getAccount())) {
+                                if ((orderDataEntity.getSeller().equals(Constant.getAccount()) || orderDataEntity.getBuyer()
+                                        .equals(Constant.getAccount())) && orderDataEntity.getStatus() != 0) {
                                     list.add(orderDataEntity);
                                 }
                             }
@@ -147,7 +145,10 @@ public class TransactionResourceFragment extends BaseFragment implements BindVie
 
         holder.getItemView().setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {
-                startActivity(new Intent(getActivity(), ResumeDetailsActivity.class).putExtra("type", 1).putExtra("dataEntity", dataEntity));
+                Intent intent = new Intent(getActivity(), ResumeDetailsActivity.class);
+                intent.putExtra("type", 1);
+                intent.putExtra("dataEntity", dataEntity);
+                startActivity(intent);
             }
         });
     }

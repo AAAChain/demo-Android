@@ -2,6 +2,29 @@ package org.aaa.chain;
 
 public class Constant {
 
+    /**
+     * aaauser1
+     *
+     * Owner key:
+     * Private key: 5Jtsaf2tyLGBTJER4bCBV5pvKiAE4v3v3G4agfQ91DkfLHRSLzX
+     * Public key: EOS5odhW8Tw51UetwxnjVMRKv6Eq4SPn6UqidCt57HYN5KjymsA2v
+     *
+     * Active Key
+     * Private key: 5JobQnxtEvshVRZW6berfYvzaUMZq2A8Ax5eZhuZqdTCqT19iLV
+     * Public key: EOS5YQkZpsD8xzmguAGL88r2b4RBXxKbV3QGjS8Vg1maBzd8Df9zX
+     *
+     * ################################################################################
+     * aaauser2
+     *
+     * Owner key:
+     * Private key: 5KejiFM4Qq1kshgtShE5n9bVLf63AmVhkReMYjhJPChcoKAog1c
+     * Public key: EOS7gqLCvRQFxLfbT2LMbzQQwAngToB3YApob74zgsZ7VN7vUBUtX
+     *
+     * Active Key
+     * Private key: 5J4a77MxGSDnASAZHAV7gThSeoenvLB4nb8wFPkepXoiLyesuf5
+     * Public key: EOS5SW9SkzUuTwhbJMsFDRge7cgKoTABiQ6ac3DrDux2UjjpKbm1h
+     **/
+
     public static String account;
     public static String privateKey;
     public static String publicKey;

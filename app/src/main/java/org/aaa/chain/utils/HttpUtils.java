@@ -139,7 +139,7 @@ public class HttpUtils {
                 .build();
 
         Request request = new Request.Builder().url(url).post(multipartBody).build();
-        OkHttpClient okHttpClient = new OkHttpClient.Builder().addInterceptor(new Interceptor() {
+        OkHttpClient okHttpClient = new OkHttpClient.Builder().addNetworkInterceptor(new Interceptor() {
             @Override public Response intercept(Chain chain) throws IOException {
                 Response response = chain.proceed(chain.request());
                 return response.newBuilder().body(new ProgressResponseBody(response.body(), progressListener)).build();

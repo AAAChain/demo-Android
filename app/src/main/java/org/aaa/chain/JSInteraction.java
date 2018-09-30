@@ -6,6 +6,7 @@ import android.util.Log;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import org.json.JSONObject;
 
 @SuppressLint("JavascriptInterface") public class JSInteraction {
 
@@ -30,7 +31,7 @@ import android.webkit.WebViewClient;
 
         webView.loadUrl("file:///android_asset/index.html");
 
-        webView.addJavascriptInterface(new JsInteraction(), "aaa");
+        webView.addJavascriptInterface(new JsInteraction(), "aaaChain");
     }
 
     public void getBalance(String account, JSCallBack callBack) {
@@ -44,6 +45,20 @@ import android.webkit.WebViewClient;
         this.listener = callback;
         listener.onProgress();
         String content = "javascript:getSignature(" + "'" + json + "'" + "," + "'" + privateKey + "'" + ")";
+        webView.loadUrl(content);
+    }
+
+    public void encryptKey(String privateKey, String anotherPublicKey, String key, JSCallBack callback) {
+        this.listener1 = callback;
+        listener1.onProgress();
+        String content = "javascript:encryptKey(" + "'" + privateKey + "'" + "," + "'" + anotherPublicKey + "'" + "," + "'" + key + "'" + ")";
+        webView.loadUrl(content);
+    }
+
+    public void decryptKey(String privateKey, String anotherPublicKey, String enKey, JSCallBack callback) {
+        this.listener = callback;
+        listener.onProgress();
+        String content = "javascript:decryptKey(" + "'" + privateKey + "'" + "," + "'" + anotherPublicKey + "'" + "," + "'" + enKey + "'" + ")";
         webView.loadUrl(content);
     }
 
@@ -79,6 +94,16 @@ import android.webkit.WebViewClient;
             listener.onSuccess(signature);
         }
 
+        @JavascriptInterface public void getEncryptKey(String enKey) {
+            Log.i("info", "enKey:" + enKey);
+            listener1.onSuccess(enKey);
+        }
+
+        @JavascriptInterface public void getDecryptKey(String deKey) {
+            Log.i("info", "deKey:" + deKey);
+            listener.onSuccess(deKey);
+        }
+
         @JavascriptInterface public void prepay(String value) {
             Log.i("info", "prepay:" + value);
             listener.onSuccess(value);
@@ -89,6 +114,15 @@ import android.webkit.WebViewClient;
             listener.onError(error);
         }
 
+        @JavascriptInterface public void paySuccessStatus(String value) {
+            Log.i("info", "paySuccessStatus:" + value);
+            listener.onSuccess(value);
+        }
+
+        @JavascriptInterface public void payFailureStatus(String error) {
+            Log.i("info", "payFailureStatus:" + error);
+            listener.onError(error);
+        }
         @JavascriptInterface public void paySuccess(String value) {
             Log.i("info", "paySuccess:" + value);
             listener.onSuccess(value);
@@ -101,6 +135,7 @@ import android.webkit.WebViewClient;
     }
 
     private JSCallBack listener;
+    private JSCallBack listener1;
 
     public interface JSCallBack {
         void onSuccess(String content);
@@ -112,5 +147,6 @@ import android.webkit.WebViewClient;
 
     public void removeListener() {
         listener = null;
+        listener1 = null;
     }
 }

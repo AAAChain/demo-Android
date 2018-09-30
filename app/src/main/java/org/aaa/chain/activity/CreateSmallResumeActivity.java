@@ -17,17 +17,10 @@ import org.json.JSONObject;
 
 public class CreateSmallResumeActivity extends BaseActivity {
 
-    private RelativeLayout rlLastCompany;
-    private RelativeLayout rlLastWorkingHour;
-    private RelativeLayout rlJobType;
-    private RelativeLayout rlSkillLabel;
-
     private TextView tvLastCompany;
     private TextView tvLastWorkingHour;
     private TextView tvJobType;
     private EditText etLastJobContentInfo;
-    private TextView tvSkillLabel;
-    private String personalinfo;
     private JSONObject object;
 
     @Override public int initLayout() {
@@ -36,12 +29,12 @@ public class CreateSmallResumeActivity extends BaseActivity {
 
     @Override public void getViewById() {
 
-        personalinfo = getIntent().getStringExtra("personalinfo");
+        String personalinfo = getIntent().getStringExtra("personalinfo");
 
-        rlLastCompany = $(R.id.rl_last_company);
-        rlLastWorkingHour = $(R.id.rl_last_working_hour);
-        rlJobType = $(R.id.rl_job_type);
-        rlSkillLabel = $(R.id.rl_skill_label);
+        RelativeLayout rlLastCompany = $(R.id.rl_last_company);
+        RelativeLayout rlLastWorkingHour = $(R.id.rl_last_working_hour);
+        RelativeLayout rlJobType = $(R.id.rl_job_type);
+        RelativeLayout rlSkillLabel = $(R.id.rl_skill_label);
         Button btnGet = $(R.id.btn_next);
         btnGet.setOnClickListener(this);
         rlLastCompany.setOnClickListener(this);
@@ -52,7 +45,7 @@ public class CreateSmallResumeActivity extends BaseActivity {
         tvLastCompany = $(R.id.tv_last_company);
         tvLastWorkingHour = $(R.id.tv_last_working_hour);
         tvJobType = $(R.id.tv_job_type);
-        tvSkillLabel = $(R.id.tv_skill_label);
+        TextView tvSkillLabel = $(R.id.tv_skill_label);
         etLastJobContentInfo = $(R.id.et_last_job_content_info);
 
         try {
