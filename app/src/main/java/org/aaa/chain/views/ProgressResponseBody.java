@@ -50,7 +50,6 @@ public class ProgressResponseBody extends ResponseBody {
             @Override public long read(Buffer sink, long byteCount) throws IOException {
                 long bytesRead = super.read(sink, byteCount);
                 totalBytesRead += bytesRead != -1 ? bytesRead : 0;   //不断统计当前下载好的数据
-                //接口回调
                 progressListener.update(totalBytesRead, responseBody.contentLength(), bytesRead == -1);
                 return bytesRead;
             }

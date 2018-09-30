@@ -1,5 +1,7 @@
 var Eos = require('eosjs')
 var ecc = require('eosjs-ecc')
+var ByteBuffer = require('bytebuffer')
+var AAA = require('aaajs')
 
 config = {
   keyProvider: ['5JobQnxtEvshVRZW6berfYvzaUMZq2A8Ax5eZhuZqdTCqT19iLV','5J4a77MxGSDnASAZHAV7gThSeoenvLB4nb8wFPkepXoiLyesuf5'], // WIF string or array of keys..
@@ -12,40 +14,52 @@ config = {
 }
 
 
-eos = Eos(config)
+//eos = Eos(config)
 
+aaa = AAA(config)
 
 getBalance = function(accountName){
-console.log("acount:"+accountName)
-  eos.getCurrencyBalance('eosio.token', accountName, 'EOS',function(error,result){
-
-   window.aaa.getEosBalance(error,result)
-  })
+  aaa.getCurrencyBalance('eosio.token', accountName, 'EOS',function(error,result){
+     window.aaaChain.getEosBalance(error,result)
+    })
 }
 
 getSignature = function(json,privateKey){
-  console.log("getSignature--------------"+privateKey)
   var key = ecc.sign(json,privateKey)
   console.log("key----"+key)
-  window.aaa.getSignature(key)
+  window.aaaChain.getSignature(key)
 }
 
-//转账到中间账号
-prepay= function(id,account1,account2,price){
-  const options = { authorization: [ account1+`@active` ] };
-  console.log("repay id:"+id+"--account1:"+account1+"--account2:"+account2+"--price:"+price);
-   eos.contract('aaatrust1111').then(contract => {
-      //contract.prepay(111, "aaauser1", "aaauser2", "2.0000 EOS" , options).
-      contract.prepay(id, account1, account2, price , options).
-        then(value => {
-        console.log('prepay OK')
-        window.aaa.prepay(JSON.stringify(value))
-        }).
-        catch(e => {
-        console.log("prepay failed: " + e)
-        window.aaa.prepayError(e)
-        })
-    })
+// 买家预付款
+prepay= function(id,buyer,seller,price){
+
+  aaa.payForGood(id, buyer, seller, price).
+    then(value => {
+      console.log('payForGood OK. txid: ' + value.transaction_id)
+      window.aaaChain.prepay(JSON.stringify(value))
+      }).catch(e => {
+        console.log("payForGood failed: " + e)
+         window.aaaChain.prepayError(e)
+        });
+}
+
+
+encryptKey = function(privateKey,anotherPublicKey,key){
+
+  var enKey  = ecc.Aes.encrypt(privateKey,anotherPublicKey,key)
+  console.log("enKey:"+JSON.stringify(enKey))
+
+  window.aaaChain.getEncryptKey(JSON.stringify(enKey))
+}
+
+decryptKey = function(privateKey,anotherPublicKey,enKey){
+  var obj = eval('(' + enKey + ')')
+  var nonce = ByteBuffer.Long.fromValue(obj.nonce)
+  var message = Buffer.from(obj.message)
+  var checksum = obj.checksum
+  var deKey  = ecc.Aes.decrypt(privateKey,anotherPublicKey,nonce,message,checksum)
+  console.log("deKey:"+deKey.toString())
+  window.aaaChain.getDecryptKey(deKey.toString())
 }
 
 
@@ -57,28 +71,26 @@ getPrepayStatus = function(id) {
   table_key = 'id';
   lower_bound = id;
   upper_bound = id + 1;
-  eos.getTableRows(true, contract, scope, table, table_key, lower_bound, upper_bound).
+  aaa.getTableRows(true, contract, scope, table, table_key, lower_bound, upper_bound).
     then(result => {
     console.log(result.rows);
-    window.aaa.paySuccess(result.rows)
+    window.aaaChain.paySuccessStatus(result.rows)
      }).
     catch(e => {
     console.log("print_row failed: " + e)
-    window.aaa.payFailure(e)
+    window.aaaChain.payFailureStatus(e)
     });
 }
 
 
+// 买家确认付款
+confirmOrder = function(buyer,orderid) {
 
-confirmOrder = function(accountName,orderid) {
-  const options = { authorization: [ accountName + `@active` ] };
-  eos.contract('aaatrust1111',function (error, result) {
-      result.confirm(orderid,options,function (error, result) {
-      if(error == null){
-      console.log("result:"+JSON.stringify(result))
-      }else{
-      console.log("error:"+error)
-      }
-      })
-  })
+  aaa.confirmPayment(buyer, orderid).then(value => {
+    console.log('confirmPayment OK. txid: ' + value.transaction_id)
+    window.aaaChain.paySuccess(JSON.stringify(value))
+    }).catch(e => {
+      console.log("confirmPayment failed: " + e)
+       window.aaaChain.payFailure(e)
+    })
 }

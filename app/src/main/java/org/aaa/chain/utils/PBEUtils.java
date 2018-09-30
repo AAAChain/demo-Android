@@ -1,7 +1,6 @@
 package org.aaa.chain.utils;
 
 import android.content.Context;
-import android.util.Log;
 import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.security.InvalidAlgorithmParameterException;
@@ -63,10 +62,10 @@ public class PBEUtils {
         return secretKey;
     }
 
-    public File encryptFile(Context context, String filePath, String privateKey, String publicKey) {
-        Log.i("info","file encrypt:"+ privateKey+publicKey);
+
+    public File encryptFile(Context context, String filePath, String publicKey,byte[] salt) {
         byte[] bytes = FileUtils.getInstance().getBytes(filePath);
-        byte[] enBytes = encryptPBE(bytes, privateKey, publicKey.getBytes());
+        byte[] enBytes = encryptPBE(bytes, publicKey, salt);
         File file = new File(filePath);
         String fileName = file.getName();
         String suffix = fileName.substring(fileName.lastIndexOf(".") + 1);
@@ -74,10 +73,9 @@ public class PBEUtils {
         return FileUtils.getInstance().getFile(enBytes, context.getExternalFilesDir("").getAbsolutePath(), prefix + "_encrypt." + suffix);
     }
 
-    public File decryptFile(Context context, String filePath, String privateKey, String publicKey) {
-        Log.i("info","file decrypt:"+ privateKey+publicKey);
+    public File decryptFile(Context context, String filePath, String publicKey,byte[] salt) {
         byte[] enbytes = FileUtils.getInstance().getBytes(filePath);
-        byte[] deBytes = decryptPBE(enbytes, privateKey, publicKey.getBytes());
+        byte[] deBytes = decryptPBE(enbytes, publicKey, salt);
         File file = new File(filePath);
         String fileName = file.getName();
         String suffix = fileName.substring(fileName.lastIndexOf(".") + 1);

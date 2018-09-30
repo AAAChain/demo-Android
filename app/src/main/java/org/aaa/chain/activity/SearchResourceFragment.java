@@ -32,13 +32,10 @@ import org.aaa.chain.utils.HttpUtils;
 
 public class SearchResourceFragment extends BaseFragment implements BindViewHolderInterface<SearchResponseEntity.DocsResponse> {
 
-    private RecyclerView recyclerView;
     private SwipeRefreshLayout swipeRefreshLayout;
     private SearchResponseEntity searchResponse;
     private int page = 1;
 
-    private RelativeLayout rlSearch;
-    private ImageView ivSearch;
     private EditText etSearch;
     private SimpleDateFormat simpleDateFormat;
     private BaseRecyclerViewAdapter adapter;
@@ -54,12 +51,12 @@ public class SearchResourceFragment extends BaseFragment implements BindViewHold
 
     @Override public void getViewById() {
         simpleDateFormat = new SimpleDateFormat("yyyy-MM");
-        rlSearch = $(R.id.rl_search);
+        RelativeLayout rlSearch = $(R.id.rl_search);
         rlSearch.setVisibility(View.VISIBLE);
-        ivSearch = $(R.id.iv_search_icon);
+        ImageView ivSearch = $(R.id.iv_search_icon);
         etSearch = $(R.id.et_search);
         ivSearch.setOnClickListener(this);
-        recyclerView = $(R.id.recycleView);
+        RecyclerView recyclerView = $(R.id.recycleView);
         swipeRefreshLayout = $(R.id.swiperefreshlayout);
         swipeRefreshLayout.setColorSchemeColors(Color.RED, Color.BLUE, Color.GREEN);
         manager = new LinearLayoutManager(getActivity());
@@ -77,6 +74,7 @@ public class SearchResourceFragment extends BaseFragment implements BindViewHold
             }
         });
 
+        //加载更多
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
                 super.onScrollStateChanged(recyclerView, newState);
