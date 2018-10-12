@@ -28,7 +28,7 @@ public class LoginActivity extends BaseActivity {
     private ListPopupWindow listPopupWindow;
 
     private String[] keysName = { Constant.getAccount(), Constant.getAnotherAccount() };
-    private String[] keys = { Constant.getPublicKey(), Constant.getAnotherPublicKey() };
+    private String[] keys = { Constant.getPrivateKey(), Constant.getAnotherPrivateKey() };
 
     @Override public int initLayout() {
         return R.layout.activity_login;

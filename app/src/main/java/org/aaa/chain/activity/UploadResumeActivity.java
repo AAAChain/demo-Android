@@ -25,6 +25,7 @@ import okhttp3.Call;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 import org.aaa.chain.ChainApplication;
+import org.aaa.chain.Constant;
 import org.aaa.chain.JSInteraction;
 import org.aaa.chain.R;
 import org.aaa.chain.entities.ResumeRequestEntity;
@@ -97,10 +98,10 @@ public class UploadResumeActivity extends BaseActivity implements ProgressRespon
                 //    }
                 //    modifyInfo(hashId, object.toString());
                 //} else {
-                    Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-                    intent.setType("*/*");
-                    intent.addCategory(Intent.CATEGORY_OPENABLE);
-                    startActivityForResult(intent, 100);
+                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                intent.setType("*/*");
+                intent.addCategory(Intent.CATEGORY_OPENABLE);
+                startActivityForResult(intent, 100);
                 //}
                 break;
 
@@ -148,17 +149,17 @@ public class UploadResumeActivity extends BaseActivity implements ProgressRespon
         }
     }
 
-        private String getImagePath(Context context, Uri uri, String selection) {
-            String path = null;
-            Cursor cursor = context.getContentResolver().query(uri, null, selection, null, null);
-            if (cursor != null) {
-                if (cursor.moveToFirst()) {
-                    path = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA));
-                }
-                cursor.close();
+    private String getImagePath(Context context, Uri uri, String selection) {
+        String path = null;
+        Cursor cursor = context.getContentResolver().query(uri, null, selection, null, null);
+        if (cursor != null) {
+            if (cursor.moveToFirst()) {
+                path = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA));
             }
-            return path;
+            cursor.close();
         }
+        return path;
+    }
 
     private void modifyInfo(String hashId, String modifyContent) {
         ProgressDialog dialog = ProgressDialog.show(UploadResumeActivity.this, "waiting...", "modifying...");

@@ -2,29 +2,6 @@ package org.aaa.chain;
 
 public class Constant {
 
-    /**
-     * aaauser1
-     *
-     * Owner key:
-     * Private key: 5Jtsaf2tyLGBTJER4bCBV5pvKiAE4v3v3G4agfQ91DkfLHRSLzX
-     * Public key: EOS5odhW8Tw51UetwxnjVMRKv6Eq4SPn6UqidCt57HYN5KjymsA2v
-     *
-     * Active Key
-     * Private key: 5JobQnxtEvshVRZW6berfYvzaUMZq2A8Ax5eZhuZqdTCqT19iLV
-     * Public key: EOS5YQkZpsD8xzmguAGL88r2b4RBXxKbV3QGjS8Vg1maBzd8Df9zX
-     *
-     * ################################################################################
-     * aaauser2
-     *
-     * Owner key:
-     * Private key: 5KejiFM4Qq1kshgtShE5n9bVLf63AmVhkReMYjhJPChcoKAog1c
-     * Public key: EOS7gqLCvRQFxLfbT2LMbzQQwAngToB3YApob74zgsZ7VN7vUBUtX
-     *
-     * Active Key
-     * Private key: 5J4a77MxGSDnASAZHAV7gThSeoenvLB4nb8wFPkepXoiLyesuf5
-     * Public key: EOS5SW9SkzUuTwhbJMsFDRge7cgKoTABiQ6ac3DrDux2UjjpKbm1h
-     **/
-
     public static String account;
     public static String privateKey;
     public static String publicKey;
@@ -51,9 +28,9 @@ public class Constant {
 
     public static String getPublicKey() {
         if (ChainApplication.getInstance().isAccount1) {
-            publicKey = "EOS5YQkZpsD8xzmguAGL88r2b4RBXxKbV3QGjS8Vg1maBzd8Df9zX";
+            publicKey = "AAA7RccFsFi5NqgDQerEYRJ7odQ5EX135N1kD4v1hxKAfrCadKxp3";
         } else {
-            publicKey = "EOS5SW9SkzUuTwhbJMsFDRge7cgKoTABiQ6ac3DrDux2UjjpKbm1h";
+            publicKey = "AAA5HZLkL5tat8aEa8egckNNeuFHWvLSCvC5v2v7N8WPSpQT2FzPM";
         }
 
         return publicKey;
@@ -61,9 +38,9 @@ public class Constant {
 
     public static String getAnotherPublicKey() {
         if (ChainApplication.getInstance().isAccount1) {
-            publicKey = "EOS5SW9SkzUuTwhbJMsFDRge7cgKoTABiQ6ac3DrDux2UjjpKbm1h";
+            publicKey = "AAA5HZLkL5tat8aEa8egckNNeuFHWvLSCvC5v2v7N8WPSpQT2FzPM";
         } else {
-            publicKey = "EOS5YQkZpsD8xzmguAGL88r2b4RBXxKbV3QGjS8Vg1maBzd8Df9zX";
+            publicKey = "AAA7RccFsFi5NqgDQerEYRJ7odQ5EX135N1kD4v1hxKAfrCadKxp3";
         }
 
         return publicKey;
@@ -71,9 +48,9 @@ public class Constant {
 
     public static String getPrivateKey() {
         if (ChainApplication.getInstance().isAccount1) {
-            privateKey = "5JobQnxtEvshVRZW6berfYvzaUMZq2A8Ax5eZhuZqdTCqT19iLV";
+            privateKey = "5JWYoMqLxGAmHi5BnhYRSdaTpNsF4jzcUCgKq57LMHqHqnCGJn4";
         } else {
-            privateKey = "5J4a77MxGSDnASAZHAV7gThSeoenvLB4nb8wFPkepXoiLyesuf5";
+            privateKey = "5KZyaoA9W2N6CP7EDoYBXXVMySVm1ZswVte2beByL2SD1C1cnEk";
         }
 
         return privateKey;
@@ -81,9 +58,9 @@ public class Constant {
 
     public static String getAnotherPrivateKey() {
         if (ChainApplication.getInstance().isAccount1) {
-            privateKey = "5J4a77MxGSDnASAZHAV7gThSeoenvLB4nb8wFPkepXoiLyesuf5";
+            privateKey = "5KZyaoA9W2N6CP7EDoYBXXVMySVm1ZswVte2beByL2SD1C1cnEk";
         } else {
-            privateKey = "5JobQnxtEvshVRZW6berfYvzaUMZq2A8Ax5eZhuZqdTCqT19iLV";
+            privateKey = "5JWYoMqLxGAmHi5BnhYRSdaTpNsF4jzcUCgKq57LMHqHqnCGJn4";
         }
 
         return privateKey;

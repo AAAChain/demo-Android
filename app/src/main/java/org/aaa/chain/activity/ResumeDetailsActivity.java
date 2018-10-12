@@ -167,7 +167,7 @@ public class ResumeDetailsActivity extends BaseActivity {
         }
         DecimalFormat decimalFormat = new DecimalFormat("##0.0000");
         String dd = decimalFormat.format(Float.valueOf(newPrice));
-        return dd + " EOS";
+        return dd + " AAA";
     }
 
     @Override public void onClick(View v) {

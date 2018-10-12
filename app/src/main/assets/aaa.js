@@ -1,12 +1,11 @@
-var Eos = require('eosjs')
 var ecc = require('eosjs-ecc')
 var ByteBuffer = require('bytebuffer')
 var AAA = require('aaajs')
 
 config = {
-  keyProvider: ['5JobQnxtEvshVRZW6berfYvzaUMZq2A8Ax5eZhuZqdTCqT19iLV','5J4a77MxGSDnASAZHAV7gThSeoenvLB4nb8wFPkepXoiLyesuf5'], // WIF string or array of keys..
-  chainId: '038f4b0fc8ff18a4f0842a8f0564611f6e96e8535901dd45e43ac8691a1c4dca',
-  httpEndpoint: 'http://jungle.cryptolions.io:18888', // jungle testnet
+  keyProvider: ['5JWYoMqLxGAmHi5BnhYRSdaTpNsF4jzcUCgKq57LMHqHqnCGJn4','5KZyaoA9W2N6CP7EDoYBXXVMySVm1ZswVte2beByL2SD1C1cnEk'], // WIF string or array of keys..
+  chainId: '1c6ae7719a2a3b4ecb19584a30ff510ba1b6ded86e1fd8b8fc22f1179c622a32',
+  httpEndpoint: 'http://47.98.107.96:10180', // jungle testnet
   expireInSeconds: 60,
   broadcast: true,
   verbose: false, // API activity
@@ -14,14 +13,17 @@ config = {
 }
 
 
-//eos = Eos(config)
-
 aaa = AAA(config)
 
 getBalance = function(accountName){
-  aaa.getCurrencyBalance('eosio.token', accountName, 'EOS',function(error,result){
+  aaa.getCurrencyBalance('eosio.token', accountName, 'AAA',function(error,result){
      window.aaaChain.getEosBalance(error,result)
     })
+}
+
+getPublicKey = function(privateKey){
+  var publicKey = ecc.privateToPublic(privateKey,'AAA')
+  window.aaaChain.getPublicKey(publicKey)
 }
 
 getSignature = function(json,privateKey){
@@ -46,7 +48,7 @@ prepay= function(id,buyer,seller,price){
 
 encryptKey = function(privateKey,anotherPublicKey,key){
 
-  var enKey  = ecc.Aes.encrypt(privateKey,anotherPublicKey,key)
+  var enKey  = ecc.Aes.encrypt(privateKey,ecc.PublicKey(anotherPublicKey, 'AAA'),key)
   console.log("enKey:"+JSON.stringify(enKey))
 
   window.aaaChain.getEncryptKey(JSON.stringify(enKey))
@@ -57,7 +59,7 @@ decryptKey = function(privateKey,anotherPublicKey,enKey){
   var nonce = ByteBuffer.Long.fromValue(obj.nonce)
   var message = Buffer.from(obj.message)
   var checksum = obj.checksum
-  var deKey  = ecc.Aes.decrypt(privateKey,anotherPublicKey,nonce,message,checksum)
+  var deKey  = ecc.Aes.decrypt(privateKey,ecc.PublicKey(anotherPublicKey, 'AAA'),nonce,message,checksum)
   console.log("deKey:"+deKey.toString())
   window.aaaChain.getDecryptKey(deKey.toString())
 }

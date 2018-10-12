@@ -48,6 +48,13 @@ import org.json.JSONObject;
         webView.loadUrl(content);
     }
 
+    public void getPublicKey(String privateKey, JSCallBack callback) {
+        this.listener = callback;
+        listener.onProgress();
+        String content = "javascript:getPublicKey(" + "'" + privateKey + "'" + ")";
+        webView.loadUrl(content);
+    }
+
     public void encryptKey(String privateKey, String anotherPublicKey, String key, JSCallBack callback) {
         this.listener1 = callback;
         listener1.onProgress();
@@ -123,6 +130,7 @@ import org.json.JSONObject;
             Log.i("info", "payFailureStatus:" + error);
             listener.onError(error);
         }
+
         @JavascriptInterface public void paySuccess(String value) {
             Log.i("info", "paySuccess:" + value);
             listener.onSuccess(value);
@@ -131,6 +139,11 @@ import org.json.JSONObject;
         @JavascriptInterface public void payFailure(String error) {
             Log.i("info", "payFailure:" + error);
             listener.onError(error);
+        }
+
+        @JavascriptInterface public void getPublicKey(String publicKey) {
+            Log.i("info", "publicKey:" + publicKey);
+            listener.onSuccess(publicKey);
         }
     }
 
