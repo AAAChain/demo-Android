@@ -1,8 +1,14 @@
 package org.aaa.chain.activity;
 
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.ActivityNotFoundException;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
+import android.support.v4.content.FileProvider;
 import android.util.Base64;
 import android.util.Log;
 import android.view.View;
@@ -445,7 +451,8 @@ public class ResumeDetailsActivity extends BaseActivity {
                                 });
                             } else if (status == 3) {
                                 dialog.dismiss();
-                                Toast.makeText(ResumeDetailsActivity.this, "path:" + finalDefile.getAbsolutePath(), Toast.LENGTH_SHORT).show();
+
+                                openFileDialog();
                             }
                         }
 
@@ -460,6 +467,35 @@ public class ResumeDetailsActivity extends BaseActivity {
         } catch (JSONException e) {
             e.printStackTrace();
         }
+    }
+
+    private void openFileDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(ResumeDetailsActivity.this);
+        builder.setTitle("open the file");
+        builder.setMessage(finalDefile.getAbsolutePath());
+        builder.setPositiveButton("ok", new DialogInterface.OnClickListener() {
+            @Override public void onClick(DialogInterface dialog, int which) {
+                try {
+                    Intent intent = new Intent();
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    intent.setAction(Intent.ACTION_VIEW);
+                    String type = getMIMEType(finalDefile);
+                    intent.setDataAndType(Uri.parse(finalDefile.getAbsolutePath()), type);
+                    startActivity(intent);
+
+                } catch (ActivityNotFoundException e) {
+                    Toast.makeText(ResumeDetailsActivity.this, "can not open file", Toast.LENGTH_SHORT).show();
+                }
+
+                dialog.dismiss();
+            }
+        });
+        builder.setNegativeButton("cancel", new DialogInterface.OnClickListener() {
+            @Override public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+            }
+        });
+        builder.show();
     }
 
     private void addEncryptFile(ResumeRequestEntity requestEntity) {
@@ -613,8 +649,7 @@ public class ResumeDetailsActivity extends BaseActivity {
                                         //authorization.setClickable(false);
                                         //authorization.setText(getResources().getString(R.string.resume_received));
                                         //authorization.setBackgroundColor(Color.GRAY);
-                                        Toast.makeText(ResumeDetailsActivity.this, "path:" + finalDefile.getAbsolutePath(), Toast.LENGTH_SHORT)
-                                                .show();
+                                        openFileDialog();
                                     }
                                 } else {
                                     if (type.equals("received")) {
@@ -645,4 +680,28 @@ public class ResumeDetailsActivity extends BaseActivity {
         super.onDestroy();
         JSInteraction.getInstance().removeListener();
     }
+
+    private String getMIMEType(File file) {
+
+        String type = "*/*";
+        String fName = file.getName();
+        int dotIndex = fName.lastIndexOf(".");
+        if (dotIndex < 0) {
+            return type;
+        }
+        String end = fName.substring(dotIndex, fName.length()).toLowerCase();
+        if (end == "") return type;
+        for (int i = 0; i < MIME_MapTable.length; i++) {
+            if (end.equals(MIME_MapTable[i][0])) type = MIME_MapTable[i][1];
+        }
+        return type;
+    }
+
+    private final String[][] MIME_MapTable = {
+            { ".bmp", "image/bmp" }, { ".doc", "application/msword" },
+            { ".docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document" }, { ".gif", "image/gif" }, { ".htm", "text/html" },
+            { ".html", "text/html" }, { ".jpeg", "image/jpeg" }, { ".jpg", "image/jpeg" }, { ".pdf", "application/pdf" }, { ".png", "image/png" },
+            { ".ppt", "application/vnd.ms-powerpoint" }, { ".pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation" },
+            { ".txt", "text/plain" }, { "", "*/*" }
+    };
 }

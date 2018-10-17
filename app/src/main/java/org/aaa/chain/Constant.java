@@ -36,16 +36,6 @@ public class Constant {
         return publicKey;
     }
 
-    public static String getAnotherPublicKey() {
-        if (ChainApplication.getInstance().isAccount1) {
-            publicKey = "AAA5HZLkL5tat8aEa8egckNNeuFHWvLSCvC5v2v7N8WPSpQT2FzPM";
-        } else {
-            publicKey = "AAA7RccFsFi5NqgDQerEYRJ7odQ5EX135N1kD4v1hxKAfrCadKxp3";
-        }
-
-        return publicKey;
-    }
-
     public static String getPrivateKey() {
         if (ChainApplication.getInstance().isAccount1) {
             privateKey = "5JWYoMqLxGAmHi5BnhYRSdaTpNsF4jzcUCgKq57LMHqHqnCGJn4";
@@ -54,6 +44,16 @@ public class Constant {
         }
 
         return privateKey;
+    }
+
+    public static String getAnotherPublicKey() {
+        if (ChainApplication.getInstance().isAccount1) {
+            publicKey = "AAA5HZLkL5tat8aEa8egckNNeuFHWvLSCvC5v2v7N8WPSpQT2FzPM";
+        } else {
+            publicKey = "AAA7RccFsFi5NqgDQerEYRJ7odQ5EX135N1kD4v1hxKAfrCadKxp3";
+        }
+
+        return publicKey;
     }
 
     public static String getAnotherPrivateKey() {
