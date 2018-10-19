@@ -17,7 +17,7 @@ aaa = AAA(config)
 
 getBalance = function(accountName){
   aaa.getCurrencyBalance('eosio.token', accountName, 'AAA',function(error,result){
-     window.aaaChain.getEosBalance(error,result)
+     window.aaaChain.getAAABalance(error,result[0])
     })
 }
 

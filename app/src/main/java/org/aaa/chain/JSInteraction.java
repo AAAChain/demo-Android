@@ -91,9 +91,9 @@ import org.json.JSONObject;
 
     public class JsInteraction {
 
-        @JavascriptInterface public void getEosBalance(String error, String[] balance) {
-            Log.i("info", "balance:" + balance[0]);
-            listener.onSuccess(balance[0]);
+        @JavascriptInterface public void getAAABalance(String error, String balance) {
+            Log.i("info", "balance:" + balance);
+            listener.onSuccess(balance);
         }
 
         @JavascriptInterface public void getSignature(String signature) {

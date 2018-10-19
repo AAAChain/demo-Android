@@ -109,11 +109,9 @@
         android:id="@+id/tv_wallet_address"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="TextView"
-        app:layout_constraintBottom_toBottomOf="@+id/tv_wallet_address_label"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/tv_wallet_address_label"
+        android:text=""
+        app:layout_constraintStart_toEndOf="@id/tv_wallet_address_label"
+        android:layout_marginLeft="10dp"
         />
     <TextView
         android:id="@+id/tv_available_balance_label"
@@ -210,7 +208,7 @@
           android:layout_centerVertical="true"
           android:layout_toRightOf="@id/iv_resume_icon"
           android:layout_marginLeft="20dp"
-          android:textSize="@dimen/text_tile_size"
+          android:textSize="@dimen/text_content_size"
           />
     </RelativeLayout>
 

@@ -38,6 +38,7 @@ public class MyHomeDetailActivity extends BaseActivity {
         } else if (getResources().getString(R.string.myWallet).equals(title)) {
             $(R.id.cl_my_home_detail_wallet).setVisibility(View.VISIBLE);
             tvBalance = $(R.id.tv_available_balance);
+            ((TextView) $(R.id.tv_wallet_address)).setText(Constant.getPublicKey());
             JSInteraction.getInstance().getBalance(Constant.getAccount(), new JSInteraction.JSCallBack() {
                 @Override public void onSuccess(String content) {
                     runOnUiThread(new Runnable() {
