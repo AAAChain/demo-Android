@@ -256,7 +256,7 @@ public class ResumeDetailsActivity extends BaseActivity {
     private void prepayOrder(long orderId) {
         JSInteraction.getInstance()
                 .prepay(orderId, Constant.getAccount(), Constant.getAnotherAccount(), getPrice(price), new JSInteraction.JSCallBack() {
-                    @Override public void onSuccess(String content) {
+                    @Override public void onSuccess(String... stringArray) {
 
                         //3.修改订单
                         updateCreateOrder(orderId, "prepay");
@@ -320,11 +320,11 @@ public class ResumeDetailsActivity extends BaseActivity {
                                     JSInteraction.getInstance()
                                             .encryptKey(Constant.getPrivateKey(), Constant.getAnotherPublicKey(),
                                                     Base64.encodeToString(salt, Base64.DEFAULT), new JSInteraction.JSCallBack() {
-                                                        @Override public void onSuccess(String content) {
+                                                        @Override public void onSuccess(String... stringArray) {
                                                             try {
                                                                 JSONObject object =
                                                                         new JSONObject(new Gson().toJson(resumeResponseEntity.getExtra()));
-                                                                JSONObject jsonObject = new JSONObject(content);
+                                                                JSONObject jsonObject = new JSONObject(stringArray[0]);
                                                                 JSONObject jsonObject1 = jsonObject.getJSONObject("nonce");
 
                                                                 object.put("low", jsonObject1.getLong("low"));
@@ -351,8 +351,8 @@ public class ResumeDetailsActivity extends BaseActivity {
                                                                                     .getSignature(
                                                                                             new JSONObject(requestEntity.getMetadata()).toString(),
                                                                                             Constant.getPrivateKey(), new JSInteraction.JSCallBack() {
-                                                                                                @Override public void onSuccess(String content) {
-                                                                                                    requestEntity.setSignature(content);
+                                                                                                @Override public void onSuccess(String... stringArray) {
+                                                                                                    requestEntity.setSignature(stringArray[0]);
                                                                                                     //2.upload file
                                                                                                     addEncryptFile(requestEntity);
                                                                                                 }
@@ -424,16 +424,16 @@ public class ResumeDetailsActivity extends BaseActivity {
 
             JSInteraction.getInstance()
                     .decryptKey(Constant.getPrivateKey(), Constant.getAnotherPublicKey(), object.toString(), new JSInteraction.JSCallBack() {
-                        @Override public void onSuccess(String content) {
+                        @Override public void onSuccess(String... stringArray) {
                             finalDefile = PBEUtils.getInstance()
                                     .decryptFile(ResumeDetailsActivity.this, file.getAbsolutePath(), Constant.getPublicKey(),
-                                            Base64.decode(content, Base64.DEFAULT));
+                                            Base64.decode(stringArray[0], Base64.DEFAULT));
                             if (status == 2) {
                                 runOnUiThread(new Runnable() {
                                     @Override public void run() {
                                         //确认付款
                                         JSInteraction.getInstance().confirmOrder(Constant.getAccount(), orderId, new JSInteraction.JSCallBack() {
-                                            @Override public void onSuccess(String content) {
+                                            @Override public void onSuccess(String... stringArray) {
                                                 //update order
                                                 updateCreateOrder(orderId, "final");
                                             }
@@ -550,8 +550,8 @@ public class ResumeDetailsActivity extends BaseActivity {
 
     private void modifyInfo(String hashId, String modifyContent) {
         JSInteraction.getInstance().getSignature(modifyContent, org.aaa.chain.Constant.getPrivateKey(), new JSInteraction.JSCallBack() {
-            @Override public void onSuccess(String content) {
-                HttpUtils.getInstance().modifyCustomInfo(hashId, content, modifyContent, new HttpUtils.ServerCallBack() {
+            @Override public void onSuccess(String... stringArray) {
+                HttpUtils.getInstance().modifyCustomInfo(hashId, stringArray[0], modifyContent, new HttpUtils.ServerCallBack() {
                     @Override public void onFailure(Call call, IOException e) {
                         runOnUiThread(new Runnable() {
                             @Override public void run() {

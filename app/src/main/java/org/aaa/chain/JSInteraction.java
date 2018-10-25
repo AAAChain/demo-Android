@@ -89,6 +89,12 @@ import org.json.JSONObject;
         webView.loadUrl(content);
     }
 
+    public void generationSecretKey(JSCallBack callBack) {
+        this.listener = callBack;
+        String content = "javascript:generationSecretKey()";
+        webView.loadUrl(content);
+    }
+
     public class JsInteraction {
 
         @JavascriptInterface public void getAAABalance(String error, String balance) {
@@ -141,8 +147,14 @@ import org.json.JSONObject;
             listener.onError(error);
         }
 
-        @JavascriptInterface public void getPublicKey(String publicKey) {
+        @JavascriptInterface public void generationSecretKey(String privateKey,String publicKey) {
+            Log.i("info", "privateKey:" + privateKey);
             Log.i("info", "publicKey:" + publicKey);
+            listener.onSuccess(privateKey,publicKey);
+        }
+
+        @JavascriptInterface public void getPublicKey(String publicKey) {
+            Log.i("info", "publicKey1:" + publicKey);
             listener.onSuccess(publicKey);
         }
     }
@@ -151,7 +163,7 @@ import org.json.JSONObject;
     private JSCallBack listener1;
 
     public interface JSCallBack {
-        void onSuccess(String content);
+        void onSuccess(String... stringArray);
 
         void onProgress();
 

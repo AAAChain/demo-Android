@@ -28,6 +28,15 @@ getPublicKey = function(privateKey){
   window.aaaChain.getPublicKey(publicKey)
 }
 
+generationSecretKey = function(){
+
+ ecc.randomKey().then(privateKey => {
+
+     window.aaaChain.generationSecretKey(privateKey,ecc.privateToPublic(privateKey,'AAA'))
+ })
+}
+
+
 getSignature = function(json,privateKey){
   var key = ecc.sign(json,privateKey)
   console.log("key----"+key)

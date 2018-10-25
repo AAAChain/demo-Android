@@ -164,8 +164,8 @@ public class UploadResumeActivity extends BaseActivity implements ProgressRespon
     private void modifyInfo(String hashId, String modifyContent) {
         ProgressDialog dialog = ProgressDialog.show(UploadResumeActivity.this, "waiting...", "modifying...");
         JSInteraction.getInstance().getSignature(modifyContent, org.aaa.chain.Constant.getPrivateKey(), new JSInteraction.JSCallBack() {
-            @Override public void onSuccess(String content) {
-                HttpUtils.getInstance().modifyCustomInfo(hashId, content, modifyContent, new HttpUtils.ServerCallBack() {
+            @Override public void onSuccess(String... stringArray) {
+                HttpUtils.getInstance().modifyCustomInfo(hashId, stringArray[0], modifyContent, new HttpUtils.ServerCallBack() {
                     @Override public void onFailure(Call call, IOException e) {
                         runOnUiThread(new Runnable() {
                             @Override public void run() {
@@ -237,8 +237,8 @@ public class UploadResumeActivity extends BaseActivity implements ProgressRespon
         requestEntity.setAccount(org.aaa.chain.Constant.getAccount());
 
         JSInteraction.getInstance().getSignature(object.toString(), org.aaa.chain.Constant.getPrivateKey(), new JSInteraction.JSCallBack() {
-            @Override public void onSuccess(String content) {
-                requestEntity.setSignature(content);
+            @Override public void onSuccess(String... stringArray) {
+                requestEntity.setSignature(stringArray[0]);
                 runOnUiThread(new Runnable() {
                     @Override public void run() {
                         dialog.dismiss();

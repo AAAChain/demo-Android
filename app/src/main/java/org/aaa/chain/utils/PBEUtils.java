@@ -54,16 +54,13 @@ public class PBEUtils {
             PBEKeySpec keySpec = new PBEKeySpec(key.toCharArray());
             SecretKeyFactory factory = SecretKeyFactory.getInstance(KEY_PBE);
             secretKey = factory.generateSecret(keySpec);
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (InvalidKeySpecException e) {
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
             e.printStackTrace();
         }
         return secretKey;
     }
 
-
-    public File encryptFile(Context context, String filePath, String publicKey,byte[] salt) {
+    public File encryptFile(Context context, String filePath, String publicKey, byte[] salt) {
         byte[] bytes = FileUtils.getInstance().getBytes(filePath);
         byte[] enBytes = encryptPBE(bytes, publicKey, salt);
         File file = new File(filePath);
@@ -73,7 +70,7 @@ public class PBEUtils {
         return FileUtils.getInstance().getFile(enBytes, context.getExternalFilesDir("").getAbsolutePath(), prefix + "_encrypt." + suffix);
     }
 
-    public File decryptFile(Context context, String filePath, String publicKey,byte[] salt) {
+    public File decryptFile(Context context, String filePath, String publicKey, byte[] salt) {
         byte[] enbytes = FileUtils.getInstance().getBytes(filePath);
         byte[] deBytes = decryptPBE(enbytes, publicKey, salt);
         File file = new File(filePath);
@@ -99,17 +96,7 @@ public class PBEUtils {
             Cipher cipher = Cipher.getInstance(KEY_PBE);
             cipher.init(Cipher.ENCRYPT_MODE, k, parameterSpec);
             bytes = cipher.doFinal(data);
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (NoSuchPaddingException e) {
-            e.printStackTrace();
-        } catch (InvalidAlgorithmParameterException e) {
-            e.printStackTrace();
-        } catch (InvalidKeyException e) {
-            e.printStackTrace();
-        } catch (BadPaddingException e) {
-            e.printStackTrace();
-        } catch (IllegalBlockSizeException e) {
+        } catch (NoSuchAlgorithmException | IllegalBlockSizeException | BadPaddingException | InvalidKeyException | InvalidAlgorithmParameterException | NoSuchPaddingException e) {
             e.printStackTrace();
         }
         return bytes;
@@ -131,17 +118,7 @@ public class PBEUtils {
             Cipher cipher = Cipher.getInstance(KEY_PBE);
             cipher.init(Cipher.DECRYPT_MODE, k, parameterSpec);
             bytes = cipher.doFinal(data);
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (NoSuchPaddingException e) {
-            e.printStackTrace();
-        } catch (InvalidAlgorithmParameterException e) {
-            e.printStackTrace();
-        } catch (InvalidKeyException e) {
-            e.printStackTrace();
-        } catch (BadPaddingException e) {
-            e.printStackTrace();
-        } catch (IllegalBlockSizeException e) {
+        } catch (NoSuchAlgorithmException | IllegalBlockSizeException | BadPaddingException | InvalidKeyException | InvalidAlgorithmParameterException | NoSuchPaddingException e) {
             e.printStackTrace();
         }
         return bytes;
@@ -177,8 +154,6 @@ public class PBEUtils {
         try {
             encStr = encryptBase64(encData);
             decStr = new String(decData, "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();
         }

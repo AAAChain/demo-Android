@@ -40,11 +40,11 @@ public class MyHomeDetailActivity extends BaseActivity {
             tvBalance = $(R.id.tv_available_balance);
             ((TextView) $(R.id.tv_wallet_address)).setText(Constant.getPublicKey());
             JSInteraction.getInstance().getBalance(Constant.getAccount(), new JSInteraction.JSCallBack() {
-                @Override public void onSuccess(String content) {
+                @Override public void onSuccess(String... stringArray) {
                     runOnUiThread(new Runnable() {
                         @Override public void run() {
                             dialog.dismiss();
-                            tvBalance.setText(String.valueOf(content));
+                            tvBalance.setText(String.valueOf(stringArray[0]));
                         }
                     });
                 }

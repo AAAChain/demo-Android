@@ -35,7 +35,6 @@ public class MainActivity extends BaseActivity {
 
         initTab();
         requestPermissions();
-        JSInteraction.getInstance().initWebKit(this);
     }
 
     private void initTab() {
