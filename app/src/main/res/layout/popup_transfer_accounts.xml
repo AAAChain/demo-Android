@@ -81,6 +81,18 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/tv_transfer_amount_label"
         app:layout_constraintTop_toTopOf="@+id/tv_transfer_amount_label"
+        android:inputType="numberDecimal"
+        android:paddingLeft="10dp"
+        />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="(AAA)"
+        app:layout_constraintTop_toTopOf="@id/et_transfer_amount"
+        app:layout_constraintBottom_toBottomOf="@id/et_transfer_amount"
+        app:layout_constraintEnd_toEndOf="@id/et_transfer_amount"
+        android:layout_marginRight="10dp"
         />
     <TextView
         android:id="@+id/tv_wallet_address_label"
@@ -104,6 +116,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/tv_wallet_address_label"
         app:layout_constraintTop_toTopOf="@+id/tv_wallet_address_label"
+        android:paddingLeft="10dp"
         />
     <TextView
         android:id="@+id/tv_account_password_label"
@@ -126,6 +139,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/tv_account_password_label"
         app:layout_constraintTop_toTopOf="@+id/tv_account_password_label"
+        android:paddingLeft="10dp"
         />
     <Button
         android:id="@+id/btn_transfer_accounts"

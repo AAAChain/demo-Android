@@ -285,7 +285,11 @@ public class ResumeDetailsActivity extends BaseActivity {
                 runOnUiThread(new Runnable() {
                     @Override public void run() {
                         dialog.dismiss();
-                        Toast.makeText(ResumeDetailsActivity.this, getResources().getString(R.string.download_failure), Toast.LENGTH_SHORT).show();
+                        if (status == 0){
+                            Toast.makeText(ResumeDetailsActivity.this, getResources().getString(R.string.authorization_failure), Toast.LENGTH_SHORT).show();
+                        }else {
+                            Toast.makeText(ResumeDetailsActivity.this, getResources().getString(R.string.download_failure), Toast.LENGTH_SHORT).show();
+                        }
                     }
                 });
             }

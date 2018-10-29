@@ -1,12 +1,15 @@
 package org.aaa.chain.views;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -17,7 +20,10 @@ import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.PopupWindow;
 import android.widget.TextView;
+import android.widget.Toast;
+import java.text.DecimalFormat;
 import java.util.List;
+import org.aaa.chain.JSInteraction;
 import org.aaa.chain.R;
 import org.aaa.chain.adapter.BaseViewHolder;
 import org.aaa.chain.adapter.BindViewHolderInterface;
@@ -32,7 +38,7 @@ public class CommonPopupWindow implements View.OnClickListener {
     private Window window;
     private WindowManager.LayoutParams layoutParams;
 
-    View parent;
+    private View parent;
 
     private EditText etTransferAmount;
     private EditText etWalletAddress;
@@ -49,6 +55,7 @@ public class CommonPopupWindow implements View.OnClickListener {
         popupWindow.setOnDismissListener(new PopupWindow.OnDismissListener() {
             @Override public void onDismiss() {
                 dimOrRecoverBehind(false);
+                JSInteraction.getInstance().removeListener();
             }
         });
     }
@@ -97,11 +104,13 @@ public class CommonPopupWindow implements View.OnClickListener {
         dimOrRecoverBehind(true);
     }
 
-    public void pupupWindowTransferAccounts() {
+    public void pupupWindowTransferAccounts(String balance) {
         initPopupWindow(R.layout.popup_transfer_accounts, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER);
         etTransferAmount = layoutView.findViewById(R.id.et_transfer_amount);
         etWalletAddress = layoutView.findViewById(R.id.et_wallet_address);
         etAccountPassword = layoutView.findViewById(R.id.et_account_password);
+        TextView tvBalance = layoutView.findViewById(R.id.tv_available_balance);
+        tvBalance.setText(balance);
         layoutView.findViewById(R.id.btn_transfer_accounts).setOnClickListener(this);
         layoutView.findViewById(R.id.tv_close).setOnClickListener(this);
 
@@ -139,7 +148,39 @@ public class CommonPopupWindow implements View.OnClickListener {
     @Override public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btn_transfer_accounts:
+                if (TextUtils.isEmpty(etTransferAmount.getText().toString())) {
+                    Toast.makeText(context, "please input amount", Toast.LENGTH_SHORT).show();
+                } else if (TextUtils.isEmpty(etWalletAddress.getText().toString())) {
+                    Toast.makeText(context, "please input account", Toast.LENGTH_SHORT).show();
+                } else if ((TextUtils.isEmpty(etAccountPassword.getText().toString()))) {
+                    Toast.makeText(context, "please input password", Toast.LENGTH_SHORT).show();
+                }
 
+                ProgressDialog dialog = ProgressDialog.show(context,"waiting...","transfer...");
+                DecimalFormat decimalFormat = new DecimalFormat("##0.0000");
+                String dd = decimalFormat.format(Float.valueOf(etTransferAmount.getText().toString()));
+                JSInteraction.getInstance()
+                        .transfer("aaauser1", etWalletAddress.getText().toString(), dd + " AAA", "", new JSInteraction.JSCallBack() {
+                            @Override public void onSuccess(String... stringArray) {
+
+                                Toast.makeText(context, "transfer successful", Toast.LENGTH_SHORT).show();
+                                ((Activity) context).runOnUiThread(new Runnable() {
+                                    @Override public void run() {
+                                        dialog.dismiss();
+                                        popupWindow.dismiss();
+                                        listener.transferSuccess();
+                                    }
+                                });
+                            }
+
+                            @Override public void onProgress() {
+
+                            }
+
+                            @Override public void onError(String error) {
+                                Toast.makeText(context, "transfer error", Toast.LENGTH_SHORT).show();
+                            }
+                        });
                 break;
             case R.id.tv_close:
                 popupWindow.dismiss();
@@ -153,5 +194,15 @@ public class CommonPopupWindow implements View.OnClickListener {
 
                 break;
         }
+    }
+
+    TransferListener listener;
+
+    public void setTransferListener(TransferListener listener) {
+        this.listener = listener;
+    }
+
+    public interface TransferListener {
+        void transferSuccess();
     }
 }

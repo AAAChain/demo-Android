@@ -95,6 +95,18 @@ import org.json.JSONObject;
         webView.loadUrl(content);
     }
 
+    public void authPermission(String account, JSCallBack callBack) {
+        this.listener = callBack;
+        String content = "javascript:authPermission(" + "'" + account + "'" + ")";
+        webView.loadUrl(content);
+    }
+
+    public void transfer(String from, String to, String amount, String remark, JSCallBack callBack) {
+        this.listener = callBack;
+        String content = "javascript:transfer(" + "'" + from + "'" + "," + "'" + to + "'" + "," + "'" + amount + "'" + "," + "'" + remark + "'" + ")";
+        webView.loadUrl(content);
+    }
+
     public class JsInteraction {
 
         @JavascriptInterface public void getAAABalance(String error, String balance) {
@@ -147,15 +159,35 @@ import org.json.JSONObject;
             listener.onError(error);
         }
 
-        @JavascriptInterface public void generationSecretKey(String privateKey,String publicKey) {
+        @JavascriptInterface public void generationSecretKey(String privateKey, String publicKey) {
             Log.i("info", "privateKey:" + privateKey);
             Log.i("info", "publicKey:" + publicKey);
-            listener.onSuccess(privateKey,publicKey);
+            listener.onSuccess(privateKey, publicKey);
         }
 
         @JavascriptInterface public void getPublicKey(String publicKey) {
             Log.i("info", "publicKey1:" + publicKey);
             listener.onSuccess(publicKey);
+        }
+
+        @JavascriptInterface public void authPermissionSuccess() {
+            Log.i("info", "authPermissionSuccess:");
+            listener.onSuccess("");
+        }
+
+        @JavascriptInterface public void authPermissionError(String error) {
+            Log.i("info", "authPermissionError:" + error);
+            listener.onError(error);
+        }
+
+        @JavascriptInterface public void transfer(String result, String error) {
+            if (error == null) {
+                listener.onSuccess(result);
+                Log.i("info", "transfer successful:" + result);
+            } else {
+                listener.onError(error);
+                Log.i("info", "transfer failure:" + error);
+            }
         }
     }
 

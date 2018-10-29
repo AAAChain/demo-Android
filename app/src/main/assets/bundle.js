@@ -17,6 +17,19 @@ config = {
 
 aaa = AAA(config)
 
+//auth
+authPermission = function(account){
+console.log("buyer:"+account)
+  aaa.authPermission(account).then(value => {
+    console.log('authPermisson OK. txid: ' + value.transaction_id)
+    window.aaaChain.authPermissionSuccess()
+  }).catch(e => {
+    console.log("authPermisson failed: " + e)
+     window.aaaChain.authPermissionError(e)
+  });
+}
+
+
 getBalance = function(accountName){
   aaa.getCurrencyBalance('eosio.token', accountName, 'AAA',function(error,result){
      window.aaaChain.getAAABalance(error,result[0])
@@ -34,6 +47,15 @@ generationSecretKey = function(){
 
      window.aaaChain.generationSecretKey(privateKey,ecc.privateToPublic(privateKey,'AAA'))
  })
+}
+
+
+transfer = function(from,to,amount,remark){
+  var options = {authorization:from+'@active',broadcast:true,sign:true}
+  aaa.transfer({from:from,to:to,quantity:amount,memo:remark},options,function (error,result) {
+     window.aaaChain.transfer(JSON.stringify(result),error)
+  })
+
 }
 
 
@@ -756,10 +778,10 @@ Object.assign(Eos, {
 // 注：
 // 1. 调用函数payForGood前，必须先进行授权。
 // 2. 授权信息记录在链上，对于同一个买家来说，这个函数只需要调用一次。
-function authPermisson(buyer) {
+function authPermission(buyer) {
   var accountInfo, activeAuth, needAddPermission, _iteratorNormalCompletion, _didIteratorError, _iteratorError, _iterator, _step, perm, accounts, _iteratorNormalCompletion2, _didIteratorError2, _iteratorError2, _iterator2, _step2, account, op_data;
 
-  return _regenerator2.default.async(function authPermisson$(_context) {
+  return _regenerator2.default.async(function authPermission$(_context) {
     while (1) {
       switch (_context.prev = _context.next) {
         case 0:
@@ -928,7 +950,7 @@ function authPermisson(buyer) {
 // 注：
 // 1. 它不会直接打钱给卖家，而是暂时打款到中间帐号，当买家确定收到商品后，
 // 应该调用 confirmPayment 来确认付款。
-// 2. 调用本函数前，请确保已授权合约从buyer扣款；如果没有，请调用authPermisson
+// 2. 调用本函数前，请确保已授权合约从buyer扣款；如果没有，请调用authPermission
 function payForGood(id, buyer, seller, price) {
   var options, contract;
   return _regenerator2.default.async(function payForGood$(_context2) {
@@ -1022,7 +1044,7 @@ function createEos(config) {
       toBuffer: toBuffer,
       abiCache: abiCache
     },
-    authPermisson: authPermisson,
+    authPermission: authPermission,
     payForGood: payForGood,
     confirmPayment: confirmPayment,
     // Repeat of static Eos.modules, help apps that use dependency injection

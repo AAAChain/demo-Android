@@ -35,7 +35,7 @@ public class HttpUtils {
     }
 
     public void AddDataResource(ResumeRequestEntity entity, ServerCallBack callBack) {
-        String url = "http://47.99.61.209:9527/dbnode/data/add?chain=eos";
+        String url = "http://47.99.114.35:9527/dbnode/data/add?chain=aaa";
         JSONObject object = new JSONObject();
         try {
             object.put("source", "it is so beautiful, i love it");
@@ -75,7 +75,7 @@ public class HttpUtils {
     }
 
     public void modifyCustomInfo(String hashId, String signature, String modifyContent, ServerCallBack callBack) {
-        String url = "http://47.99.61.209:9527/dbnode/" + hashId + "?chain=eos";
+        String url = "http://47.99.114.35:9527/dbnode/" + hashId + "?chain=aaa";
         JSONObject object = new JSONObject();
         try {
             object.put("signature", signature);
@@ -89,7 +89,7 @@ public class HttpUtils {
     }
 
     public void getBaseInfo(ServerCallBack callBack) {
-        String url = "http://47.99.61.209:9527/dbnode/find?page=1&pageSize=1&order=-1";
+        String url = "http://47.99.114.35:9527/dbnode/find?page=1&pageSize=1&order=-1";
         JSONObject object = new JSONObject();
         try {
             object.put("account", Constant.getAccount());
@@ -100,7 +100,7 @@ public class HttpUtils {
     }
 
     public void searchResource(int page, String content, ServerCallBack callBack) {
-        String url = "http://47.99.61.209:9527/dbnode/find?page=" + page + "&pageSize=20&sortBy=timestamp&order=-1";
+        String url = "http://47.99.114.35:9527/dbnode/find?page=" + page + "&pageSize=20&sortBy=timestamp&order=-1";
         JSONObject object = new JSONObject();
         try {
             JSONObject object1 = new JSONObject();
@@ -125,7 +125,7 @@ public class HttpUtils {
             AddDataResource(entity, callBack);
             return;
         }
-        String url = "http://47.99.61.209:9527/dbnode/file/add?chain=eos";
+        String url = "http://47.99.114.35:9527/dbnode/file/add?chain=aaa";
         File file = new File(entity.getFilepath());
         MediaType type = MediaType.parse("text/x-markdown;charset=utf-8");
         RequestBody fileBody = RequestBody.create(type, file);
@@ -164,18 +164,18 @@ public class HttpUtils {
     }
 
     public void getMyResource(String signature, String message, ServerCallBack callBack) {
-        String url = "http://47.99.61.209:9527/dbnode/mine?chain=eos&page=1&pageSize=2&sortBy=timestamp";
+        String url = "http://47.99.114.35:9527/dbnode/mine?chain=aaa&page=1&pageSize=2&sortBy=timestamp";
         Headers headers = new Headers.Builder().add("signature", signature).add("message", message).build();
         httpRequest(null, headers, METHOD_GET, url, callBack);
     }
 
     public void getAppointResource(String hashId, ServerCallBack callBack) {
-        String url = "http://47.99.61.209:9527/dbnode/" + hashId;
+        String url = "http://47.99.114.35:9527/dbnode/" + hashId;
         httpRequest(null, null, METHOD_GET, url, callBack);
     }
 
     public void downlaodFile(String hashId, ServerCallBack callBack) {
-        String url = "http://47.99.61.209/ipfs/" + hashId;
+        String url = "http://47.99.114.35:8089/ipfs/" + hashId;
         httpRequest(null, null, METHOD_GET, url, callBack);
     }
 

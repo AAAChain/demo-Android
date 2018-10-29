@@ -39,6 +39,11 @@ public class LoginActivity extends BaseActivity {
         etKey = $(R.id.et_key);
         Button btnLogin = $(R.id.btn_login);
 
+        boolean isImport = getIntent().getBooleanExtra("import", false);
+        if (isImport) {
+            tvKey.setVisibility(View.GONE);
+        }
+
         Locale locale;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             locale = LocaleList.getDefault().get(0);

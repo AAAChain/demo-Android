@@ -14,7 +14,7 @@ import org.aaa.chain.R;
 import org.aaa.chain.entities.ResumeRequestEntity;
 import org.aaa.chain.views.CommonPopupWindow;
 
-public class MyHomeDetailActivity extends BaseActivity {
+public class MyHomeDetailActivity extends BaseActivity implements CommonPopupWindow.TransferListener{
 
     private List<ResumeRequestEntity> dataEntities = new ArrayList<>();
     private TextView tvBalance;
@@ -86,7 +86,9 @@ public class MyHomeDetailActivity extends BaseActivity {
                 break;
 
             case R.id.tv_transfer_accounts:
-                new CommonPopupWindow(MyHomeDetailActivity.this).pupupWindowTransferAccounts();
+                CommonPopupWindow commonPopupWindow = new CommonPopupWindow(MyHomeDetailActivity.this);
+               commonPopupWindow.pupupWindowTransferAccounts(tvBalance.getText().toString());
+               commonPopupWindow.setTransferListener(this);
                 break;
             case R.id.rl_my_resume:
 
@@ -105,5 +107,26 @@ public class MyHomeDetailActivity extends BaseActivity {
         RefWatcher refWatcher = ChainApplication.getRefWatcher(this);
         refWatcher.watch(this);
         JSInteraction.getInstance().removeListener();
+    }
+
+    @Override public void transferSuccess() {
+        JSInteraction.getInstance().getBalance(Constant.getAccount(), new JSInteraction.JSCallBack() {
+            @Override public void onSuccess(String... stringArray) {
+                runOnUiThread(new Runnable() {
+                    @Override public void run() {
+                        dialog.dismiss();
+                        tvBalance.setText(String.valueOf(stringArray[0]));
+                    }
+                });
+            }
+
+            @Override public void onProgress() {
+                dialog = ProgressDialog.show(MyHomeDetailActivity.this, "waiting...", "loading...");
+            }
+
+            @Override public void onError(String error) {
+
+            }
+        });
     }
 }

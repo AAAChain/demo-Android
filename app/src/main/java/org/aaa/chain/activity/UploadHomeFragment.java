@@ -150,31 +150,39 @@ public class UploadHomeFragment extends BaseFragment {
                             ResponseBody body = response.body();
                             try {
                                 searchResponseEntity = new Gson().fromJson(body.string(), SearchResponseEntity.class);
-                                ChainApplication.getInstance().setBaseInfo(searchResponseEntity);
-                                getActivity().runOnUiThread(new Runnable() {
-                                    @Override public void run() {
-                                        dialog.dismiss();
-                                        extraEntity = searchResponseEntity.getDocs().get(0).getExtra();
-                                        String sex = extraEntity.getSex();
-                                        if ("male".equals(sex)) {
-                                            rbMale.setChecked(true);
-                                        } else {
-                                            rbFemale.setChecked(true);
+                                if (searchResponseEntity.getDocs().size() > 0) {
+                                    ChainApplication.getInstance().setBaseInfo(searchResponseEntity);
+                                    getActivity().runOnUiThread(new Runnable() {
+                                        @Override public void run() {
+                                            dialog.dismiss();
+                                            extraEntity = searchResponseEntity.getDocs().get(0).getExtra();
+                                            String sex = extraEntity.getSex();
+                                            if ("male".equals(sex)) {
+                                                rbMale.setChecked(true);
+                                            } else {
+                                                rbFemale.setChecked(true);
+                                            }
+                                            String startTime = extraEntity.getStartTime();
+                                            tvStartTime.setText(startTime);
+                                            String birthday = extraEntity.getBirthday();
+                                            tvBirthday.setText(birthday);
+                                            String company = extraEntity.getCompany();
+                                            tvCompany.setText(company);
+                                            String jobContentInfo = extraEntity.getJobContentInfo();
+                                            if (!TextUtils.isEmpty(jobContentInfo)) {
+                                                etJobContentInfo.setText(jobContentInfo);
+                                            } else {
+                                                etJobContentInfo.setText(getResources().getString(R.string.last_job_details));
+                                            }
                                         }
-                                        String startTime = extraEntity.getStartTime();
-                                        tvStartTime.setText(startTime);
-                                        String birthday = extraEntity.getBirthday();
-                                        tvBirthday.setText(birthday);
-                                        String company = extraEntity.getCompany();
-                                        tvCompany.setText(company);
-                                        String jobContentInfo = extraEntity.getJobContentInfo();
-                                        if (!TextUtils.isEmpty(jobContentInfo)) {
-                                            etJobContentInfo.setText(jobContentInfo);
-                                        } else {
-                                            etJobContentInfo.setText(getResources().getString(R.string.last_job_details));
+                                    });
+                                }else {
+                                    getActivity().runOnUiThread(new Runnable() {
+                                        @Override public void run() {
+                                            dialog.dismiss();
                                         }
-                                    }
-                                });
+                                    });
+                                }
                             } catch (IOException e) {
                                 e.printStackTrace();
                             }

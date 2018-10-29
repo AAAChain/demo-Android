@@ -15,6 +15,19 @@ config = {
 
 aaa = AAA(config)
 
+//auth
+authPermission = function(account){
+console.log("buyer:"+account)
+  aaa.authPermission(account).then(value => {
+    console.log('authPermisson OK. txid: ' + value.transaction_id)
+    window.aaaChain.authPermissionSuccess()
+  }).catch(e => {
+    console.log("authPermisson failed: " + e)
+     window.aaaChain.authPermissionError(e)
+  });
+}
+
+
 getBalance = function(accountName){
   aaa.getCurrencyBalance('eosio.token', accountName, 'AAA',function(error,result){
      window.aaaChain.getAAABalance(error,result[0])
@@ -32,6 +45,15 @@ generationSecretKey = function(){
 
      window.aaaChain.generationSecretKey(privateKey,ecc.privateToPublic(privateKey,'AAA'))
  })
+}
+
+
+transfer = function(from,to,amount,remark){
+  var options = {authorization:from+'@active',broadcast:true,sign:true}
+  aaa.transfer({from:from,to:to,quantity:amount,memo:remark},options,function (error,result) {
+     window.aaaChain.transfer(JSON.stringify(result),error)
+  })
+
 }
 
 
