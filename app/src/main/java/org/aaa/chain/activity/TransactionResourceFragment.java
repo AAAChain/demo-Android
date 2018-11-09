@@ -78,6 +78,9 @@ public class TransactionResourceFragment extends BaseFragment implements BindVie
                 if (response.code() == 200) {
                     try {
                         orderResponseEntity = new Gson().fromJson(response.body().string(), OrderResponseEntity.class);
+                        if (orderResponseEntity.getData() == null || orderResponseEntity.getData().size() == 0) {
+                            return;
+                        }
                     } catch (IOException e) {
                         e.printStackTrace();
                     }

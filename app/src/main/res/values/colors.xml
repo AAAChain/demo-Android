@@ -28,4 +28,6 @@
   <color name="app_title_bg">#3880ec</color>
   <color name="tab_color">#9D9D9D</color>
 
+  <color name="text_color">#1E1E1E</color>
+
 </resources>

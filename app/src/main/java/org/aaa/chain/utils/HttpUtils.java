@@ -206,4 +206,17 @@ public class HttpUtils {
         }
         httpRequest(object.toString(), null, METHOD_POST, url, callBack);
     }
+
+    public void newAccount(String account, String publicKey, ServerCallBack callBack) {
+        String url = "http://47.99.114.35:8090/accountService/newAccount";
+        JSONObject jsonObject = new JSONObject();
+        try {
+            jsonObject.put("account", account);
+            jsonObject.put("ownerPubkey", publicKey);
+            jsonObject.put("activePubkey", publicKey);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        httpRequest(jsonObject.toString(), null, METHOD_POST, url, callBack);
+    }
 }

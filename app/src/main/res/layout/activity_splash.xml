@@ -43,16 +43,25 @@
       app:layout_constraintStart_toStartOf="parent"
       app:layout_constraintTop_toBottomOf="@id/btn_import"
       />
+  <EditText
+      android:id="@+id/et_new_account"
+      android:layout_width="0dp"
+      android:layout_height="wrap_content"
+      android:hint="new account"
+      android:paddingLeft="10dp"
+      app:layout_constraintEnd_toEndOf="@id/et_pwd"
+      app:layout_constraintStart_toStartOf="@id/et_pwd"
+      app:layout_constraintTop_toBottomOf="@id/et_pwd"
+      />
   <Button
       android:id="@+id/btn_create"
       android:layout_width="0dp"
       android:layout_height="wrap_content"
       android:layout_marginRight="10dp"
-      android:layout_marginTop="50dp"
       android:text="create"
       android:textAllCaps="false"
       app:layout_constraintEnd_toEndOf="parent"
       app:layout_constraintHorizontal_weight="1"
-      app:layout_constraintTop_toBottomOf="@id/btn_import"
+      app:layout_constraintTop_toBottomOf="@id/et_pwd"
       />
 </android.support.constraint.ConstraintLayout>

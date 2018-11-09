@@ -107,6 +107,63 @@ import org.json.JSONObject;
         webView.loadUrl(content);
     }
 
+    public void getAccountInfo(String account, JSCallBack callBack) {
+        this.listener = callBack;
+        String content = "javascript:getAccountInfo(" + "'" + account + "'" + ")";
+        webView.loadUrl(content);
+    }
+
+    public void mortgage(String account, String receiveAccount, String netq, String cpuq, JSCallBack callBack) {
+        this.listener = callBack;
+        String content = "javascript:mortgage("
+                + "'"
+                + account
+                + "'"
+                + ","
+                + "'"
+                + receiveAccount
+                + "'"
+                + ","
+                + "'"
+                + netq
+                + "'"
+                + ","
+                + "'"
+                + cpuq
+                + "'"
+                + ")";
+        webView.loadUrl(content);
+    }
+
+    public void redemption(String account, String receiveAccount, String netq, String cpuq, JSCallBack callBack) {
+        this.listener = callBack;
+        String content = "javascript:redemption("
+                + "'"
+                + account
+                + "'"
+                + ","
+                + "'"
+                + receiveAccount
+                + "'"
+                + ","
+                + "'"
+                + netq
+                + "'"
+                + ","
+                + "'"
+                + cpuq
+                + "'"
+                + ")";
+        webView.loadUrl(content);
+    }
+
+    public void sellram(String account, long bytesnum, JSCallBack callback) {
+        this.listener = callback;
+        listener.onProgress();
+        String content = "javascript:sellram(" + "'" + account + "'" + "," + "'" + bytesnum + "'" + ")";
+        webView.loadUrl(content);
+    }
+
     public class JsInteraction {
 
         @JavascriptInterface public void getAAABalance(String error, String balance) {
@@ -187,6 +244,16 @@ import org.json.JSONObject;
             } else {
                 listener.onError(error);
                 Log.i("info", "transfer failure:" + error);
+            }
+        }
+
+        @JavascriptInterface public void getAccountInfo(String result, String error) {
+            if (error == null) {
+                listener.onSuccess(result);
+                Log.i("info", "getAccountInfo successful:" + result);
+            } else {
+                listener.onError(error);
+                Log.i("info", "getAccountInfo failure:" + error);
             }
         }
     }

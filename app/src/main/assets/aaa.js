@@ -127,3 +127,56 @@ confirmOrder = function(buyer,orderid) {
        window.aaaChain.payFailure(e)
     })
 }
+
+
+//获取eoshackathon账户的信息
+getAccountInfo = function(account){
+
+  aaa.getAccount({account_name: account}, function (error, result) {
+          console.log("error:"+error);
+          console.log("result:"+JSON.stringify(result))
+          window.aaaChain.getAccountInfo(JSON.stringify(result),error)
+      })
+}
+
+//抵押
+mortgage = function(account,receiveAccount,netq,cpuq){
+
+  aaa.transaction(result =>
+    result.delegatebw({
+      from:account,
+      receiver:receiveAccount,
+      stake_net_quantity:netq,
+      stake_cpu_quantity:cpuq,
+      transfer:0
+    })
+  )
+}
+
+
+//赎回
+redemption = function(account,receiveAccount,netq,cpuq){
+
+  aaa.transaction(result => {
+      result.undelegatebw({
+          from: account,
+          receiver: receiveAccount,
+          unstake_net_quantity: netq,
+          unstake_cpu_quantity: cpuq
+      })
+  })
+
+}
+
+
+//出售
+sellram = function(account,bytesnum){
+
+  aaa.transaction(tr => {
+      tr.sellram({
+          account: account,
+          bytes: bytesnum
+      })
+  })
+
+}

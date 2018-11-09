@@ -57,6 +57,8 @@
         <category android:name="android.intent.category.LAUNCHER"/>
       </intent-filter>
     </activity>
+    <activity android:name=".activity.ResourceManagementActivity"
+        android:windowSoftInputMode="adjustUnspecified|stateHidden"/>
 
   </application>
 

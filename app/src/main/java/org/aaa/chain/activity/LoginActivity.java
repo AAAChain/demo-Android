@@ -30,6 +30,9 @@ public class LoginActivity extends BaseActivity {
     private String[] keysName = { Constant.getAccount(), Constant.getAnotherAccount() };
     private String[] keys = { Constant.getPrivateKey(), Constant.getAnotherPrivateKey() };
 
+    private String account;
+    private String privatekey;
+
     @Override public int initLayout() {
         return R.layout.activity_login;
     }
@@ -42,6 +45,13 @@ public class LoginActivity extends BaseActivity {
         boolean isImport = getIntent().getBooleanExtra("import", false);
         if (isImport) {
             tvKey.setVisibility(View.GONE);
+        }
+
+        account = getIntent().getStringExtra("account");
+        privatekey = getIntent().getStringExtra("privatekey");
+        if (!TextUtils.isEmpty(account) && !TextUtils.isEmpty(privatekey)) {
+            keysName = new String[] { account, Constant.getAccount() };
+            keys = new String[] { privatekey, Constant.getPrivateKey() };
         }
 
         Locale locale;

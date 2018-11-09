@@ -1,10 +1,13 @@
 package org.aaa.chain.activity;
 
 import android.support.design.widget.TabLayout;
+import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
 import android.view.View;
 import com.squareup.leakcanary.RefWatcher;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import org.aaa.chain.ChainApplication;
 import org.aaa.chain.R;
@@ -26,7 +29,10 @@ public class SearchAndTransFragment extends BaseFragment {
 
         //获取标签数据
         String[] titles = getResources().getStringArray(R.array.search_trans_tab);
-        adapter = new SearchTransAdapter(getChildFragmentManager(), Arrays.asList(titles));
+        List<Fragment> fragments = new ArrayList<>();
+        fragments.add(new SearchResourceFragment());
+        fragments.add(new TransactionResourceFragment());
+        adapter = new SearchTransAdapter(getChildFragmentManager(), Arrays.asList(titles), fragments);
         viewPager.setAdapter(adapter);
         tabLayout.setupWithViewPager(viewPager);
     }
