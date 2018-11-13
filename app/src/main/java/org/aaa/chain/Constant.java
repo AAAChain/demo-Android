@@ -2,67 +2,45 @@ package org.aaa.chain;
 
 public class Constant {
 
-    public static String account;
-    public static String privateKey;
-    public static String publicKey;
+    private static String currentAccount;
+    private static String currentPrivateKey;
+    private static String currentPublicKey;
+    private static String password;
 
-    public static String getAccount() {
-        if (ChainApplication.getInstance().isAccount1) {
-            account = "aaauser1";
-        } else {
-            account = "aaauser2";
-        }
-
-        return account;
+    public static String getCurrentAccount() {
+        return currentAccount;
     }
 
-    public static String getAnotherAccount() {
-        if (ChainApplication.getInstance().isAccount1) {
-            account = "aaauser2";
-        } else {
-            account = "aaauser1";
-        }
-
-        return account;
+    public static void setCurrentAccount(String currentAccount) {
+        Constant.currentAccount = currentAccount;
     }
 
-    public static String getPublicKey() {
-        if (ChainApplication.getInstance().isAccount1) {
-            publicKey = "AAA7RccFsFi5NqgDQerEYRJ7odQ5EX135N1kD4v1hxKAfrCadKxp3";
-        } else {
-            publicKey = "AAA5HZLkL5tat8aEa8egckNNeuFHWvLSCvC5v2v7N8WPSpQT2FzPM";
-        }
-
-        return publicKey;
+    public static String getCurrentPrivateKey() {
+        return currentPrivateKey;
     }
 
-    public static String getPrivateKey() {
-        if (ChainApplication.getInstance().isAccount1) {
-            privateKey = "5JWYoMqLxGAmHi5BnhYRSdaTpNsF4jzcUCgKq57LMHqHqnCGJn4";
-        } else {
-            privateKey = "5KZyaoA9W2N6CP7EDoYBXXVMySVm1ZswVte2beByL2SD1C1cnEk";
-        }
+    public static void setCurrentPrivateKey(String currentPrivateKey) {
+        Constant.currentPrivateKey = currentPrivateKey;
+    }
 
-        return privateKey;
+    public static String getCurrentPublicKey() {
+        return currentPublicKey;
+    }
+
+    public static void setCurrentPublicKey(String currentPublicKey) {
+        Constant.currentPublicKey = currentPublicKey;
+    }
+
+    public static String getPassword() {
+        return password;
+    }
+
+    public static void setPassword(String password) {
+        Constant.password = password;
     }
 
     public static String getAnotherPublicKey() {
-        if (ChainApplication.getInstance().isAccount1) {
-            publicKey = "AAA5HZLkL5tat8aEa8egckNNeuFHWvLSCvC5v2v7N8WPSpQT2FzPM";
-        } else {
-            publicKey = "AAA7RccFsFi5NqgDQerEYRJ7odQ5EX135N1kD4v1hxKAfrCadKxp3";
-        }
-
-        return publicKey;
+            return "";
     }
 
-    public static String getAnotherPrivateKey() {
-        if (ChainApplication.getInstance().isAccount1) {
-            privateKey = "5KZyaoA9W2N6CP7EDoYBXXVMySVm1ZswVte2beByL2SD1C1cnEk";
-        } else {
-            privateKey = "5JWYoMqLxGAmHi5BnhYRSdaTpNsF4jzcUCgKq57LMHqHqnCGJn4";
-        }
-
-        return privateKey;
-    }
 }

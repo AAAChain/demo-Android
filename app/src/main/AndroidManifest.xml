@@ -58,7 +58,7 @@
       </intent-filter>
     </activity>
     <activity android:name=".activity.ResourceManagementActivity"
-        android:windowSoftInputMode="adjustUnspecified|stateHidden"/>
+        android:windowSoftInputMode="adjustResize|stateHidden"/>
 
   </application>
 

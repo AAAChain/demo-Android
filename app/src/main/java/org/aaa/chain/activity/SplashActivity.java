@@ -10,6 +10,7 @@ import android.widget.EditText;
 import android.widget.Toast;
 import com.squareup.leakcanary.RefWatcher;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import okhttp3.Call;
 import okhttp3.Response;
@@ -28,6 +29,8 @@ public class SplashActivity extends BaseActivity {
     private EditText etPwd;
     private EditText etNewAccount;
 
+    private List<KeyInfoEntity> keyInfoEntityList = new ArrayList<>();
+
     @Override public int initLayout() {
         return R.layout.activity_splash;
     }
@@ -45,6 +48,27 @@ public class SplashActivity extends BaseActivity {
         btnDemo.setOnClickListener(this);
         btnImport.setOnClickListener(this);
         btnCreate.setOnClickListener(this);
+
+        keyInfoEntityList.addAll(DBManager.getInstance().getKeyInfo());
+        if (keyInfoEntityList.size() == 0) {
+            KeyInfoEntity entity = new KeyInfoEntity();
+            entity.setPrivateKey("5JWYoMqLxGAmHi5BnhYRSdaTpNsF4jzcUCgKq57LMHqHqnCGJn4");
+            entity.setPublicKey("AAA7RccFsFi5NqgDQerEYRJ7odQ5EX135N1kD4v1hxKAfrCadKxp3");
+            entity.setAccount("aaauser1");
+            entity.setPassword("123456");
+            DBManager.getInstance().saveKeyInfo(entity);
+            KeyInfoEntity entity1 = new KeyInfoEntity();
+            entity1.setPrivateKey("5KZyaoA9W2N6CP7EDoYBXXVMySVm1ZswVte2beByL2SD1C1cnEk");
+            entity1.setPublicKey("AAA5HZLkL5tat8aEa8egckNNeuFHWvLSCvC5v2v7N8WPSpQT2FzPM");
+            entity1.setAccount("aaauser2");
+            entity1.setPassword("123456");
+            DBManager.getInstance().saveKeyInfo(entity1);
+            keyInfoEntityList.add(entity);
+            keyInfoEntityList.add(entity1);
+            ChainApplication.getInstance().setKeyInfoEntity(keyInfoEntityList);
+        } else {
+            ChainApplication.getInstance().setKeyInfoEntity(keyInfoEntityList);
+        }
     }
 
     @Override public void onClick(View v) {
@@ -102,6 +126,7 @@ public class SplashActivity extends BaseActivity {
                                         entity.setPublicKey(stringArray[1]);
 
                                         DBManager.getInstance().saveKeyInfo(entity);
+                                        ChainApplication.getInstance().addKeyInfoEntity(entity);
                                         runOnUiThread(new Runnable() {
                                             @Override public void run() {
                                                 dialog.dismiss();

@@ -14,7 +14,7 @@ import org.aaa.chain.R;
 import org.aaa.chain.entities.ResumeRequestEntity;
 import org.aaa.chain.views.CommonPopupWindow;
 
-public class MyHomeDetailActivity extends BaseActivity implements CommonPopupWindow.TransferListener{
+public class MyHomeDetailActivity extends BaseActivity implements CommonPopupWindow.TransferListener {
 
     private List<ResumeRequestEntity> dataEntities = new ArrayList<>();
     private TextView tvBalance;
@@ -34,12 +34,12 @@ public class MyHomeDetailActivity extends BaseActivity implements CommonPopupWin
             $(R.id.cl_my_home_detail_account).setVisibility(View.VISIBLE);
             $(R.id.tv_change_phone_number).setOnClickListener(this);
             TextView account = $(R.id.tv_account_name);
-            account.setText(ChainApplication.getInstance().getBaseInfo().getDocs().get(0).getAccount());
+            account.setText(Constant.getCurrentAccount());
         } else if (getResources().getString(R.string.myWallet).equals(title)) {
             $(R.id.cl_my_home_detail_wallet).setVisibility(View.VISIBLE);
             tvBalance = $(R.id.tv_available_balance);
-            ((TextView) $(R.id.tv_wallet_address)).setText(Constant.getPublicKey());
-            JSInteraction.getInstance().getBalance(Constant.getAccount(), new JSInteraction.JSCallBack() {
+            ((TextView) $(R.id.tv_wallet_address)).setText(Constant.getCurrentPublicKey());
+            JSInteraction.getInstance().getBalance(Constant.getCurrentAccount(), new JSInteraction.JSCallBack() {
                 @Override public void onSuccess(String... stringArray) {
                     runOnUiThread(new Runnable() {
                         @Override public void run() {
@@ -87,8 +87,8 @@ public class MyHomeDetailActivity extends BaseActivity implements CommonPopupWin
 
             case R.id.tv_transfer_accounts:
                 CommonPopupWindow commonPopupWindow = new CommonPopupWindow(MyHomeDetailActivity.this);
-               commonPopupWindow.pupupWindowTransferAccounts(tvBalance.getText().toString());
-               commonPopupWindow.setTransferListener(this);
+                commonPopupWindow.pupupWindowTransferAccounts(tvBalance.getText().toString());
+                commonPopupWindow.setTransferListener(this);
                 break;
             case R.id.rl_my_resume:
 
@@ -110,7 +110,7 @@ public class MyHomeDetailActivity extends BaseActivity implements CommonPopupWin
     }
 
     @Override public void transferSuccess() {
-        JSInteraction.getInstance().getBalance(Constant.getAccount(), new JSInteraction.JSCallBack() {
+        JSInteraction.getInstance().getBalance(Constant.getCurrentAccount(), new JSInteraction.JSCallBack() {
             @Override public void onSuccess(String... stringArray) {
                 runOnUiThread(new Runnable() {
                     @Override public void run() {

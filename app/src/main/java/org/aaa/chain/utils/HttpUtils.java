@@ -92,7 +92,7 @@ public class HttpUtils {
         String url = "http://47.99.114.35:9527/dbnode/find?page=1&pageSize=1&order=-1";
         JSONObject object = new JSONObject();
         try {
-            object.put("account", Constant.getAccount());
+            object.put("account", Constant.getCurrentAccount());
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -107,7 +107,7 @@ public class HttpUtils {
             object1.put("$gte", 0);
             object.put("size", object1);
             JSONObject object2 = new JSONObject();
-            object2.put("$ne", Constant.getAccount());
+            object2.put("$ne", Constant.getCurrentAccount());
             object.put("account", object2);
             if (content != null) {
                 JSONObject object3 = new JSONObject();

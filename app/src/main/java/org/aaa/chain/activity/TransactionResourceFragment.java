@@ -74,36 +74,37 @@ public class TransactionResourceFragment extends BaseFragment implements BindVie
             }
 
             @Override public void onResponse(Call call, Response response) {
+                try {
+                    String json = response.body().string();
+                    if (response.code() == 200) {
 
-                if (response.code() == 200) {
-                    try {
-                        orderResponseEntity = new Gson().fromJson(response.body().string(), OrderResponseEntity.class);
+                        orderResponseEntity = new Gson().fromJson(json, OrderResponseEntity.class);
                         if (orderResponseEntity.getData() == null || orderResponseEntity.getData().size() == 0) {
                             return;
                         }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    getActivity().runOnUiThread(new Runnable() {
-                        @Override public void run() {
-                            swipeRefreshLayout.setRefreshing(false);
-                            Toast.makeText(getActivity(), "order refresh successful:" + response.code(), Toast.LENGTH_SHORT).show();
-                            for (OrderDataEntity orderDataEntity : orderResponseEntity.getData()) {
-                                if ((orderDataEntity.getSeller().equals(Constant.getAccount()) || orderDataEntity.getBuyer()
-                                        .equals(Constant.getAccount())) && orderDataEntity.getStatus() != 0) {
-                                    list.add(orderDataEntity);
+                        getActivity().runOnUiThread(new Runnable() {
+                            @Override public void run() {
+                                swipeRefreshLayout.setRefreshing(false);
+                                Toast.makeText(getActivity(), "order refresh successful:" + response.code(), Toast.LENGTH_SHORT).show();
+                                for (OrderDataEntity orderDataEntity : orderResponseEntity.getData()) {
+                                    if ((orderDataEntity.getSeller().equals(Constant.getCurrentAccount()) || orderDataEntity.getBuyer()
+                                            .equals(Constant.getCurrentAccount())) && orderDataEntity.getStatus() != 0) {
+                                        list.add(orderDataEntity);
+                                    }
                                 }
+                                adapter.updateList(false);
+                                adapter.notifyDataSetChanged();
                             }
-                            adapter.updateList(false);
-                            adapter.notifyDataSetChanged();
-                        }
-                    });
-                } else {
-                    getActivity().runOnUiThread(new Runnable() {
-                        @Override public void run() {
-                            Toast.makeText(getActivity(), "order refresh failure:" + response.code(), Toast.LENGTH_SHORT).show();
-                        }
-                    });
+                        });
+                    } else {
+                        getActivity().runOnUiThread(new Runnable() {
+                            @Override public void run() {
+                                Toast.makeText(getActivity(), "order refresh failure:" + response.code(), Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
         });
@@ -114,7 +115,7 @@ public class TransactionResourceFragment extends BaseFragment implements BindVie
     }
 
     @Override public void bindViewHolder(BaseViewHolder holder, OrderDataEntity dataEntity) {
-        if (dataEntity.getBuyer().equals(Constant.getAccount())) {
+        if (dataEntity.getBuyer().equals(Constant.getCurrentAccount())) {
             ((TextView) holder.getView(R.id.tv_company_notice)).setText("waiting(" + dataEntity.getSeller() + ")authorization");
         } else {
             ((TextView) holder.getView(R.id.tv_company_notice)).setText("need(" + dataEntity.getSeller() + ")authorization");
@@ -127,19 +128,19 @@ public class TransactionResourceFragment extends BaseFragment implements BindVie
         if (dataEntity.getStatus() == 0) {
             ((TextView) holder.getView(R.id.tv_resume_status)).setText("buyer created");
         } else if (dataEntity.getStatus() == 1) {
-            if (dataEntity.getBuyer().equals(Constant.getAccount())) {
+            if (dataEntity.getBuyer().equals(Constant.getCurrentAccount())) {
                 ((TextView) holder.getView(R.id.tv_resume_status)).setText(getResources().getString(R.string.waiting_seller_authorization));
             } else {
                 ((TextView) holder.getView(R.id.tv_resume_status)).setText(getResources().getString(R.string.waiting_buyer_authorization));
             }
         } else if (dataEntity.getStatus() == 2) {
-            if (dataEntity.getBuyer().equals(Constant.getAccount())) {
+            if (dataEntity.getBuyer().equals(Constant.getCurrentAccount())) {
                 ((TextView) holder.getView(R.id.tv_resume_status)).setText(getResources().getString(R.string.waiting_receive));
             } else {
                 ((TextView) holder.getView(R.id.tv_resume_status)).setText(getResources().getString(R.string.authorization_successful));
             }
         } else {
-            if (dataEntity.getBuyer().equals(Constant.getAccount())) {
+            if (dataEntity.getBuyer().equals(Constant.getCurrentAccount())) {
                 ((TextView) holder.getView(R.id.tv_resume_status)).setText(getResources().getString(R.string.resume_received));
             } else {
                 ((TextView) holder.getView(R.id.tv_resume_status)).setText(getResources().getString(R.string.transaction_done));

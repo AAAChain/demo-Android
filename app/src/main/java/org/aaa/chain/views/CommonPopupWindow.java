@@ -23,6 +23,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import java.text.DecimalFormat;
 import java.util.List;
+import org.aaa.chain.Constant;
 import org.aaa.chain.JSInteraction;
 import org.aaa.chain.R;
 import org.aaa.chain.adapter.BaseViewHolder;
@@ -150,37 +151,44 @@ public class CommonPopupWindow implements View.OnClickListener {
             case R.id.btn_transfer_accounts:
                 if (TextUtils.isEmpty(etTransferAmount.getText().toString())) {
                     Toast.makeText(context, "please input amount", Toast.LENGTH_SHORT).show();
+                    return;
                 } else if (TextUtils.isEmpty(etWalletAddress.getText().toString())) {
                     Toast.makeText(context, "please input account", Toast.LENGTH_SHORT).show();
+                    return;
                 } else if ((TextUtils.isEmpty(etAccountPassword.getText().toString()))) {
                     Toast.makeText(context, "please input password", Toast.LENGTH_SHORT).show();
+                    return;
+                } else if (!etAccountPassword.getText().toString().equals(Constant.getPassword())) {
+                    Toast.makeText(context, "password is wrong", Toast.LENGTH_SHORT).show();
+                    return;
                 }
 
-                ProgressDialog dialog = ProgressDialog.show(context,"waiting...","transfer...");
+                ProgressDialog dialog = ProgressDialog.show(context, "waiting...", "transfer...");
                 DecimalFormat decimalFormat = new DecimalFormat("##0.0000");
                 String dd = decimalFormat.format(Float.valueOf(etTransferAmount.getText().toString()));
                 JSInteraction.getInstance()
-                        .transfer("aaauser1", etWalletAddress.getText().toString(), dd + " AAA", "", new JSInteraction.JSCallBack() {
-                            @Override public void onSuccess(String... stringArray) {
+                        .transfer(Constant.getCurrentAccount(), etWalletAddress.getText().toString(), dd + " AAA", "",
+                                new JSInteraction.JSCallBack() {
+                                    @Override public void onSuccess(String... stringArray) {
 
-                                Toast.makeText(context, "transfer successful", Toast.LENGTH_SHORT).show();
-                                ((Activity) context).runOnUiThread(new Runnable() {
-                                    @Override public void run() {
-                                        dialog.dismiss();
-                                        popupWindow.dismiss();
-                                        listener.transferSuccess();
+                                        Toast.makeText(context, "transfer successful", Toast.LENGTH_SHORT).show();
+                                        ((Activity) context).runOnUiThread(new Runnable() {
+                                            @Override public void run() {
+                                                dialog.dismiss();
+                                                popupWindow.dismiss();
+                                                listener.transferSuccess();
+                                            }
+                                        });
+                                    }
+
+                                    @Override public void onProgress() {
+
+                                    }
+
+                                    @Override public void onError(String error) {
+                                        Toast.makeText(context, "transfer error", Toast.LENGTH_SHORT).show();
                                     }
                                 });
-                            }
-
-                            @Override public void onProgress() {
-
-                            }
-
-                            @Override public void onError(String error) {
-                                Toast.makeText(context, "transfer error", Toast.LENGTH_SHORT).show();
-                            }
-                        });
                 break;
             case R.id.tv_close:
                 popupWindow.dismiss();
@@ -194,9 +202,10 @@ public class CommonPopupWindow implements View.OnClickListener {
 
                 break;
         }
+        JSInteraction.getInstance().removeListener();
     }
 
-    TransferListener listener;
+    private TransferListener listener;
 
     public void setTransferListener(TransferListener listener) {
         this.listener = listener;

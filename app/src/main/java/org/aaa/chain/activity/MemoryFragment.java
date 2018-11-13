@@ -1,13 +1,14 @@
 package org.aaa.chain.activity;
 
+import android.app.ProgressDialog;
 import android.support.v4.widget.ContentLoadingProgressBar;
 import android.text.TextUtils;
-import android.view.TextureView;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+import org.aaa.chain.Constant;
 import org.aaa.chain.JSInteraction;
 import org.aaa.chain.R;
 
@@ -58,6 +59,26 @@ public class MemoryFragment extends BaseFragment {
         btnSell.setOnClickListener(this);
         btnConfirmBuy.setOnClickListener(this);
 
+        JSInteraction.getInstance().getRamPrice(new JSInteraction.JSCallBack() {
+            @Override public void onSuccess(String... stringArray) {
+
+                getActivity().runOnUiThread(new Runnable() {
+                    @Override public void run() {
+
+                        tvCurrentPrice.setText(String.format(getResources().getString(R.string.current_price), stringArray[0]));
+                    }
+                });
+            }
+
+            @Override public void onProgress() {
+
+            }
+
+            @Override public void onError(String error) {
+
+            }
+        });
+
         tvMemoryUsed.setText(String.format(getActivity().getResources().getString(R.string.used), activity.ramUsage) + "kb");
         tvMemoryAvailable.setText(String.format(getActivity().getResources().getString(R.string.available), activity.ramAvailable) + "kb");
         pbMemory.setProgress(Double.valueOf(activity.ramUsage).intValue() / Double.valueOf(activity.ramQuota).intValue());
@@ -90,17 +111,22 @@ public class MemoryFragment extends BaseFragment {
                 String memory = etBuyMemory.getText().toString();
                 String account = etRecAccount.getText().toString();
 
+                String currentPrice = tvCurrentPrice.getText().toString();
+
                 if (TextUtils.isEmpty(memory) || TextUtils.isEmpty(account)) {
                     Toast.makeText(getActivity(), "not null", Toast.LENGTH_SHORT).show();
                     return;
                 }
-
+                double bytenum =
+                        Double.valueOf(memory) / Double.valueOf(currentPrice.substring(currentPrice.indexOf(" "), currentPrice.lastIndexOf(" ")));
+                ProgressDialog dialog = ProgressDialog.show(getActivity(), "waiting...", "loading...");
                 if (type == 0) {
 
-                } else {
-                    JSInteraction.getInstance().sellram(account, Integer.valueOf(memory), new JSInteraction.JSCallBack() {
+                    JSInteraction.getInstance().buyram(Constant.getCurrentAccount(), account, Math.round(bytenum), new JSInteraction.JSCallBack() {
                         @Override public void onSuccess(String... stringArray) {
 
+                            Toast.makeText(getActivity(), "buy success", Toast.LENGTH_SHORT).show();
+                            dialog.dismiss();
                         }
 
                         @Override public void onProgress() {
@@ -108,7 +134,24 @@ public class MemoryFragment extends BaseFragment {
                         }
 
                         @Override public void onError(String error) {
+                            Toast.makeText(getActivity(), "buy failure", Toast.LENGTH_SHORT).show();
+                            dialog.dismiss();
+                        }
+                    });
+                } else {
+                    JSInteraction.getInstance().sellram(account, Math.round(bytenum), new JSInteraction.JSCallBack() {
+                        @Override public void onSuccess(String... stringArray) {
+                            Toast.makeText(getActivity(), "sell success", Toast.LENGTH_SHORT).show();
+                            dialog.dismiss();
+                        }
 
+                        @Override public void onProgress() {
+
+                        }
+
+                        @Override public void onError(String error) {
+                            Toast.makeText(getActivity(), "sell failure", Toast.LENGTH_SHORT).show();
+                            dialog.dismiss();
                         }
                     });
                 }

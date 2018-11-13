@@ -16,10 +16,15 @@ import android.widget.ListPopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 import com.squareup.leakcanary.RefWatcher;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import org.aaa.chain.ChainApplication;
 import org.aaa.chain.Constant;
+import org.aaa.chain.JSInteraction;
 import org.aaa.chain.R;
+import org.aaa.chain.db.DBManager;
+import org.aaa.chain.entities.KeyInfoEntity;
 
 public class LoginActivity extends BaseActivity {
 
@@ -27,11 +32,12 @@ public class LoginActivity extends BaseActivity {
     private EditText etKey;
     private ListPopupWindow listPopupWindow;
 
-    private String[] keysName = { Constant.getAccount(), Constant.getAnotherAccount() };
-    private String[] keys = { Constant.getPrivateKey(), Constant.getAnotherPrivateKey() };
-
     private String account;
     private String privatekey;
+
+    private List<String> keyAccounts = new ArrayList<>();
+    private List<String> keys = new ArrayList<>();
+    boolean isImport;
 
     @Override public int initLayout() {
         return R.layout.activity_login;
@@ -42,16 +48,21 @@ public class LoginActivity extends BaseActivity {
         etKey = $(R.id.et_key);
         Button btnLogin = $(R.id.btn_login);
 
-        boolean isImport = getIntent().getBooleanExtra("import", false);
+        isImport = getIntent().getBooleanExtra("import", false);
         if (isImport) {
             tvKey.setVisibility(View.GONE);
+        }
+
+        for (KeyInfoEntity entity : ChainApplication.getInstance().getKeyInfoEntity()) {
+            keyAccounts.add(entity.getAccount());
+            keys.add(entity.getPrivateKey());
         }
 
         account = getIntent().getStringExtra("account");
         privatekey = getIntent().getStringExtra("privatekey");
         if (!TextUtils.isEmpty(account) && !TextUtils.isEmpty(privatekey)) {
-            keysName = new String[] { account, Constant.getAccount() };
-            keys = new String[] { privatekey, Constant.getPrivateKey() };
+            tvKey.setText(account);
+            etKey.setText(privatekey);
         }
 
         Locale locale;
@@ -71,20 +82,15 @@ public class LoginActivity extends BaseActivity {
         tvKey.setOnClickListener(this);
         btnLogin.setOnClickListener(this);
         listPopupWindow = new ListPopupWindow(this);
-        ArrayAdapter adapter = new ArrayAdapter<>(this, R.layout.listpopupwindow_item, keysName);
+        ArrayAdapter adapter = new ArrayAdapter<>(this, R.layout.listpopupwindow_item, keyAccounts.toArray(new String[keyAccounts.size()]));
         listPopupWindow.setAdapter(adapter);
         listPopupWindow.setWidth(LinearLayout.LayoutParams.WRAP_CONTENT);
         listPopupWindow.setHeight(LinearLayout.LayoutParams.WRAP_CONTENT);
         listPopupWindow.setModal(true);
         listPopupWindow.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                tvKey.setText(keysName[position]);
-                etKey.setText(keys[position]);
-                if (position == 0) {
-                    ChainApplication.getInstance().isAccount1 = true;
-                } else {
-                    ChainApplication.getInstance().isAccount1 = false;
-                }
+                tvKey.setText(keyAccounts.get(position));
+                etKey.setText(keys.get(position));
                 listPopupWindow.dismiss();
             }
         });
@@ -103,7 +109,39 @@ public class LoginActivity extends BaseActivity {
 
             case R.id.btn_login:
                 if (!TextUtils.isEmpty(etKey.getText())) {
-                    startActivity(MainActivity.class, null);
+                    if (isImport) {
+                        JSInteraction.getInstance().getPublicKey(etKey.getText().toString(), new JSInteraction.JSCallBack() {
+                            @Override public void onSuccess(String... stringArray) {
+                                KeyInfoEntity entity = new KeyInfoEntity();
+                                entity.setPublicKey(stringArray[0]);
+                                entity.setPrivateKey(etKey.getText().toString());
+                                DBManager.getInstance().saveKeyInfo(entity);
+                                ChainApplication.getInstance().addKeyInfoEntity(entity);
+
+                                Constant.setCurrentPrivateKey(entity.getPrivateKey());
+                                Constant.setCurrentPublicKey(entity.getPublicKey());
+                                startActivity(MainActivity.class, null);
+                            }
+
+                            @Override public void onProgress() {
+
+                            }
+
+                            @Override public void onError(String error) {
+
+                            }
+                        });
+                    } else {
+                        for (KeyInfoEntity entity : ChainApplication.getInstance().getKeyInfoEntity()) {
+                            if (entity.getPrivateKey().equals(etKey.getText().toString())) {
+                                Constant.setCurrentPublicKey(entity.getPublicKey());
+                                Constant.setCurrentPrivateKey(entity.getPrivateKey());
+                                Constant.setCurrentAccount(entity.getAccount());
+                                Constant.setPassword(entity.getPassword());
+                            }
+                        }
+                        startActivity(MainActivity.class, null);
+                    }
                 } else {
                     Toast.makeText(LoginActivity.this, getResources().getString(R.string.input_secret_key), Toast.LENGTH_SHORT).show();
                 }

@@ -157,10 +157,21 @@ import org.json.JSONObject;
         webView.loadUrl(content);
     }
 
+    public void buyram(String account, String receiveAccount, long bytesnum, JSCallBack callBack) {
+        this.listener = callBack;
+        String content = "javascript:buyram(" + "'" + account + "'" + "," + "'" + receiveAccount + "'" + "," + bytesnum + ")";
+        webView.loadUrl(content);
+    }
+
     public void sellram(String account, long bytesnum, JSCallBack callback) {
         this.listener = callback;
-        listener.onProgress();
-        String content = "javascript:sellram(" + "'" + account + "'" + "," + "'" + bytesnum + "'" + ")";
+        String content = "javascript:sellram(" + "'" + account + "'" + "," + bytesnum + ")";
+        webView.loadUrl(content);
+    }
+
+    public void getRamPrice(JSCallBack callback) {
+        this.listener = callback;
+        String content = "javascript:getRamPrice()";
         webView.loadUrl(content);
     }
 
@@ -255,6 +266,51 @@ import org.json.JSONObject;
                 listener.onError(error);
                 Log.i("info", "getAccountInfo failure:" + error);
             }
+        }
+
+        @JavascriptInterface public void mortgageSuccess(String result) {
+            Log.i("info", "mortgageSuccess:" + result);
+            listener.onSuccess(result);
+        }
+
+        @JavascriptInterface public void mortgageError(String error) {
+            Log.i("info", "mortgageError:" + error);
+            listener.onError(error);
+        }
+
+        @JavascriptInterface public void redemptionSuccess(String result) {
+            Log.i("info", "redemptionSuccess:" + result);
+            listener.onSuccess(result);
+        }
+
+        @JavascriptInterface public void redemptionError(String error) {
+            Log.i("info", "redemptionError:" + error);
+            listener.onError(error);
+        }
+
+        @JavascriptInterface public void buyramSuccess(String result) {
+            Log.i("info", "buyramSuccess:" + result);
+            listener.onSuccess(result);
+        }
+
+        @JavascriptInterface public void buyramError(String error) {
+            Log.i("info", "buyramError:" + error);
+            listener.onError(error);
+        }
+
+        @JavascriptInterface public void sellramSuccess(String result) {
+            Log.i("info", "sellramSuccess:" + result);
+            listener.onSuccess(result);
+        }
+
+        @JavascriptInterface public void sellramError(String error) {
+            Log.i("info", "sellramError:" + error);
+            listener.onError(error);
+        }
+
+        @JavascriptInterface public void getRamPrice(String ramPrice, String error) {
+            Log.i("info", "getRamPrice:" + ramPrice);
+            listener.onSuccess(ramPrice);
         }
     }
 

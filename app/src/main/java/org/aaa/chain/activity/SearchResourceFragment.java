@@ -160,7 +160,7 @@ public class SearchResourceFragment extends BaseFragment implements BindViewHold
             @Override public void onClick(View v) {
                 startActivity(new Intent(getActivity(), ResumeDetailsActivity.class).putExtra("type", 0)
                         .putExtra("price", dataEntity.getExtra().getPrice())
-                        .putExtra("name", dataEntity.getAccount())
+                        .putExtra("seller", dataEntity.getAccount())
                         .putExtra("hashId", dataEntity.getHashId()));
             }
         });

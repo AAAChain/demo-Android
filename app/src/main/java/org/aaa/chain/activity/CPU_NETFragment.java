@@ -1,5 +1,6 @@
 package org.aaa.chain.activity;
 
+import android.app.ProgressDialog;
 import android.support.v4.widget.ContentLoadingProgressBar;
 import android.text.TextUtils;
 import android.view.View;
@@ -77,7 +78,7 @@ public class CPU_NETFragment extends BaseFragment {
         pbCalResource.setProgress(Double.valueOf(activity.cpuUsed).intValue() / Double.valueOf(activity.cpuMax).intValue());
 
         if (activity.cpuAmount != null || activity.netAmount != null) {
-            tvRefundAmount.setText(getAmount(activity.cpuAmount, activity.netAmount));
+            tvRefundAmount.setText(getAmount(activity.cpuAmount, activity.netAmount) + " AAA");
         } else {
             tvRefundAmount.setText("0 AAA");
         }
@@ -137,11 +138,14 @@ public class CPU_NETFragment extends BaseFragment {
                     return;
                 }
 
+                ProgressDialog dialog = ProgressDialog.show(getActivity(), "waiting...", "loading...");
                 if (type == 0) {
                     JSInteraction.getInstance()
-                            .mortgage(Constant.getAccount(), account, getPrice(netMortgage), getPrice(calMortgage), new JSInteraction.JSCallBack() {
+                            .mortgage(Constant.getCurrentAccount(), account, getPrice(netMortgage), getPrice(calMortgage), new JSInteraction.JSCallBack() {
                                 @Override public void onSuccess(String... stringArray) {
 
+                                    Toast.makeText(getActivity(), "mortgage success", Toast.LENGTH_SHORT).show();
+                                    dialog.dismiss();
                                 }
 
                                 @Override public void onProgress() {
@@ -149,14 +153,16 @@ public class CPU_NETFragment extends BaseFragment {
                                 }
 
                                 @Override public void onError(String error) {
-
+                                    Toast.makeText(getActivity(), "mortgage failure", Toast.LENGTH_SHORT).show();
+                                    dialog.dismiss();
                                 }
                             });
                 } else {
                     JSInteraction.getInstance()
-                            .redemption(Constant.getAccount(), account, getPrice(netMortgage), getPrice(calMortgage), new JSInteraction.JSCallBack() {
+                            .redemption(Constant.getCurrentAccount(), account, getPrice(netMortgage), getPrice(calMortgage), new JSInteraction.JSCallBack() {
                                 @Override public void onSuccess(String... stringArray) {
-
+                                    Toast.makeText(getActivity(), "redemption success", Toast.LENGTH_SHORT).show();
+                                    dialog.dismiss();
                                 }
 
                                 @Override public void onProgress() {
@@ -164,7 +170,8 @@ public class CPU_NETFragment extends BaseFragment {
                                 }
 
                                 @Override public void onError(String error) {
-
+                                    Toast.makeText(getActivity(), "redemption failure", Toast.LENGTH_SHORT).show();
+                                    dialog.dismiss();
                                 }
                             });
                 }

@@ -133,11 +133,21 @@ confirmOrder = function(buyer,orderid) {
 getAccountInfo = function(account){
 
   aaa.getAccount({account_name: account}, function (error, result) {
-          console.log("error:"+error);
-          console.log("result:"+JSON.stringify(result))
           window.aaaChain.getAccountInfo(JSON.stringify(result),error)
       })
 }
+
+
+getRamPrice = function(){
+
+  aaa.getTableRows({"json": true,"code": "eosio","scope":"eosio","table":"rammarket"},function (error, result) {
+      const quote = result.rows[0].quote.balance.substring(0,result.rows[0].quote.balance.lastIndexOf(" "));
+      const base = result.rows[0].base.balance.substring(0,result.rows[0].base.balance.lastIndexOf(" "));
+
+      window.aaaChain.getRamPrice(parseFloat(quote/(base/1024)).toFixed(6),error)
+  })
+}
+
 
 //抵押
 mortgage = function(account,receiveAccount,netq,cpuq){
@@ -150,7 +160,11 @@ mortgage = function(account,receiveAccount,netq,cpuq){
       stake_cpu_quantity:cpuq,
       transfer:0
     })
-  )
+  ).then(result=>
+           window.aaaChain.mortgageSuccess(JSON.stringify(result))
+       ).catch(error=>
+           window.aaaChain.mortgageError(error.toString())
+       )
 }
 
 
@@ -164,6 +178,29 @@ redemption = function(account,receiveAccount,netq,cpuq){
           unstake_net_quantity: netq,
           unstake_cpu_quantity: cpuq
       })
+  }).then(result=>
+            window.aaaChain.redemptionSuccess(JSON.stringify(result))
+        ).catch(error=>
+        window.aaaChain.redemptionError(error.toString())
+        )
+
+}
+
+  /**购买**/
+buyram = function(account,receiveAccount,bytesnum){
+
+  aaa.transaction(tr => {
+      tr.buyrambytes({
+          payer: account,
+          receiver: receiveAccount,
+          bytes: bytesnum
+      })
+  }).then(result=>{
+
+    window.aaaChain.buyramSuccess(JSON.stringify(result))
+  }).catch(error=>{
+  console.log("buy ram error:"+error)
+    window.aaaChain.buyramError(error.toString())
   })
 
 }
@@ -177,6 +214,9 @@ sellram = function(account,bytesnum){
           account: account,
           bytes: bytesnum
       })
-  })
-
+  }).then(result=>
+        window.aaaChain.sellramSuccess(JSON.stringify(result))
+    ).catch(error=>
+    window.aaaChain.sellramError(error.toString())
+    )
 }

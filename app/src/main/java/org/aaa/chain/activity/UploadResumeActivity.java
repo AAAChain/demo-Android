@@ -135,8 +135,8 @@ public class UploadResumeActivity extends BaseActivity implements ProgressRespon
                 }
                 try {
                     File file = PBEUtils.getInstance()
-                            .encryptFile(UploadResumeActivity.this, imagePath, org.aaa.chain.Constant.getPrivateKey(),
-                                    org.aaa.chain.Constant.getPublicKey().getBytes());
+                            .encryptFile(UploadResumeActivity.this, imagePath, org.aaa.chain.Constant.getCurrentPrivateKey(),
+                                    org.aaa.chain.Constant.getCurrentPublicKey().getBytes());
                     Log.i("info", "file path:" + file.getAbsolutePath());
                     requestEntity.setFilepath(file.getAbsolutePath());
                     requestEntity.setFilename(file.getName());
@@ -163,7 +163,7 @@ public class UploadResumeActivity extends BaseActivity implements ProgressRespon
 
     private void modifyInfo(String hashId, String modifyContent) {
         ProgressDialog dialog = ProgressDialog.show(UploadResumeActivity.this, "waiting...", "modifying...");
-        JSInteraction.getInstance().getSignature(modifyContent, org.aaa.chain.Constant.getPrivateKey(), new JSInteraction.JSCallBack() {
+        JSInteraction.getInstance().getSignature(modifyContent, org.aaa.chain.Constant.getCurrentPrivateKey(), new JSInteraction.JSCallBack() {
             @Override public void onSuccess(String... stringArray) {
                 HttpUtils.getInstance().modifyCustomInfo(hashId, stringArray[0], modifyContent, new HttpUtils.ServerCallBack() {
                     @Override public void onFailure(Call call, IOException e) {
@@ -234,9 +234,9 @@ public class UploadResumeActivity extends BaseActivity implements ProgressRespon
         } catch (JSONException e) {
             e.printStackTrace();
         }
-        requestEntity.setAccount(org.aaa.chain.Constant.getAccount());
+        requestEntity.setAccount(org.aaa.chain.Constant.getCurrentAccount());
 
-        JSInteraction.getInstance().getSignature(object.toString(), org.aaa.chain.Constant.getPrivateKey(), new JSInteraction.JSCallBack() {
+        JSInteraction.getInstance().getSignature(object.toString(), org.aaa.chain.Constant.getCurrentPrivateKey(), new JSInteraction.JSCallBack() {
             @Override public void onSuccess(String... stringArray) {
                 requestEntity.setSignature(stringArray[0]);
                 runOnUiThread(new Runnable() {
