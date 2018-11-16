@@ -19,6 +19,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import okhttp3.Call;
 import okhttp3.Response;
 import org.aaa.chain.ChainApplication;
@@ -122,7 +123,7 @@ public class SearchResourceFragment extends BaseFragment implements BindViewHold
                     try {
                         searchResponse = new Gson().fromJson(response.body().string(), SearchResponseEntity.class);
                         list.addAll(searchResponse.getDocs());
-                        getActivity().runOnUiThread(new Runnable() {
+                        Objects.requireNonNull(getActivity()).runOnUiThread(new Runnable() {
                             @Override public void run() {
                                 if (page > 1 && page <= searchResponse.getPages()) {
                                     adapter.updateList(true);

@@ -4,6 +4,7 @@ import android.app.ProgressDialog;
 import android.support.v4.widget.ContentLoadingProgressBar;
 import android.text.TextUtils;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -12,8 +13,10 @@ import java.text.DecimalFormat;
 import org.aaa.chain.Constant;
 import org.aaa.chain.JSInteraction;
 import org.aaa.chain.R;
+import org.json.JSONException;
+import org.json.JSONObject;
 
-public class CPU_NETFragment extends BaseFragment {
+public class CPU_NETFragment extends BaseFragment implements ResourceManagementActivity.ResourceListener {
 
     private TextView tvCalResourceUsed;
     private TextView tvCalResourceAvailable;
@@ -37,6 +40,8 @@ public class CPU_NETFragment extends BaseFragment {
     private TextView tvBalance;
 
     private int type = 0;
+
+    private ProgressDialog dialog;
 
     @Override public int initLayout() {
         return R.layout.fragment_cpu_net;
@@ -69,12 +74,14 @@ public class CPU_NETFragment extends BaseFragment {
         btnRedemption.setOnClickListener(this);
         btnConfirm.setOnClickListener(this);
 
+        activity.setResourceListener(this);
+
         tvNetResourceAvailable.setText(String.format(getActivity().getResources().getString(R.string.available), activity.netAvailable) + "kb");
         tvNetResourceUsed.setText(String.format(getActivity().getResources().getString(R.string.used), activity.netUsed) + "kb");
         pbNetResource.setProgress(Double.valueOf(activity.netUsed).intValue() / Double.valueOf(activity.netMax).intValue());
 
-        tvCalResourceAvailable.setText(String.format(getResources().getString(R.string.available), activity.cpuAvailable) + "kb");
-        tvCalResourceUsed.setText(String.format(getResources().getString(R.string.used), activity.cpuUsed) + "kb");
+        tvCalResourceAvailable.setText(String.format(getResources().getString(R.string.available), activity.cpuAvailable) + "ms");
+        tvCalResourceUsed.setText(String.format(getResources().getString(R.string.used), activity.cpuUsed) + "ms");
         pbCalResource.setProgress(Double.valueOf(activity.cpuUsed).intValue() / Double.valueOf(activity.cpuMax).intValue());
 
         if (activity.cpuAmount != null || activity.netAmount != null) {
@@ -82,6 +89,8 @@ public class CPU_NETFragment extends BaseFragment {
         } else {
             tvRefundAmount.setText("0 AAA");
         }
+
+        etRecAccount.setText(Constant.getCurrentAccount());
     }
 
     private String getPrice(String price) {
@@ -122,6 +131,9 @@ public class CPU_NETFragment extends BaseFragment {
                 tvCalRedemption.setVisibility(View.VISIBLE);
                 tvNetRedemption.setVisibility(View.VISIBLE);
 
+                tvNetRedemption.setText(activity.netRedemption);
+                tvCalRedemption.setText(activity.cpuRedemption);
+
                 tvCalMortgage.setText(getResources().getString(R.string.calculation_redemption));
                 tvNetMortgage.setText(getResources().getString(R.string.network_redemption));
                 type = 1;
@@ -134,48 +146,127 @@ public class CPU_NETFragment extends BaseFragment {
                 String netMortgage = etNetMortgage.getText().toString();
 
                 if (TextUtils.isEmpty(account) || TextUtils.isEmpty(calMortgage) || TextUtils.isEmpty(netMortgage)) {
-                    Toast.makeText(getActivity(), "not null", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getActivity(), getResources().getString(R.string.not_null), Toast.LENGTH_SHORT).show();
                     return;
                 }
 
-                ProgressDialog dialog = ProgressDialog.show(getActivity(), "waiting...", "loading...");
+                dialog = ProgressDialog.show(getActivity(), getResources().getString(R.string.waiting), getResources().getString(R.string.loading));
                 if (type == 0) {
                     JSInteraction.getInstance()
-                            .mortgage(Constant.getCurrentAccount(), account, getPrice(netMortgage), getPrice(calMortgage), new JSInteraction.JSCallBack() {
-                                @Override public void onSuccess(String... stringArray) {
+                            .mortgage(Constant.getCurrentAccount(), account, getPrice(netMortgage), getPrice(calMortgage),
+                                    new JSInteraction.JSCallBack() {
+                                        @Override public void onSuccess(String... stringArray) {
 
-                                    Toast.makeText(getActivity(), "mortgage success", Toast.LENGTH_SHORT).show();
-                                    dialog.dismiss();
-                                }
+                                            activity.runOnUiThread(new Runnable() {
+                                                @Override public void run() {
+                                                    activity.getAccountInfo();
+                                                }
+                                            });
+                                        }
 
-                                @Override public void onProgress() {
+                                        @Override public void onProgress() {
 
-                                }
+                                        }
 
-                                @Override public void onError(String error) {
-                                    Toast.makeText(getActivity(), "mortgage failure", Toast.LENGTH_SHORT).show();
-                                    dialog.dismiss();
-                                }
-                            });
+                                        @Override public void onError(String error) {
+                                            Toast.makeText(getActivity(), getResources().getString(R.string.mortgage_failure), Toast.LENGTH_SHORT)
+                                                    .show();
+                                            dialog.dismiss();
+                                        }
+                                    });
                 } else {
                     JSInteraction.getInstance()
-                            .redemption(Constant.getCurrentAccount(), account, getPrice(netMortgage), getPrice(calMortgage), new JSInteraction.JSCallBack() {
-                                @Override public void onSuccess(String... stringArray) {
-                                    Toast.makeText(getActivity(), "redemption success", Toast.LENGTH_SHORT).show();
-                                    dialog.dismiss();
-                                }
+                            .redemption(Constant.getCurrentAccount(), account, getPrice(netMortgage), getPrice(calMortgage),
+                                    new JSInteraction.JSCallBack() {
+                                        @Override public void onSuccess(String... stringArray) {
+                                            activity.runOnUiThread(new Runnable() {
+                                                @Override public void run() {
+                                                    activity.getAccountInfo();
+                                                }
+                                            });
+                                        }
 
-                                @Override public void onProgress() {
+                                        @Override public void onProgress() {
 
-                                }
+                                        }
 
-                                @Override public void onError(String error) {
-                                    Toast.makeText(getActivity(), "redemption failure", Toast.LENGTH_SHORT).show();
-                                    dialog.dismiss();
-                                }
-                            });
+                                        @Override public void onError(String error) {
+                                            Toast.makeText(getActivity(), getResources().getString(R.string.redemption_failure), Toast.LENGTH_SHORT)
+                                                    .show();
+                                            dialog.dismiss();
+                                        }
+                                    });
                 }
                 break;
+        }
+    }
+
+    public void updateView() {
+        tvBalance.setText(String.format(getResources().getString(R.string.balance), activity.balance));
+    }
+
+    String cpuAmount;
+    String netAmount;
+
+    @Override public void getResource(String resource) {
+        DecimalFormat decimalFormat = new DecimalFormat("##0.0#");
+        try {
+            JSONObject jsonObject = new JSONObject(resource);
+            JSONObject cpuLimit = new JSONObject(jsonObject.getString("cpu_limit"));
+            String cpuAvailable = decimalFormat.format(cpuLimit.getDouble("available") / 1000);
+            String cpuUsed = decimalFormat.format(cpuLimit.getLong("used") / 1000);
+            String cpuMax = decimalFormat.format(cpuLimit.getLong("max") / 1000);
+
+            JSONObject netLimit = new JSONObject(jsonObject.getString("net_limit"));
+            String netAvailable = decimalFormat.format(netLimit.getDouble("available") / 1024);
+            String netUsed = decimalFormat.format(netLimit.getDouble("used") / 1024);
+            String netMax = decimalFormat.format(netLimit.getDouble("max") / 1024);
+
+            JSONObject redemption = new JSONObject(jsonObject.getString("self_delegated_bandwidth"));
+            String netRedemption = redemption.getString("net_weight");
+            String cpuRedemption = redemption.getString("cpu_weight");
+
+            String balance = jsonObject.getString("core_liquid_balance");
+
+            String refundRequest = jsonObject.getString("refund_request");
+            if (refundRequest != null && !refundRequest.equals("null")) {
+                JSONObject refund = new JSONObject(refundRequest);
+                cpuAmount = refund.getString("cpu_amount");
+                netAmount = refund.getString("net_amount");
+            }
+
+            activity.balance = balance;
+
+            activity.runOnUiThread(new Runnable() {
+                @Override public void run() {
+                    tvNetResourceAvailable.setText(String.format(getActivity().getResources().getString(R.string.available), netAvailable) + "kb");
+                    tvNetResourceUsed.setText(String.format(getActivity().getResources().getString(R.string.used), netUsed) + "kb");
+                    pbNetResource.setProgress(Double.valueOf(netUsed).intValue() / Double.valueOf(netMax).intValue());
+
+                    tvCalResourceAvailable.setText(String.format(getResources().getString(R.string.available), cpuAvailable) + "ms");
+                    tvCalResourceUsed.setText(String.format(getResources().getString(R.string.used), cpuUsed) + "ms");
+                    pbCalResource.setProgress(Double.valueOf(cpuUsed).intValue() / Double.valueOf(cpuMax).intValue());
+
+                    if (cpuAmount != null || netAmount != null) {
+                        tvRefundAmount.setText(getAmount(cpuAmount, netAmount) + " AAA");
+                    } else {
+                        tvRefundAmount.setText("0 AAA");
+                    }
+
+                    tvNetRedemption.setText(netRedemption);
+                    tvCalRedemption.setText(cpuRedemption);
+                    tvBalance.setText(String.format(getResources().getString(R.string.balance), balance));
+
+                    if (type == 0) {
+                        Toast.makeText(getActivity(), getResources().getString(R.string.mortgage_success), Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(getActivity(), getResources().getString(R.string.redemption_success), Toast.LENGTH_SHORT).show();
+                    }
+                    dialog.dismiss();
+                }
+            });
+        } catch (JSONException e) {
+            e.printStackTrace();
         }
     }
 }

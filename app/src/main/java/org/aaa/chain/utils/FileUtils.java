@@ -4,8 +4,10 @@ import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.DecimalFormat;
 
 public class FileUtils {
 
@@ -81,5 +83,19 @@ public class FileUtils {
         }
 
         return file;
+    }
+
+    public double FormatFileSize(String filePath) {
+        double fileSizeLong = 0;
+        DecimalFormat df = new DecimalFormat("#.00");
+        File file = new File(filePath);
+        try {
+            FileInputStream stream = new FileInputStream(file);
+            fileSizeLong = Double.valueOf(df.format((double) stream.available() / 1048576));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return fileSizeLong;
     }
 }

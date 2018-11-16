@@ -78,7 +78,7 @@ public class CreateSmallResumeActivity extends BaseActivity {
                 break;
             case R.id.rl_last_working_hour:
 
-                CommonUtils.getInstance().initDate(CreateSmallResumeActivity.this, tvLastWorkingHour, true);
+                CommonUtils.getInstance().initDate(CreateSmallResumeActivity.this.getApplicationContext(), tvLastWorkingHour, true);
                 break;
             case R.id.rl_job_type:
                 startActivityForResult(new Intent(CreateSmallResumeActivity.this, UpdateInfoActivity.class).putExtra("title",

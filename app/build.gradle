@@ -31,6 +31,10 @@ android {
     versionName "1.0"
     testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     multiDexEnabled true
+
+    manifestPlaceholders = [GETUI_APP_ID    : "mnqYSUsojc9rvREBVqQEf1",
+                            GETUI_APP_KEY   : "VVtaNVbEsw6N1tzIMzkfu8",
+                            GETUI_APP_SECRET: "jhNeUYq2z691Ob46oYX136"]
   }
 
   signingConfigs {
@@ -67,19 +71,12 @@ android {
     }
   }
 
-  sourceSets {
-    main {
-      jniLibs.srcDirs = ['libs']
-    }
-  }
-
   flavorDimensions "data"
   productFlavors {
     aaaChain {
-      manifestPlaceholders = [APP_LABEL_VALUE: "@string/app_name", APP_ICON_VALUE: "@mipmap/ic_launcher"]
+      manifestPlaceholders = [APP_LABEL_VALUE: "@string/app_name", APP_ICON_VALUE: "@mipmap/app_title_zh_icon"]
     }
   }
-
 }
 
 dependencies {
@@ -99,6 +96,7 @@ dependencies {
   implementation 'com.google.code.gson:gson:2.8.5'
   implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
   implementation 'com.jaeger.statusbaruitl:library:1.0.0'
+  implementation files('libs/GetuiSDK2.12.5.0.jar')
 }
 repositories {
   mavenCentral()

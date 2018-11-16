@@ -39,9 +39,11 @@ public class MainActivity extends BaseActivity {
 
     private void initTab() {
         tabItemList = new ArrayList<>();
-        tabItemList.add(new TabItem(this, R.mipmap.tab_upload, R.mipmap.tab_upload, R.string.upload_home, UploadHomeFragment.class));
-        tabItemList.add(new TabItem(this, R.mipmap.tab_search_and_trans, R.mipmap.tab_search_and_trans, R.string.search_trans, SearchAndTransFragment.class));
-        tabItemList.add(new TabItem(this, R.mipmap.tab_my, R.mipmap.tab_my, R.string.my_home, MyHomeFragment.class));
+        tabItemList.add(
+                new TabItem(getApplicationContext(), R.mipmap.tab_upload, R.mipmap.tab_upload, R.string.upload_home, UploadHomeFragment.class));
+        tabItemList.add(new TabItem(getApplicationContext(), R.mipmap.tab_search_and_trans, R.mipmap.tab_search_and_trans, R.string.search_trans,
+                SearchAndTransFragment.class));
+        tabItemList.add(new TabItem(getApplicationContext(), R.mipmap.tab_my, R.mipmap.tab_my, R.string.my_home, MyHomeFragment.class));
 
         for (int i = 0; i < tabItemList.size(); i++) {
             TabItem tabItem = tabItemList.get(i);

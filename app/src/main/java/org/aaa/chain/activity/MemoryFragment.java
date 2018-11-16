@@ -4,22 +4,23 @@ import android.app.ProgressDialog;
 import android.support.v4.widget.ContentLoadingProgressBar;
 import android.text.TextUtils;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+import java.text.DecimalFormat;
 import org.aaa.chain.Constant;
 import org.aaa.chain.JSInteraction;
 import org.aaa.chain.R;
+import org.json.JSONException;
+import org.json.JSONObject;
 
-public class MemoryFragment extends BaseFragment {
+public class MemoryFragment extends BaseFragment implements ResourceManagementActivity.ResourceListener {
 
     private TextView tvMemoryUsed;
     private TextView tvMemoryAvailable;
-    private TextView tvAllUsed;
-    private TextView tvAllAvailable;
     private ContentLoadingProgressBar pbMemory;
-    private ContentLoadingProgressBar pbAll;
     private Button btnBuy;
     private Button btnSell;
     private TextView tvBuyMemoryLabel;
@@ -32,6 +33,8 @@ public class MemoryFragment extends BaseFragment {
 
     private int type = 0;
 
+    private ProgressDialog dialog;
+
     @Override public int initLayout() {
         return R.layout.fragment_memory;
     }
@@ -40,10 +43,7 @@ public class MemoryFragment extends BaseFragment {
 
         tvMemoryUsed = $(R.id.tv_memory_used);
         tvMemoryAvailable = $(R.id.tv_memory_available);
-        tvAllUsed = $(R.id.tv_all_used);
-        tvAllAvailable = $(R.id.tv_all_available);
         pbMemory = $(R.id.pb_memory_resource);
-        pbAll = $(R.id.pb_all_memory);
         btnBuy = $(R.id.btn_buy);
         btnSell = $(R.id.btn_sell);
         tvBuyMemoryLabel = $(R.id.tv_buy_memory_label);
@@ -58,6 +58,8 @@ public class MemoryFragment extends BaseFragment {
         btnBuy.setOnClickListener(this);
         btnSell.setOnClickListener(this);
         btnConfirmBuy.setOnClickListener(this);
+
+        activity.setResourceListener1(this);
 
         JSInteraction.getInstance().getRamPrice(new JSInteraction.JSCallBack() {
             @Override public void onSuccess(String... stringArray) {
@@ -82,6 +84,8 @@ public class MemoryFragment extends BaseFragment {
         tvMemoryUsed.setText(String.format(getActivity().getResources().getString(R.string.used), activity.ramUsage) + "kb");
         tvMemoryAvailable.setText(String.format(getActivity().getResources().getString(R.string.available), activity.ramAvailable) + "kb");
         pbMemory.setProgress(Double.valueOf(activity.ramUsage).intValue() / Double.valueOf(activity.ramQuota).intValue());
+
+        etRecAccount.setText(Constant.getCurrentAccount());
     }
 
     @Override public void onClick(View v) {
@@ -114,19 +118,22 @@ public class MemoryFragment extends BaseFragment {
                 String currentPrice = tvCurrentPrice.getText().toString();
 
                 if (TextUtils.isEmpty(memory) || TextUtils.isEmpty(account)) {
-                    Toast.makeText(getActivity(), "not null", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getActivity(), getResources().getString(R.string.not_null), Toast.LENGTH_SHORT).show();
                     return;
                 }
                 double bytenum =
                         Double.valueOf(memory) / Double.valueOf(currentPrice.substring(currentPrice.indexOf(" "), currentPrice.lastIndexOf(" ")));
-                ProgressDialog dialog = ProgressDialog.show(getActivity(), "waiting...", "loading...");
+                dialog = ProgressDialog.show(getActivity(), getResources().getString(R.string.waiting), getResources().getString(R.string.loading));
                 if (type == 0) {
 
                     JSInteraction.getInstance().buyram(Constant.getCurrentAccount(), account, Math.round(bytenum), new JSInteraction.JSCallBack() {
                         @Override public void onSuccess(String... stringArray) {
 
-                            Toast.makeText(getActivity(), "buy success", Toast.LENGTH_SHORT).show();
-                            dialog.dismiss();
+                            activity.runOnUiThread(new Runnable() {
+                                @Override public void run() {
+                                    activity.getAccountInfo();
+                                }
+                            });
                         }
 
                         @Override public void onProgress() {
@@ -134,15 +141,18 @@ public class MemoryFragment extends BaseFragment {
                         }
 
                         @Override public void onError(String error) {
-                            Toast.makeText(getActivity(), "buy failure", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(getActivity(), getResources().getString(R.string.buy_failure), Toast.LENGTH_SHORT).show();
                             dialog.dismiss();
                         }
                     });
                 } else {
                     JSInteraction.getInstance().sellram(account, Math.round(bytenum), new JSInteraction.JSCallBack() {
                         @Override public void onSuccess(String... stringArray) {
-                            Toast.makeText(getActivity(), "sell success", Toast.LENGTH_SHORT).show();
-                            dialog.dismiss();
+                            activity.runOnUiThread(new Runnable() {
+                                @Override public void run() {
+                                    activity.getAccountInfo();
+                                }
+                            });
                         }
 
                         @Override public void onProgress() {
@@ -150,13 +160,52 @@ public class MemoryFragment extends BaseFragment {
                         }
 
                         @Override public void onError(String error) {
-                            Toast.makeText(getActivity(), "sell failure", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(getActivity(), getResources().getString(R.string.sell_failure), Toast.LENGTH_SHORT).show();
                             dialog.dismiss();
                         }
                     });
                 }
 
                 break;
+        }
+    }
+
+    public void updateView() {
+        tvBalance.setText(String.format(getResources().getString(R.string.balance), activity.balance));
+    }
+
+    @Override public void getResource(String resource) {
+        DecimalFormat decimalFormat = new DecimalFormat("##0.0#");
+        try {
+            JSONObject jsonObject = new JSONObject(resource);
+            double rq, ru;
+            rq = jsonObject.getDouble("ram_quota");
+            ru = jsonObject.getDouble("ram_usage");
+            String ramAvailable = decimalFormat.format((rq - ru) / 1024);
+            String ramQuota = decimalFormat.format(rq / 1024);
+            String ramUsage = decimalFormat.format(ru / 1024);
+
+            String balance = jsonObject.getString("core_liquid_balance");
+
+            activity.balance = balance;
+
+            activity.runOnUiThread(new Runnable() {
+                @Override public void run() {
+                    tvBalance.setText(String.format(getResources().getString(R.string.balance), balance));
+                    tvMemoryUsed.setText(String.format(getActivity().getResources().getString(R.string.used), ramUsage) + "kb");
+                    tvMemoryAvailable.setText(String.format(getActivity().getResources().getString(R.string.available), ramAvailable) + "kb");
+                    pbMemory.setProgress(Double.valueOf(ramUsage).intValue() / Double.valueOf(ramQuota).intValue());
+
+                    if (type == 0) {
+                        Toast.makeText(getActivity(), getResources().getString(R.string.buy_success), Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(getActivity(), getResources().getString(R.string.sell_success), Toast.LENGTH_SHORT).show();
+                    }
+                    dialog.dismiss();
+                }
+            });
+        } catch (JSONException e) {
+            e.printStackTrace();
         }
     }
 }

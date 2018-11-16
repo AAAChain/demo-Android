@@ -16,6 +16,8 @@ public class ExtraEntity {
     private String price;
     private String jobType;
 
+    private String sellerPublicKey;
+
     public String getStartTime() {
         return startTime;
     }
@@ -110,6 +112,14 @@ public class ExtraEntity {
 
     public void setHashId(String hashId) {
         this.hashId = hashId;
+    }
+
+    public String getSellerPublicKey() {
+        return sellerPublicKey;
+    }
+
+    public void setSellerPublicKey(String sellerPublicKey) {
+        this.sellerPublicKey = sellerPublicKey;
     }
 
     private long low;

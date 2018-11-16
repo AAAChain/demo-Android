@@ -51,6 +51,7 @@ public class ResumeDetailsActivity extends BaseActivity {
     private String price;
     private int status;
     private String buyer;
+    private String buyerPublicKey;
     private ResumeResponseEntity resumeResponseEntity;
     private ProgressDialog dialog;
     private String pMessage;
@@ -71,10 +72,15 @@ public class ResumeDetailsActivity extends BaseActivity {
             layoutId = R.layout.activity_postion_info;
             OrderDataEntity entity = getIntent().getParcelableExtra("dataEntity");
             orderId = entity.getId();
-            hashId = entity.getGoodId();
+            if (entity.getDeliverMsg() == null) {
+                hashId = entity.getGoodId();
+            } else {
+                hashId = entity.getDeliverMsg();
+            }
             status = entity.getStatus();
             buyer = entity.getBuyer();
             sellerAccount = entity.getSeller();
+            buyerPublicKey = entity.getExt1();
         } else {
             layoutId = R.layout.activity_postion_info;
         }
@@ -94,7 +100,8 @@ public class ResumeDetailsActivity extends BaseActivity {
             tvName.setText(getIntent().getStringExtra("name"));
             buy.setOnClickListener(this);
         } else if (type == 1) {
-            ProgressDialog dialog = ProgressDialog.show(ResumeDetailsActivity.this, "waiting...", "loading...");
+            ProgressDialog dialog = ProgressDialog.show(ResumeDetailsActivity.this, getResources().getString(R.string.waiting),
+                    getResources().getString(R.string.loading));
             authorization = $(R.id.btn_authorization);
             authorization.setOnClickListener(this);
             ((TextView) $(R.id.tv_position_name)).setText(String.format(getResources().getString(R.string.java_engineer), "java"));
@@ -190,10 +197,11 @@ public class ResumeDetailsActivity extends BaseActivity {
                     jsonObject.put("seller", sellerAccount);
                     jsonObject.put("goodId", goodId);
                     jsonObject.put("price", price);
+                    jsonObject.put("ext1", Constant.getCurrentPublicKey());
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
-                dialog.setTitle("waiting...");
+                dialog.setTitle(getResources().getString(R.string.waiting));
                 dialog.setMessage(pMessage);
                 dialog.show();
                 //1.create order
@@ -201,7 +209,7 @@ public class ResumeDetailsActivity extends BaseActivity {
                 break;
 
             case R.id.btn_authorization:
-                dialog.setTitle("waiting...");
+                dialog.setTitle(getResources().getString(R.string.waiting));
                 if ((status == 2 || status == 3) && Constant.getCurrentAccount().equals(buyer)) {
 
                     downloadFile(status, resumeResponseEntity.getExtra().getHashId());
@@ -222,7 +230,8 @@ public class ResumeDetailsActivity extends BaseActivity {
             @Override public void onFailure(Call call, IOException e) {
                 runOnUiThread(new Runnable() {
                     @Override public void run() {
-                        Toast.makeText(ResumeDetailsActivity.this, "create order failure,please retry", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(ResumeDetailsActivity.this, getResources().getString(R.string.create_order_failure), Toast.LENGTH_SHORT)
+                                .show();
                     }
                 });
             }
@@ -236,7 +245,7 @@ public class ResumeDetailsActivity extends BaseActivity {
                         //2.预支付订单
                         runOnUiThread(new Runnable() {
                             @Override public void run() {
-                                dialog.setTitle("waiting...");
+                                dialog.setTitle(getResources().getString(R.string.waiting));
                                 dialog.setMessage(pMessage);
                                 dialog.show();
                                 prepayOrder(data);
@@ -314,8 +323,8 @@ public class ResumeDetailsActivity extends BaseActivity {
                             byte[] salt = new SecureRandom().generateSeed(8);
 
                             //使用原始秘钥对文件加密
-                            File enfile = PBEUtils.getInstance()
-                                    .encryptFile(ResumeDetailsActivity.this, defile.getAbsolutePath(), Constant.getAnotherPublicKey(), salt);
+                            File enfile =
+                                    PBEUtils.getInstance().encryptFile(ResumeDetailsActivity.this, defile.getAbsolutePath(), buyerPublicKey, salt);
 
                             ResumeRequestEntity requestEntity = new ResumeRequestEntity();
                             requestEntity.setFilepath(enfile.getAbsolutePath());
@@ -323,11 +332,11 @@ public class ResumeDetailsActivity extends BaseActivity {
 
                             runOnUiThread(new Runnable() {
                                 @Override public void run() {
-                                    dialog.setMessage("order updating...");
+                                    dialog.setMessage(getResources().getString(R.string.order_updating));
                                     //对原始秘钥进行加密
                                     JSInteraction.getInstance()
-                                            .encryptKey(Constant.getCurrentPrivateKey(), Constant.getAnotherPublicKey(),
-                                                    Base64.encodeToString(salt, Base64.DEFAULT), new JSInteraction.JSCallBack() {
+                                            .encryptKey(Constant.getCurrentPrivateKey(), buyerPublicKey, Base64.encodeToString(salt, Base64.DEFAULT),
+                                                    new JSInteraction.JSCallBack() {
                                                         @Override public void onSuccess(String... stringArray) {
                                                             try {
                                                                 JSONObject object =
@@ -345,8 +354,8 @@ public class ResumeDetailsActivity extends BaseActivity {
 
                                                                 object.put("checksum", jsonObject.getLong("checksum"));
                                                                 object.put("name", enfile.getName());
+                                                                object.put("sellerPublicKey", Constant.getCurrentPublicKey());
 
-                                                                requestEntity.setMetadata(object.toString());
                                                                 requestEntity.setAccount(resumeResponseEntity.getAccount());
                                                                 JSONObject jsonObject3 = new JSONObject();
                                                                 jsonObject3.put("onlyHash", false);
@@ -433,48 +442,48 @@ public class ResumeDetailsActivity extends BaseActivity {
             object.put("checksum", extraEntity.getChecksum());
 
             JSInteraction.getInstance()
-                    .decryptKey(Constant.getCurrentPrivateKey(), Constant.getAnotherPublicKey(), object.toString(), new JSInteraction.JSCallBack() {
-                        @Override public void onSuccess(String... stringArray) {
-                            finalDefile = PBEUtils.getInstance()
-                                    .decryptFile(ResumeDetailsActivity.this, file.getAbsolutePath(), Constant.getCurrentPublicKey(),
-                                            Base64.decode(stringArray[0], Base64.DEFAULT));
-                            if (status == 2) {
-                                runOnUiThread(new Runnable() {
-                                    @Override public void run() {
-                                        //确认付款
-                                        JSInteraction.getInstance()
-                                                .confirmOrder(Constant.getCurrentAccount(), orderId, new JSInteraction.JSCallBack() {
-                                                    @Override public void onSuccess(String... stringArray) {
-                                                        //update order
-                                                        updateCreateOrder(orderId, "final");
-                                                    }
+                    .decryptKey(Constant.getCurrentPrivateKey(), resumeResponseEntity.getExtra().getSellerPublicKey(), object.toString(),
+                            new JSInteraction.JSCallBack() {
+                                @Override public void onSuccess(String... stringArray) {
+                                    finalDefile = PBEUtils.getInstance()
+                                            .decryptFile(ResumeDetailsActivity.this, file.getAbsolutePath(), Constant.getCurrentPublicKey(),
+                                                    Base64.decode(stringArray[0], Base64.DEFAULT));
+                                    if (status == 2) {
+                                        runOnUiThread(new Runnable() {
+                                            @Override public void run() {
+                                                //确认付款
+                                                JSInteraction.getInstance()
+                                                        .confirmOrder(Constant.getCurrentAccount(), orderId, new JSInteraction.JSCallBack() {
+                                                            @Override public void onSuccess(String... stringArray) {
+                                                                //update order
+                                                                updateCreateOrder(orderId, "final");
+                                                            }
 
-                                                    @Override public void onProgress() {
+                                                            @Override public void onProgress() {
 
-                                                    }
+                                                            }
 
-                                                    @Override public void onError(String error) {
-                                                        dialog.dismiss();
-                                                        Toast.makeText(ResumeDetailsActivity.this, "confirm failure", Toast.LENGTH_SHORT).show();
-                                                    }
-                                                });
+                                                            @Override public void onError(String error) {
+                                                                dialog.dismiss();
+                                                            }
+                                                        });
+                                            }
+                                        });
+                                    } else if (status == 3) {
+                                        dialog.dismiss();
+
+                                        openFileDialog();
                                     }
-                                });
-                            } else if (status == 3) {
-                                dialog.dismiss();
+                                }
 
-                                openFileDialog();
-                            }
-                        }
+                                @Override public void onProgress() {
 
-                        @Override public void onProgress() {
+                                }
 
-                        }
+                                @Override public void onError(String error) {
 
-                        @Override public void onError(String error) {
-
-                        }
-                    });
+                                }
+                            });
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -496,15 +505,9 @@ public class ResumeDetailsActivity extends BaseActivity {
                 } catch (ActivityNotFoundException e) {
                     Toast.makeText(ResumeDetailsActivity.this, "can not open file", Toast.LENGTH_SHORT).show();
                 }
-
-                dialog.dismiss();
             }
         });
-        builder.setNegativeButton("cancel", new DialogInterface.OnClickListener() {
-            @Override public void onClick(DialogInterface dialog, int which) {
-                dialog.dismiss();
-            }
-        });
+        builder.setNegativeButton("cancel", null);
         builder.show();
     }
 
@@ -536,7 +539,7 @@ public class ResumeDetailsActivity extends BaseActivity {
                         String jsonObject = new Gson().toJson(extraEntity);
                         runOnUiThread(new Runnable() {
                             @Override public void run() {
-                                dialog.setMessage("order sent");
+                                dialog.setMessage(getResources().getString(R.string.order_sent));
 
                                 //modify hashid
                                 modifyInfo(resumeResponseEntity.getHashId(), jsonObject);
@@ -579,7 +582,7 @@ public class ResumeDetailsActivity extends BaseActivity {
                             String json = body.string();
                             if (response.code() == 200) {
                                 //4.update order
-                                updateCreateOrder(orderId, "delivered");
+                                updateCreateOrder(orderId, hashId);
                             } else {
                                 runOnUiThread(new Runnable() {
                                     @Override public void run() {
@@ -604,7 +607,7 @@ public class ResumeDetailsActivity extends BaseActivity {
                 runOnUiThread(new Runnable() {
                     @Override public void run() {
                         dialog.dismiss();
-                        Toast.makeText(ResumeDetailsActivity.this, "modify failure", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(ResumeDetailsActivity.this, getResources().getString(R.string.modify_failure), Toast.LENGTH_SHORT).show();
                     }
                 });
             }
@@ -615,10 +618,10 @@ public class ResumeDetailsActivity extends BaseActivity {
         String option;
         if (type.equals("prepay")) {
             option = HttpUtils.PRE_PAYED;
-        } else if (type.equals("delivered")) {
-            option = HttpUtils.DELIVERED;
-        } else {
+        } else if (type.equals("final")) {
             option = HttpUtils.FINAL_PAYED;
+        } else {
+            option = HttpUtils.DELIVERED;
         }
         HttpUtils.getInstance().updateOrderStatus(orderId, type, option, new HttpUtils.ServerCallBack() {
             @Override public void onFailure(Call call, IOException e) {
@@ -649,17 +652,17 @@ public class ResumeDetailsActivity extends BaseActivity {
                                         buy.setBackgroundColor(Color.GRAY);
                                         Toast.makeText(ResumeDetailsActivity.this,
                                                 getResources().getString(R.string.waiting_transaction_done) + response, Toast.LENGTH_SHORT).show();
-                                    } else if (type.equals("delivered")) {//卖家授权发货
+                                    } else if (type.equals("final")) {//买家成功接收文件
+                                        //authorization.setClickable(false);
+                                        //authorization.setText(getResources().getString(R.string.resume_received));
+                                        //authorization.setBackgroundColor(Color.GRAY);
+                                        openFileDialog();
+                                    } else {//卖家授权发货
                                         authorization.setClickable(false);
                                         authorization.setText(getResources().getString(R.string.authorization_successful));
                                         authorization.setBackgroundColor(Color.GRAY);
                                         Toast.makeText(ResumeDetailsActivity.this, getResources().getString(R.string.authorization_successful),
                                                 Toast.LENGTH_SHORT).show();
-                                    } else {//买家成功接收文件
-                                        //authorization.setClickable(false);
-                                        //authorization.setText(getResources().getString(R.string.resume_received));
-                                        //authorization.setBackgroundColor(Color.GRAY);
-                                        openFileDialog();
                                     }
                                 } else {
                                     if (type.equals("received")) {

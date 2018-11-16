@@ -1,67 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
 <android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:padding="10dp"
     >
 
-  <Button
-      android:id="@+id/btn_demo"
-      android:layout_width="wrap_content"
+  <EditText
+      android:id="@+id/et_pwd"
+      android:layout_width="match_parent"
       android:layout_height="wrap_content"
-      android:layout_marginTop="50dp"
-      android:text="demo"
-      android:textAllCaps="false"
+      android:hint="@string/input_password"
+      android:paddingLeft="10dp"
+      app:layout_constraintBottom_toBottomOf="parent"
       app:layout_constraintEnd_toEndOf="parent"
       app:layout_constraintStart_toStartOf="parent"
       app:layout_constraintTop_toTopOf="parent"
       />
-  <Button
-      android:id="@+id/btn_import"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="50dp"
-      android:text="import"
-      android:textAllCaps="false"
-      app:layout_constraintEnd_toEndOf="parent"
-      app:layout_constraintStart_toStartOf="parent"
-      app:layout_constraintTop_toBottomOf="@+id/btn_demo"
-      />
-
   <EditText
-      android:id="@+id/et_pwd"
+      android:id="@+id/et_confirm_pwd"
       android:layout_width="0dp"
       android:layout_height="wrap_content"
-      android:layout_marginLeft="10dp"
-      android:layout_marginRight="10dp"
-      android:layout_marginTop="50dp"
-      android:hint="input password"
-      android:paddingLeft="10dp"
-      app:layout_constraintEnd_toStartOf="@id/btn_create"
-      app:layout_constraintHorizontal_weight="1"
-      app:layout_constraintStart_toStartOf="parent"
-      app:layout_constraintTop_toBottomOf="@id/btn_import"
-      />
-  <EditText
-      android:id="@+id/et_new_account"
-      android:layout_width="0dp"
-      android:layout_height="wrap_content"
-      android:hint="new account"
+      android:hint="@string/input_confirm_password"
       android:paddingLeft="10dp"
       app:layout_constraintEnd_toEndOf="@id/et_pwd"
       app:layout_constraintStart_toStartOf="@id/et_pwd"
       app:layout_constraintTop_toBottomOf="@id/et_pwd"
       />
+
   <Button
-      android:id="@+id/btn_create"
-      android:layout_width="0dp"
+      android:id="@+id/btn_generation"
+      android:layout_width="wrap_content"
       android:layout_height="wrap_content"
-      android:layout_marginRight="10dp"
-      android:text="create"
+      android:layout_marginTop="10dp"
+      android:text="@string/generate_pwd"
       android:textAllCaps="false"
       app:layout_constraintEnd_toEndOf="parent"
-      app:layout_constraintHorizontal_weight="1"
-      app:layout_constraintTop_toBottomOf="@id/et_pwd"
+      app:layout_constraintStart_toStartOf="parent"
+      app:layout_constraintTop_toBottomOf="@id/et_confirm_pwd"
       />
 </android.support.constraint.ConstraintLayout>

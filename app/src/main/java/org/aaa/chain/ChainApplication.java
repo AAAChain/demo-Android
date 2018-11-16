@@ -7,6 +7,7 @@ import com.squareup.leakcanary.RefWatcher;
 import java.util.List;
 import org.aaa.chain.entities.KeyInfoEntity;
 import org.aaa.chain.entities.SearchResponseEntity;
+import org.aaa.chain.utils.PreferenceUtils;
 
 public class ChainApplication extends Application {
 
@@ -26,6 +27,7 @@ public class ChainApplication extends Application {
 
         instance = this;
 
+        PreferenceUtils.init(this);
         refWatcher = setupLeakCanary();
     }
 
@@ -45,7 +47,7 @@ public class ChainApplication extends Application {
         return keyInfoEntityList;
     }
 
-    public void addKeyInfoEntity(KeyInfoEntity entity){
+    public void addKeyInfoEntity(KeyInfoEntity entity) {
         keyInfoEntityList.add(entity);
     }
 

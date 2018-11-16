@@ -39,8 +39,4 @@ public class Constant {
         Constant.password = password;
     }
 
-    public static String getAnotherPublicKey() {
-            return "";
-    }
-
 }

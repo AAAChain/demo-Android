@@ -150,6 +150,15 @@ getRamPrice = function(){
   })
 }
 
+getGlobalRam = function(){
+
+aaa.getTableRows({"json": true,"code": "eosio","scope":"eosio","table":"global"},function (error, result) {
+
+      window.aaaChain.getGlobalRam(JSON.stringify(result),error)
+  })
+
+}
+
 
 //抵押
 mortgage = function(account,receiveAccount,netq,cpuq){
@@ -221,6 +230,17 @@ sellram = function(account,bytesnum){
     ).catch(error=>
     window.aaaChain.sellramError(error.toString())
     )
+}
+
+
+//获取账户
+getKeyAccounts = function(publicKey){
+
+  aaa.getKeyAccounts(publicKey,function (error, result) {
+
+    window.aaaChain.getKeyAccounts(JSON.stringify(result),error)
+  })
+
 }
 }).call(this,require("buffer").Buffer)
 },{"aaajs":4,"buffer":180,"bytebuffer":48,"eosjs-ecc":144}],2:[function(require,module,exports){

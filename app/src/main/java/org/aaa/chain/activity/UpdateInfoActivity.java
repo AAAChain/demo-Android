@@ -37,7 +37,7 @@ public class UpdateInfoActivity extends BaseActivity {
                     setResult(RESULT_OK, intent);
                     finish();
                 } else {
-                    Toast.makeText(UpdateInfoActivity.this, "not null", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(UpdateInfoActivity.this, getResources().getString(R.string.not_null), Toast.LENGTH_SHORT).show();
                 }
                 break;
         }

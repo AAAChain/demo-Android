@@ -202,7 +202,6 @@ public class CommonPopupWindow implements View.OnClickListener {
 
                 break;
         }
-        JSInteraction.getInstance().removeListener();
     }
 
     private TransferListener listener;

@@ -175,6 +175,12 @@ import org.json.JSONObject;
         webView.loadUrl(content);
     }
 
+    public void getKeyAccounts(String publicKey, JSCallBack callback) {
+        this.listener = callback;
+        String content = "javascript:getKeyAccounts(" + "'" + publicKey + "'" + ")";
+        webView.loadUrl(content);
+    }
+
     public class JsInteraction {
 
         @JavascriptInterface public void getAAABalance(String error, String balance) {
@@ -310,7 +316,20 @@ import org.json.JSONObject;
 
         @JavascriptInterface public void getRamPrice(String ramPrice, String error) {
             Log.i("info", "getRamPrice:" + ramPrice);
-            listener.onSuccess(ramPrice);
+            if (error == null) {
+                listener.onSuccess(ramPrice);
+            } else {
+                listener.onError(error);
+            }
+        }
+
+        @JavascriptInterface public void getKeyAccounts(String accounts, String error) {
+            Log.i("info", "getKeyAccounts:" + accounts);
+            if (error == null) {
+                listener.onSuccess(accounts);
+            } else {
+                listener.onError(error);
+            }
         }
     }
 

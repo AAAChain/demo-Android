@@ -62,13 +62,13 @@ public class TransactionResourceFragment extends BaseFragment implements BindVie
     OrderResponseEntity orderResponseEntity = null;
 
     private void initRecyclerView() {
-
+        list.clear();
         HttpUtils.getInstance().getOrderList(new HttpUtils.ServerCallBack() {
             @Override public void onFailure(Call call, IOException e) {
                 getActivity().runOnUiThread(new Runnable() {
                     @Override public void run() {
                         swipeRefreshLayout.setRefreshing(false);
-                        Toast.makeText(getActivity(), "order refresh onFailure:" + e.toString(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getActivity(), getResources().getString(R.string.order_refresh_failure), Toast.LENGTH_SHORT).show();
                     }
                 });
             }
@@ -85,7 +85,7 @@ public class TransactionResourceFragment extends BaseFragment implements BindVie
                         getActivity().runOnUiThread(new Runnable() {
                             @Override public void run() {
                                 swipeRefreshLayout.setRefreshing(false);
-                                Toast.makeText(getActivity(), "order refresh successful:" + response.code(), Toast.LENGTH_SHORT).show();
+                                Toast.makeText(getActivity(), getResources().getString(R.string.order_refresh_success), Toast.LENGTH_SHORT).show();
                                 for (OrderDataEntity orderDataEntity : orderResponseEntity.getData()) {
                                     if ((orderDataEntity.getSeller().equals(Constant.getCurrentAccount()) || orderDataEntity.getBuyer()
                                             .equals(Constant.getCurrentAccount())) && orderDataEntity.getStatus() != 0) {
@@ -99,7 +99,7 @@ public class TransactionResourceFragment extends BaseFragment implements BindVie
                     } else {
                         getActivity().runOnUiThread(new Runnable() {
                             @Override public void run() {
-                                Toast.makeText(getActivity(), "order refresh failure:" + response.code(), Toast.LENGTH_SHORT).show();
+                                Toast.makeText(getActivity(), getResources().getString(R.string.order_refresh_failure), Toast.LENGTH_SHORT).show();
                             }
                         });
                     }
