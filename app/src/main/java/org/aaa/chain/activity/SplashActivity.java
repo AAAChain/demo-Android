@@ -6,7 +6,6 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
-import com.squareup.leakcanary.RefWatcher;
 import java.util.ArrayList;
 import java.util.List;
 import org.aaa.chain.ChainApplication;
@@ -93,7 +92,5 @@ public class SplashActivity extends BaseActivity {
 
     @Override protected void onDestroy() {
         super.onDestroy();
-        RefWatcher refWatcher = ChainApplication.getRefWatcher(this);
-        refWatcher.watch(this);
     }
 }

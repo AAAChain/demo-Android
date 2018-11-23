@@ -205,21 +205,62 @@ public class ResumeDetailsActivity extends BaseActivity {
                 dialog.setMessage(pMessage);
                 dialog.show();
                 //1.create order
-                createOrder(jsonObject.toString());
+                JSInteraction.getInstance().getBalance(Constant.getCurrentAccount(), new JSInteraction.JSCallBack() {
+                    @Override public void onSuccess(String... stringArray) {
+                        if (stringArray[0].equals("undefined")) {
+                            String balance = stringArray[0].substring(0, stringArray[0].lastIndexOf(" "));
+                            String currentPrice = price.substring(0, price.lastIndexOf(" "));
+                            Double value = Double.valueOf(balance) - Double.valueOf(currentPrice);
+                            if (value < 0) {
+                                dialog.dismiss();
+                                Toast.makeText(ResumeDetailsActivity.this, getResources().getString(R.string.not_sufficient_funds),
+                                        Toast.LENGTH_SHORT).show();
+                            } else {
+                                createOrder(jsonObject.toString());
+                            }
+                        } else {
+                            dialog.dismiss();
+                            Toast.makeText(ResumeDetailsActivity.this, getResources().getString(R.string.not_sufficient_funds), Toast.LENGTH_SHORT)
+                                    .show();
+                        }
+                    }
+
+                    @Override public void onProgress() {
+
+                    }
+
+                    @Override public void onError(String error) {
+
+                    }
+                });
                 break;
 
             case R.id.btn_authorization:
-                dialog.setTitle(getResources().getString(R.string.waiting));
                 if ((status == 2 || status == 3) && Constant.getCurrentAccount().equals(buyer)) {
-
-                    downloadFile(status, resumeResponseEntity.getExtra().getHashId());
-                    dialog.setMessage(getResources().getString(R.string.waiting_receive));
+                    File[] files = getExternalFilesDir("").listFiles();
+                    if (status == 3 && files != null && files.length > 0) {
+                        for (File file : files) {
+                            if (file.getName()
+                                    .substring(0, file.getName().indexOf("encrypt"))
+                                    .equals(resumeResponseEntity.getExtra()
+                                            .getName()
+                                            .substring(0, resumeResponseEntity.getExtra().getName().indexOf("encrypt")))) {
+                                finalDefile = file;
+                                openFileDialog();
+                            }
+                        }
+                    } else {
+                        dialog.setTitle(getResources().getString(R.string.waiting));
+                        downloadFile(status, resumeResponseEntity.getExtra().getHashId());
+                        dialog.setMessage(getResources().getString(R.string.waiting_receive));
+                        dialog.show();
+                    }
                 } else {
 
                     downloadFile(0, hashId);
                     dialog.setMessage(pMessage);
+                    dialog.show();
                 }
-                dialog.show();
 
                 break;
         }
@@ -311,8 +352,9 @@ public class ResumeDetailsActivity extends BaseActivity {
                 try {
                     ResponseBody body = response.body();
                     if (response.code() == 200) {
+                        byte[] bytes = body.bytes();
                         File file = FileUtils.getInstance()
-                                .getFile(body.bytes(), getExternalCacheDir().getAbsolutePath(), resumeResponseEntity.getExtra().getName());
+                                .getFile(bytes, getExternalCacheDir().getAbsolutePath(), resumeResponseEntity.getExtra().getName());
 
                         if (status == 0) {
 

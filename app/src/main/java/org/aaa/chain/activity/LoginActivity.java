@@ -19,7 +19,6 @@ import android.widget.ListPopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 import com.igexin.sdk.PushManager;
-import com.squareup.leakcanary.RefWatcher;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -151,6 +150,7 @@ public class LoginActivity extends BaseActivity {
                                                 Constant.setCurrentPublicKey(entity.getPublicKey());
                                                 Constant.setCurrentAccount(entity.getAccount());
                                                 Constant.setPassword(entity.getPassword());
+                                                JSInteraction.getInstance().authPermission(entity.getAccount());
                                                 startActivity(MainActivity.class, null);
                                             }
 
@@ -227,6 +227,12 @@ public class LoginActivity extends BaseActivity {
                                         entity.setPrivateKey(stringArray[0]);
                                         entity.setPublicKey(stringArray[1]);
 
+                                        runOnUiThread(new Runnable() {
+                                            @Override public void run() {
+                                                JSInteraction.getInstance().authPermission(entity.getAccount());
+                                            }
+                                        });
+
                                         DBManager.getInstance().saveKeyInfo(entity);
                                         keyAccounts.add(entity.getAccount());
                                         keys.add(entity.getPrivateKey());
@@ -273,7 +279,5 @@ public class LoginActivity extends BaseActivity {
 
     @Override protected void onDestroy() {
         super.onDestroy();
-        RefWatcher refWatcher = ChainApplication.getRefWatcher(this);
-        refWatcher.watch(this);
     }
 }

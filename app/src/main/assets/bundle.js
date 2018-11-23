@@ -5,7 +5,6 @@ var ByteBuffer = require('bytebuffer')
 var AAA = require('aaajs')
 
 config = {
-  keyProvider: ['5JWYoMqLxGAmHi5BnhYRSdaTpNsF4jzcUCgKq57LMHqHqnCGJn4','5KZyaoA9W2N6CP7EDoYBXXVMySVm1ZswVte2beByL2SD1C1cnEk'], // WIF string or array of keys..
   chainId: '1c6ae7719a2a3b4ecb19584a30ff510ba1b6ded86e1fd8b8fc22f1179c622a32',
   httpEndpoint: 'http://47.98.107.96:10180', // jungle testnet
   expireInSeconds: 60,
@@ -14,18 +13,20 @@ config = {
   sign: true
 }
 
-
 aaa = AAA(config)
+
+initConfig = function(privateKey){
+  config.keyProvider = [privateKey]
+  aaa = AAA(config)
+}
+
 
 //auth
 authPermission = function(account){
-console.log("buyer:"+account)
   aaa.authPermission(account).then(value => {
-    console.log('authPermisson OK. txid: ' + value.transaction_id)
-    window.aaaChain.authPermissionSuccess()
+    console.log('authPermission OK. txid: ' + value.transaction_id)
   }).catch(e => {
-    console.log("authPermisson failed: " + e)
-     window.aaaChain.authPermissionError(e)
+    console.log("authPermission failed: " + e)
   });
 }
 
@@ -67,14 +68,13 @@ getSignature = function(json,privateKey){
 
 // 买家预付款
 prepay= function(id,buyer,seller,price){
-
   aaa.payForGood(id, buyer, seller, price).
     then(value => {
       console.log('payForGood OK. txid: ' + value.transaction_id)
       window.aaaChain.prepay(JSON.stringify(value))
       }).catch(e => {
         console.log("payForGood failed: " + e)
-         window.aaaChain.prepayError(e)
+         window.aaaChain.prepayError(e.toString())
         });
 }
 

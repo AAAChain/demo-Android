@@ -95,8 +95,7 @@ import org.json.JSONObject;
         webView.loadUrl(content);
     }
 
-    public void authPermission(String account, JSCallBack callBack) {
-        this.listener = callBack;
+    public void authPermission(String account) {
         String content = "javascript:authPermission(" + "'" + account + "'" + ")";
         webView.loadUrl(content);
     }
@@ -181,6 +180,11 @@ import org.json.JSONObject;
         webView.loadUrl(content);
     }
 
+    public void initConfig(String privateKey) {
+        String content = "javascript:initConfig(" + "'" + privateKey + "'" + ")";
+        webView.loadUrl(content);
+    }
+
     public class JsInteraction {
 
         @JavascriptInterface public void getAAABalance(String error, String balance) {
@@ -242,16 +246,6 @@ import org.json.JSONObject;
         @JavascriptInterface public void getPublicKey(String publicKey) {
             Log.i("info", "publicKey1:" + publicKey);
             listener.onSuccess(publicKey);
-        }
-
-        @JavascriptInterface public void authPermissionSuccess() {
-            Log.i("info", "authPermissionSuccess:");
-            listener.onSuccess("");
-        }
-
-        @JavascriptInterface public void authPermissionError(String error) {
-            Log.i("info", "authPermissionError:" + error);
-            listener.onError(error);
         }
 
         @JavascriptInterface public void transfer(String result, String error) {

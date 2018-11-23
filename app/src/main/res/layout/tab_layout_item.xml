@@ -1,28 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     >
-
-  <ImageView
-      android:id="@+id/tab_iv_image"
-      android:layout_width="26dp"
-      android:layout_height="26dp"
-      android:contentDescription="@null"
-      app:layout_constraintEnd_toEndOf="parent"
-      app:layout_constraintStart_toStartOf="parent"
-      />
-
   <TextView
-      android:id="@+id/tab_tv_text"
+      android:id="@+id/tv_title"
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
-      android:layout_marginTop="1dp"
-      android:textSize="12sp"
+      android:layout_gravity="center"
       app:layout_constraintEnd_toEndOf="parent"
       app:layout_constraintStart_toStartOf="parent"
-      app:layout_constraintTop_toBottomOf="@id/tab_iv_image"
+      tools:text="title"
       />
 
   <TextView
@@ -31,9 +21,6 @@
       android:layout_height="10dp"
       android:background="@drawable/shape_red_dot"
       android:textColor="@color/white_color"
-      app:layout_constraintStart_toEndOf="@id/tab_iv_image"
-      android:visibility="gone"
+      app:layout_constraintStart_toEndOf="@id/tv_title"
       />
-
-
 </android.support.constraint.ConstraintLayout>

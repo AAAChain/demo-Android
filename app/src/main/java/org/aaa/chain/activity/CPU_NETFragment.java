@@ -4,7 +4,6 @@ import android.app.ProgressDialog;
 import android.support.v4.widget.ContentLoadingProgressBar;
 import android.text.TextUtils;
 import android.view.View;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -131,8 +130,17 @@ public class CPU_NETFragment extends BaseFragment implements ResourceManagementA
                 tvCalRedemption.setVisibility(View.VISIBLE);
                 tvNetRedemption.setVisibility(View.VISIBLE);
 
-                tvNetRedemption.setText(activity.netRedemption);
-                tvCalRedemption.setText(activity.cpuRedemption);
+                if (activity.cpuRedemption != null){
+                    tvNetRedemption.setText(String.format(getResources().getString(R.string.available_redemption), activity.netRedemption));
+                }else {
+                    tvNetRedemption.setText(String.format(getResources().getString(R.string.available_redemption), "0.0000 AAA"));
+
+                }
+                if (activity.netRedemption != null){
+                    tvCalRedemption.setText(String.format(getResources().getString(R.string.available_redemption), activity.cpuRedemption));
+                }else {
+                    tvCalRedemption.setText(String.format(getResources().getString(R.string.available_redemption), "0.0000 AAA"));
+                }
 
                 tvCalMortgage.setText(getResources().getString(R.string.calculation_redemption));
                 tvNetMortgage.setText(getResources().getString(R.string.network_redemption));

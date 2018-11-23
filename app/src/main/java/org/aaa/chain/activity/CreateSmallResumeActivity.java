@@ -8,8 +8,6 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-import com.squareup.leakcanary.RefWatcher;
-import org.aaa.chain.ChainApplication;
 import org.aaa.chain.R;
 import org.aaa.chain.utils.CommonUtils;
 import org.json.JSONException;
@@ -78,7 +76,7 @@ public class CreateSmallResumeActivity extends BaseActivity {
                 break;
             case R.id.rl_last_working_hour:
 
-                CommonUtils.getInstance().initDate(CreateSmallResumeActivity.this.getApplicationContext(), tvLastWorkingHour, true);
+                CommonUtils.getInstance().initDate(CreateSmallResumeActivity.this, tvLastWorkingHour, true);
                 break;
             case R.id.rl_job_type:
                 startActivityForResult(new Intent(CreateSmallResumeActivity.this, UpdateInfoActivity.class).putExtra("title",
@@ -126,7 +124,5 @@ public class CreateSmallResumeActivity extends BaseActivity {
 
     @Override protected void onDestroy() {
         super.onDestroy();
-        RefWatcher refWatcher = ChainApplication.getRefWatcher(this);
-        refWatcher.watch(this);
     }
 }

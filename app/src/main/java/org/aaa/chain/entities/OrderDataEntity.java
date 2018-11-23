@@ -8,7 +8,7 @@ public class OrderDataEntity implements Parcelable {
     private String buyer;
     private String seller;
     private String goodId;
-    private int price;
+    private float price;
     private long createTime;
     private long payTime;
     private String payMsg;
@@ -24,7 +24,7 @@ public class OrderDataEntity implements Parcelable {
         buyer = in.readString();
         seller = in.readString();
         goodId = in.readString();
-        price = in.readInt();
+        price = in.readFloat();
         createTime = in.readLong();
         payTime = in.readLong();
         payMsg = in.readString();
@@ -75,11 +75,11 @@ public class OrderDataEntity implements Parcelable {
         this.goodId = goodId;
     }
 
-    public int getPrice() {
+    public float getPrice() {
         return price;
     }
 
-    public void setPrice(int price) {
+    public void setPrice(float price) {
         this.price = price;
     }
 
@@ -140,7 +140,7 @@ public class OrderDataEntity implements Parcelable {
         dest.writeString(buyer);
         dest.writeString(seller);
         dest.writeString(goodId);
-        dest.writeInt(price);
+        dest.writeFloat(price);
         dest.writeLong(createTime);
         dest.writeLong(payTime);
         dest.writeString(payMsg);

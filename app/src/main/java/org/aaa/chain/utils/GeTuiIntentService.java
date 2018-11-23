@@ -1,6 +1,7 @@
 package org.aaa.chain.utils;
 
 import android.content.Context;
+import android.os.Bundle;
 import android.os.Message;
 import android.util.Log;
 import com.igexin.sdk.GTIntentService;
@@ -13,6 +14,7 @@ import com.igexin.sdk.message.GTNotificationMessage;
 import com.igexin.sdk.message.GTTransmitMessage;
 import com.igexin.sdk.message.SetTagCmdMessage;
 import com.igexin.sdk.message.UnBindAliasCmdMessage;
+import org.aaa.chain.ChainApplication;
 
 /**
  * 继承 GTIntentService 接收来自个推的消息, 所有消息在线程中回调, 如果注册了该服务, 则务必要在 AndroidManifest中声明, 否则无法接受消息<br>
@@ -71,7 +73,6 @@ public class GeTuiIntentService extends GTIntentService {
             //    data = data + "-" + cnt;
             //    cnt++;
             //}
-            sendMessage(data, 0);
         }
 
         Log.d(TAG, "----------------------------------------------------------------------------------------------");
@@ -79,8 +80,7 @@ public class GeTuiIntentService extends GTIntentService {
 
     @Override public void onReceiveClientId(Context context, String clientid) {
         Log.e(TAG, "onReceiveClientId -> " + "clientid = " + clientid);
-
-        sendMessage(clientid, 1);
+        sendMessage(clientid, 0);
     }
 
     @Override public void onReceiveOnlineState(Context context, boolean online) {
@@ -119,6 +119,10 @@ public class GeTuiIntentService extends GTIntentService {
                 + message.getTitle()
                 + "\ncontent = "
                 + message.getContent());
+
+        Bundle bundle = new Bundle();
+        bundle.putSerializable("msg",message);
+        sendMessage(bundle,1);
     }
 
     @Override public void onNotificationMessageClicked(Context context, GTNotificationMessage message) {
@@ -298,10 +302,14 @@ public class GeTuiIntentService extends GTIntentService {
                 + timestamp);
     }
 
-    private void sendMessage(String data, int what) {
+    private void sendMessage(Object data, int what) {
         Message msg = Message.obtain();
         msg.what = what;
-        msg.obj = data;
-        //DemoApplication.sendMessage(msg);
+        if (what == 0){
+            msg.obj = data;
+        }else {
+            msg.setData((Bundle) data);
+        }
+        ChainApplication.sendMessage(msg);
     }
 }

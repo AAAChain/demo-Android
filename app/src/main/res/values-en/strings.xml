@@ -11,6 +11,7 @@ The recruiter directly docks the job seeker, and the resume downloads the token 
   <string name="my_home">Personal Center</string>
   <string name="myAccount">My account</string>
   <string name="myWallet">My wallet </string>
+  <string name="myResourceManagement">Resource Management </string>
   <string name="setting">Settings </string>
   <array name="search_trans_tab">
     <item>Query</item>
@@ -93,7 +94,8 @@ Personal information such as name, phone number, and email address should be sub
   <string name="phone_number">Phone number </string>
   <string name="change_phone_number">Change phone number </string>
   <string name="commit">Submit </string>
-  <string name="wallet_address">Wallet address </string>
+  <string name="wallet_account">Wallet account </string>
+  <string name="wallet_password">Wallet password</string>
   <string name="available_balance">Available balance </string>
   <string name="transfer_accounts">Transfer </string>
   <string name="transfer_amount">Transfer amount </string>
@@ -102,4 +104,73 @@ Personal information such as name, phone number, and email address should be sub
   <string name="user_agreement">User agreement</string>
   <string name="about_us">About us</string>
   <string name="logout">Exit login </string>
+
+
+  <array name="resource_management_tab">
+    <item>CPU/NET</item>
+    <item>memory</item>
+  </array>
+
+  <string name="calculation_resource">computing resources </string>
+  <string name="network_resource">network resources </string>
+  <string name="redemption_ing"> redemption </string>
+  <string name="redemption">Redemption</string>
+  <string name="calculation_redemption"> calculate redemption </string>
+  <string name="network_redemption">network redemption</string>
+  <string name="receive_account">receive account </string>
+
+  <string name="buy">buy </string>
+  <string name="mortgage">Staking</string>
+  <string name="calculation_mortgage">calculate Staking</string>
+  <string name="network_mortgage">network Staking</string>
+
+  <string name="memory_resource">memory resources</string>
+  <string name="all_resource">total  memory </string>
+  <string name="sell">sale </string>
+  <string name="buy_memory">buy memory</string>
+  <string name="sell_memory"> sell memory </string>
+  <string name="input_AAA">Enter the number of AAA</string>
+
+  <string name="available_redemption"> redeemable: %s AAA</string>
+  <string name="available">available %s</string>
+  <string name="used">Used %s</string>
+  <string name="current_price">current price: %s AAA/kb</string>
+  <string name="balance">balance: %s</string>
+
+  <string name="copy">copy </string>
+  <string name="copy_success">copy success </string>
+  <string name="generate_pwd">Generate app password</string>
+  <string name="create_account_description">Generate a new account (including the key) </string>
+  <string name="create_account">Create account </string>
+  <string name="order_refresh_failure">order refresh failed </string>
+  <string name="order_refresh_success">order refresh succeeded </string>
+  <string name="modify_failure"> modification failed </string>
+  <string name="waiting">waiting </string>
+  <string name="loading">Loading...</string>
+  <string name="logouting">Exiting </string>
+  <string name="create_order_failure">Failed to create an order, please try again</string>
+  <string name="mortgage_failure"> Staking failed </string>
+  <string name="mortgage_success"> Staking success </string>
+  <string name="redemption_success">Redemption success</string>
+  <string name="redemption_failure"> redemption failed </string>
+  <string name="not_null">Content cannot be empty</string>
+  <string name="buy_success">purchase success </string>
+  <string name="buy_failure"> purchase failed </string>
+  <string name="sell_success">Sell successfully </string>
+  <string name="sell_failure">Sell failed </string>
+  <string name="get_account_success">Get account information successfully </string>
+  <string name="get_account_failure">Failed to get account information</string>
+  <string name="order_updating">order update </string>
+  <string name="order_sent">send order </string>
+  <string name="input_new_account">Please enter a new account name </string>
+  <string name="account_name_rule"> account name must be 12 digits </string>
+
+  <string name="create_account_failure">Failed to create an account, please try again</string>
+  <string name="create_account_success">Create an account successfully </string>
+  <string name="creating">Created </string>
+  <string name="input_password">Please enter the password </string>
+  <string name="input_confirm_password">Please confirm the password again </string>
+  <string name="password_not_identical">Inconsistent passwords</string>
+  <string name="private_key_export">key export </string>
+  <string name="not_sufficient_funds">not sufficient funds</string>
 </resources>

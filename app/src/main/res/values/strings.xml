@@ -46,7 +46,7 @@
   <string name="sell_memory">出售内存</string>
   <string name="input_AAA">输入AAA数量</string>
 
-  <string name="available_redemption">可赎回： %s AAA</string>
+  <string name="available_redemption">可赎回： %s</string>
   <string name="available">可用 %s</string>
   <string name="used">已用 %s</string>
   <string name="current_price">当前价格： %s AAA/kb</string>
@@ -129,6 +129,7 @@
   <string name="modify_failure">修改失败</string>
   <string name="waiting">等待中</string>
   <string name="loading">加载中...</string>
+  <string name="logouting">正在退出</string>
   <string name="create_order_failure">创建订单失败，请重试</string>
   <string name="mortgage_failure">抵押失败</string>
   <string name="mortgage_success">抵押成功</string>
@@ -145,6 +146,7 @@
   <string name="order_sent">发送订单</string>
   <string name="input_new_account">请输入新账户名</string>
   <string name="account_name_rule">账户名必须是12位</string>
+  <string name="not_sufficient_funds">余额不足</string>
 
   <string name="create_account_failure">创建账户失败，请重试</string>
   <string name="create_account_success">创建账户成功</string>
@@ -174,7 +176,7 @@
   <string name="change_phone_number">更换手机号</string>
   <string name="commit">提交</string>
 
-  <string name="wallet_address">钱包账号</string>
+  <string name="wallet_account">钱包账号</string>
   <string name="available_balance">可用余额</string>
   <string name="transfer_accounts">转账</string>
   <string name="transfer_amount">转账金额</string>

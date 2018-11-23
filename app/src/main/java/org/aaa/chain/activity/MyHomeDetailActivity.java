@@ -4,17 +4,22 @@ import android.app.ProgressDialog;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
-import com.squareup.leakcanary.RefWatcher;
+import com.igexin.sdk.PushManager;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import okhttp3.Call;
+import okhttp3.Response;
 import org.aaa.chain.ChainApplication;
 import org.aaa.chain.Constant;
 import org.aaa.chain.JSInteraction;
 import org.aaa.chain.R;
 import org.aaa.chain.entities.ResumeRequestEntity;
+import org.aaa.chain.utils.HttpUtils;
 import org.aaa.chain.views.CommonPopupWindow;
 
 public class MyHomeDetailActivity extends BaseActivity implements CommonPopupWindow.TransferListener {
@@ -57,7 +62,11 @@ public class MyHomeDetailActivity extends BaseActivity implements CommonPopupWin
                     runOnUiThread(new Runnable() {
                         @Override public void run() {
                             dialog.dismiss();
-                            tvBalance.setText(String.valueOf(stringArray[0]));
+                            if (!"undefined".equals(stringArray[0])) {
+                                tvBalance.setText(String.valueOf(stringArray[0]));
+                            } else {
+                                tvBalance.setText("0.0000 AAA");
+                            }
                         }
                     });
                 }
@@ -73,8 +82,10 @@ public class MyHomeDetailActivity extends BaseActivity implements CommonPopupWin
             });
 
             TextView tvMyResumeTitle = $(R.id.tv_my_resume_title);
-            tvMyResumeTitle.setText(String.format(getResources().getString(R.string.my_resume_title),
-                    ChainApplication.getInstance().getBaseInfo().getDocs().get(0).getExtra().getJobType()));
+            if (ChainApplication.getInstance().getBaseInfo() != null) {
+                tvMyResumeTitle.setText(String.format(getResources().getString(R.string.my_resume_title),
+                        ChainApplication.getInstance().getBaseInfo().getDocs().get(0).getExtra().getJobType()));
+            }
 
             $(R.id.rl_transaction_history).setOnClickListener(this);
             $(R.id.rl_my_resume).setOnClickListener(this);
@@ -99,6 +110,45 @@ public class MyHomeDetailActivity extends BaseActivity implements CommonPopupWin
             });
         } else {
             $(R.id.cl_my_home_detail_setting).setVisibility(View.VISIBLE);
+            $(R.id.btn_logout).setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) {
+                    ProgressDialog progressDialog = ProgressDialog.show(MyHomeDetailActivity.this, getResources().getString(R.string.logouting),
+                            getResources().getString(R.string.waiting));
+                    HttpUtils.getInstance().unSubscribePush(Constant.getCurrentAccount(), new HttpUtils.ServerCallBack() {
+                        @Override public void onFailure(Call call, IOException e) {
+                            Log.i("info", "unbind push error");
+                            runOnUiThread(new Runnable() {
+                                @Override public void run() {
+                                    progressDialog.dismiss();
+                                }
+                            });
+                        }
+
+                        @Override public void onResponse(Call call, Response response) {
+
+                            if (response.code() == 200) {
+                                Log.i("info", "unbind push success");
+
+                                PushManager.getInstance().stopService(MyHomeDetailActivity.this);
+                                runOnUiThread(new Runnable() {
+                                    @Override public void run() {
+                                        progressDialog.dismiss();
+                                        startActivity(LoginActivity.class, null);
+                                        finish();
+                                    }
+                                });
+                            } else {
+                                runOnUiThread(new Runnable() {
+                                    @Override public void run() {
+                                        progressDialog.dismiss();
+                                    }
+                                });
+                                Log.i("info", "unbind push error");
+                            }
+                        }
+                    });
+                }
+            });
         }
 
         dataEntities.clear();
@@ -135,8 +185,6 @@ public class MyHomeDetailActivity extends BaseActivity implements CommonPopupWin
 
     @Override protected void onDestroy() {
         super.onDestroy();
-        RefWatcher refWatcher = ChainApplication.getRefWatcher(this);
-        refWatcher.watch(this);
         JSInteraction.getInstance().removeListener();
     }
 

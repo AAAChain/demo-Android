@@ -118,9 +118,12 @@ public class ResourceManagementActivity extends BaseActivity {
                         ramQuota = decimalFormat.format(rq / 1024);
                         ramUsage = decimalFormat.format(ru / 1024);
 
-                        JSONObject redemption = new JSONObject(jsonObject.getString("self_delegated_bandwidth"));
-                        netRedemption = redemption.getString("net_weight");
-                        cpuRedemption = redemption.getString("cpu_weight");
+                        if (jsonObject.getString("self_delegated_bandwidth") != null && !"null".equals(
+                                jsonObject.getString("self_delegated_bandwidth"))) {
+                            JSONObject redemption = new JSONObject(jsonObject.getString("self_delegated_bandwidth"));
+                            netRedemption = redemption.getString("net_weight");
+                            cpuRedemption = redemption.getString("cpu_weight");
+                        }
 
                         balance = jsonObject.getString("core_liquid_balance");
 

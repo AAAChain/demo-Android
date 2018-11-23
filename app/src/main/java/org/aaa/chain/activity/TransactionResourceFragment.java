@@ -46,8 +46,6 @@ public class TransactionResourceFragment extends BaseFragment implements BindVie
         recyclerView.setLayoutManager(manager);
         swipeRefreshLayout.setColorSchemeColors(Color.RED, Color.BLUE, Color.GREEN);
 
-        initRecyclerView();
-
         adapter = new RecyclerViewAdapter<>(getActivity(), list, R.layout.recyclerview_msg_item, this);
         recyclerView.setAdapter(adapter);
 
@@ -57,6 +55,11 @@ public class TransactionResourceFragment extends BaseFragment implements BindVie
                 initRecyclerView();
             }
         });
+    }
+
+    @Override public void onResume() {
+        super.onResume();
+        initRecyclerView();
     }
 
     OrderResponseEntity orderResponseEntity = null;
@@ -82,6 +85,9 @@ public class TransactionResourceFragment extends BaseFragment implements BindVie
                         if (orderResponseEntity.getData() == null || orderResponseEntity.getData().size() == 0) {
                             return;
                         }
+                        if (getActivity() == null) {
+                            return;
+                        }
                         getActivity().runOnUiThread(new Runnable() {
                             @Override public void run() {
                                 swipeRefreshLayout.setRefreshing(false);
@@ -97,6 +103,9 @@ public class TransactionResourceFragment extends BaseFragment implements BindVie
                             }
                         });
                     } else {
+                        if (getActivity() == null){
+                            return;
+                        }
                         getActivity().runOnUiThread(new Runnable() {
                             @Override public void run() {
                                 Toast.makeText(getActivity(), getResources().getString(R.string.order_refresh_failure), Toast.LENGTH_SHORT).show();
@@ -149,6 +158,7 @@ public class TransactionResourceFragment extends BaseFragment implements BindVie
 
         holder.getItemView().setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {
+                ((SearchAndTransFragment) getParentFragment()).setNotification(false);
                 Intent intent = new Intent(getActivity(), ResumeDetailsActivity.class);
                 intent.putExtra("type", 1);
                 intent.putExtra("dataEntity", dataEntity);

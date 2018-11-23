@@ -219,4 +219,29 @@ public class HttpUtils {
         }
         httpRequest(jsonObject.toString(), null, METHOD_POST, url, callBack);
     }
+
+    public void subscribePush(String account, String cid, ServerCallBack callBack) {
+        String url = " http://47.99.114.35:8086/subscribe";
+        JSONObject jsonObject = new JSONObject();
+        try {
+            jsonObject.put("user", account);
+            jsonObject.put("ge_tui_cid", cid);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        httpRequest(jsonObject.toString(), null, METHOD_POST, url, callBack);
+    }
+
+    public void unSubscribePush(String account, ServerCallBack callBack) {
+
+        String url = "http://47.99.114.35:8086/unsubscribe";
+        JSONObject jsonObject = new JSONObject();
+        try {
+            jsonObject.put("user", account);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        httpRequest(jsonObject.toString(), null, METHOD_POST, url, callBack);
+    }
 }

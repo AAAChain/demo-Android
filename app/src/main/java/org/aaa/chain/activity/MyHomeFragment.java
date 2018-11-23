@@ -3,9 +3,7 @@ package org.aaa.chain.activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
-import com.squareup.leakcanary.RefWatcher;
 import java.util.Objects;
-import org.aaa.chain.ChainApplication;
 import org.aaa.chain.R;
 
 public class MyHomeFragment extends BaseFragment {
@@ -52,7 +50,5 @@ public class MyHomeFragment extends BaseFragment {
 
     @Override public void onDestroy() {
         super.onDestroy();
-        RefWatcher refWatcher = ChainApplication.getRefWatcher(getActivity());
-        refWatcher.watch(this);
     }
 }

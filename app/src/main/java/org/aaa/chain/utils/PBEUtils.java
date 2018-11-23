@@ -2,7 +2,6 @@ package org.aaa.chain.utils;
 
 import android.content.Context;
 import java.io.File;
-import java.io.UnsupportedEncodingException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.Key;
