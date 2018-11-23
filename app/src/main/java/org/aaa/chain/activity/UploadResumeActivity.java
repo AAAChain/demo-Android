@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.net.Uri;
+import android.os.Environment;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.support.constraint.ConstraintLayout;
@@ -29,6 +30,7 @@ import org.aaa.chain.JSInteraction;
 import org.aaa.chain.R;
 import org.aaa.chain.entities.ResumeRequestEntity;
 import org.aaa.chain.entities.ResumeResponseEntity;
+import org.aaa.chain.utils.FileUtils;
 import org.aaa.chain.utils.HttpUtils;
 import org.aaa.chain.utils.PBEUtils;
 import org.aaa.chain.views.ProgressResponseBody;
@@ -69,16 +71,20 @@ public class UploadResumeActivity extends BaseActivity implements ProgressRespon
         $(R.id.btn_resume_upload).setOnClickListener(this);
         btnUploadDone.setOnClickListener(this);
 
+        inputPrice.setText("1");
+        inputPrice.setSelection(1);
+
         try {
             object = new JSONObject(getIntent().getExtras().getString("metadata"));
             fileName = object.getString("name");
             hashId = object.getString("hashId");
             price = object.getString("price");
-            //if (fileName != null && hashId != null) {
-            //    onlyModifyInfo = true;
-            //    btnResumeUpload.setText(getResources().getString(R.string.confirm_modify));
-            //    inputPrice.setText(price);
-            //}
+            if (fileName != null && hashId != null) {
+                onlyModifyInfo = true;
+                btnResumeUpload.setText(getResources().getString(R.string.confirm_modify));
+                inputPrice.setText(price);
+                inputPrice.setSelection(price.length());
+            }
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -89,19 +95,19 @@ public class UploadResumeActivity extends BaseActivity implements ProgressRespon
         switch (v.getId()) {
 
             case R.id.btn_resume_upload:
-                //if (onlyModifyInfo) {
-                //    try {
-                //        object.put("price", inputPrice.getText().toString());
-                //    } catch (JSONException e) {
-                //        e.printStackTrace();
-                //    }
-                //    modifyInfo(hashId, object.toString());
-                //} else {
+                if (onlyModifyInfo) {
+                    try {
+                        object.put("price", inputPrice.getText().toString());
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                    modifyInfo(hashId, object.toString());
+                } else {
                     Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
                     intent.setType("*/*");
                     intent.addCategory(Intent.CATEGORY_OPENABLE);
                     startActivityForResult(intent, 100);
-                //}
+                }
                 break;
 
             case R.id.btn_upload_done:
@@ -126,16 +132,29 @@ public class UploadResumeActivity extends BaseActivity implements ProgressRespon
                     } else if ("com.android.downloads.documents".equals(imageUri.getAuthority())) {
                         Uri contentUri = ContentUris.withAppendedId(Uri.parse("content://downloads/public_downloads"), Long.valueOf(docId));
                         imagePath = getImagePath(UploadResumeActivity.this, contentUri, null);
+                    } else if ("com.android.externalstorage.documents".equals(imageUri.getAuthority())) {
+                        final String[] split = docId.split(":");
+                        final String type = split[0];
+                        if ("primary".equalsIgnoreCase(type)) {
+                            imagePath = Environment.getExternalStorageDirectory() + "/" + split[1];
+                        }
                     }
                 } else if ("content".equalsIgnoreCase(imageUri.getScheme())) {
                     imagePath = getImagePath(UploadResumeActivity.this, imageUri, null);
                 } else if ("file".equalsIgnoreCase(imageUri.getScheme())) {
                     imagePath = imageUri.getPath();
                 }
+
+                if (FileUtils.getInstance().FormatFileSize(imagePath) > 10) {
+                    Log.i("info", "file size:" + FileUtils.getInstance().FormatFileSize(imagePath));
+                    Toast.makeText(this, "file is too large", Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 try {
+
                     File file = PBEUtils.getInstance()
-                            .encryptFile(UploadResumeActivity.this, imagePath, org.aaa.chain.Constant.getPrivateKey(),
-                                    org.aaa.chain.Constant.getPublicKey().getBytes());
+                            .encryptFile(UploadResumeActivity.this, imagePath, org.aaa.chain.Constant.getCurrentPrivateKey(),
+                                    org.aaa.chain.Constant.getCurrentPublicKey().getBytes());
                     Log.i("info", "file path:" + file.getAbsolutePath());
                     requestEntity.setFilepath(file.getAbsolutePath());
                     requestEntity.setFilename(file.getName());
@@ -148,23 +167,23 @@ public class UploadResumeActivity extends BaseActivity implements ProgressRespon
         }
     }
 
-        private String getImagePath(Context context, Uri uri, String selection) {
-            String path = null;
-            Cursor cursor = context.getContentResolver().query(uri, null, selection, null, null);
-            if (cursor != null) {
-                if (cursor.moveToFirst()) {
-                    path = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA));
-                }
-                cursor.close();
+    private String getImagePath(Context context, Uri uri, String selection) {
+        String path = null;
+        Cursor cursor = context.getContentResolver().query(uri, null, selection, null, null);
+        if (cursor != null) {
+            if (cursor.moveToFirst()) {
+                path = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA));
             }
-            return path;
+            cursor.close();
         }
+        return path;
+    }
 
     private void modifyInfo(String hashId, String modifyContent) {
         ProgressDialog dialog = ProgressDialog.show(UploadResumeActivity.this, "waiting...", "modifying...");
-        JSInteraction.getInstance().getSignature(modifyContent, org.aaa.chain.Constant.getPrivateKey(), new JSInteraction.JSCallBack() {
-            @Override public void onSuccess(String content) {
-                HttpUtils.getInstance().modifyCustomInfo(hashId, content, modifyContent, new HttpUtils.ServerCallBack() {
+        JSInteraction.getInstance().getSignature(modifyContent, org.aaa.chain.Constant.getCurrentPrivateKey(), new JSInteraction.JSCallBack() {
+            @Override public void onSuccess(String... stringArray) {
+                HttpUtils.getInstance().modifyCustomInfo(hashId, stringArray[0], modifyContent, new HttpUtils.ServerCallBack() {
                     @Override public void onFailure(Call call, IOException e) {
                         runOnUiThread(new Runnable() {
                             @Override public void run() {
@@ -233,11 +252,11 @@ public class UploadResumeActivity extends BaseActivity implements ProgressRespon
         } catch (JSONException e) {
             e.printStackTrace();
         }
-        requestEntity.setAccount(org.aaa.chain.Constant.getAccount());
+        requestEntity.setAccount(org.aaa.chain.Constant.getCurrentAccount());
 
-        JSInteraction.getInstance().getSignature(object.toString(), org.aaa.chain.Constant.getPrivateKey(), new JSInteraction.JSCallBack() {
-            @Override public void onSuccess(String content) {
-                requestEntity.setSignature(content);
+        JSInteraction.getInstance().getSignature(object.toString(), org.aaa.chain.Constant.getCurrentPrivateKey(), new JSInteraction.JSCallBack() {
+            @Override public void onSuccess(String... stringArray) {
+                requestEntity.setSignature(stringArray[0]);
                 runOnUiThread(new Runnable() {
                     @Override public void run() {
                         dialog.dismiss();

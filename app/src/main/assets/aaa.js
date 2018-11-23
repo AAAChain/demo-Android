@@ -1,28 +1,62 @@
-var Eos = require('eosjs')
 var ecc = require('eosjs-ecc')
 var ByteBuffer = require('bytebuffer')
 var AAA = require('aaajs')
 
 config = {
-  keyProvider: ['5JobQnxtEvshVRZW6berfYvzaUMZq2A8Ax5eZhuZqdTCqT19iLV','5J4a77MxGSDnASAZHAV7gThSeoenvLB4nb8wFPkepXoiLyesuf5'], // WIF string or array of keys..
-  chainId: '038f4b0fc8ff18a4f0842a8f0564611f6e96e8535901dd45e43ac8691a1c4dca',
-  httpEndpoint: 'http://jungle.cryptolions.io:18888', // jungle testnet
+  chainId: '1c6ae7719a2a3b4ecb19584a30ff510ba1b6ded86e1fd8b8fc22f1179c622a32',
+  httpEndpoint: 'http://47.98.107.96:10180', // jungle testnet
   expireInSeconds: 60,
   broadcast: true,
   verbose: false, // API activity
   sign: true
 }
 
-
-//eos = Eos(config)
-
 aaa = AAA(config)
 
+initConfig = function(privateKey){
+  config.keyProvider = [privateKey]
+  aaa = AAA(config)
+}
+
+
+//auth
+authPermission = function(account){
+  aaa.authPermission(account).then(value => {
+    console.log('authPermission OK. txid: ' + value.transaction_id)
+  }).catch(e => {
+    console.log("authPermission failed: " + e)
+  });
+}
+
+
 getBalance = function(accountName){
-  aaa.getCurrencyBalance('eosio.token', accountName, 'EOS',function(error,result){
-     window.aaaChain.getEosBalance(error,result)
+  aaa.getCurrencyBalance('eosio.token', accountName, 'AAA',function(error,result){
+     window.aaaChain.getAAABalance(error,result[0])
     })
 }
+
+getPublicKey = function(privateKey){
+  var publicKey = ecc.privateToPublic(privateKey,'AAA')
+  window.aaaChain.getPublicKey(publicKey)
+}
+
+generationSecretKey = function(){
+
+ ecc.randomKey().then(privateKey => {
+
+     window.aaaChain.generationSecretKey(privateKey,ecc.privateToPublic(privateKey,'AAA'))
+ })
+}
+
+
+transfer = function(from,to,amount,remark){
+  var options = {authorization:from+'@active',broadcast:true,sign:true}
+  aaa.transfer({from:from,to:to,quantity:amount,memo:remark},options,function (error,result) {
+     window.aaaChain.transfer(JSON.stringify(result),error)
+  })
+
+}
+
 
 getSignature = function(json,privateKey){
   var key = ecc.sign(json,privateKey)
@@ -32,21 +66,20 @@ getSignature = function(json,privateKey){
 
 // 买家预付款
 prepay= function(id,buyer,seller,price){
-
   aaa.payForGood(id, buyer, seller, price).
     then(value => {
       console.log('payForGood OK. txid: ' + value.transaction_id)
       window.aaaChain.prepay(JSON.stringify(value))
       }).catch(e => {
         console.log("payForGood failed: " + e)
-         window.aaaChain.prepayError(e)
+         window.aaaChain.prepayError(e.toString())
         });
 }
 
 
 encryptKey = function(privateKey,anotherPublicKey,key){
 
-  var enKey  = ecc.Aes.encrypt(privateKey,anotherPublicKey,key)
+  var enKey  = ecc.Aes.encrypt(privateKey,ecc.PublicKey(anotherPublicKey, 'AAA'),key)
   console.log("enKey:"+JSON.stringify(enKey))
 
   window.aaaChain.getEncryptKey(JSON.stringify(enKey))
@@ -57,7 +90,7 @@ decryptKey = function(privateKey,anotherPublicKey,enKey){
   var nonce = ByteBuffer.Long.fromValue(obj.nonce)
   var message = Buffer.from(obj.message)
   var checksum = obj.checksum
-  var deKey  = ecc.Aes.decrypt(privateKey,anotherPublicKey,nonce,message,checksum)
+  var deKey  = ecc.Aes.decrypt(privateKey,ecc.PublicKey(anotherPublicKey, 'AAA'),nonce,message,checksum)
   console.log("deKey:"+deKey.toString())
   window.aaaChain.getDecryptKey(deKey.toString())
 }
@@ -93,4 +126,117 @@ confirmOrder = function(buyer,orderid) {
       console.log("confirmPayment failed: " + e)
        window.aaaChain.payFailure(e)
     })
+}
+
+
+//获取eoshackathon账户的信息
+getAccountInfo = function(account){
+
+  aaa.getAccount({account_name: account}, function (error, result) {
+          window.aaaChain.getAccountInfo(JSON.stringify(result),error)
+      })
+}
+
+
+getRamPrice = function(){
+
+  aaa.getTableRows({"json": true,"code": "eosio","scope":"eosio","table":"rammarket"},function (error, result) {
+      const quote = result.rows[0].quote.balance.substring(0,result.rows[0].quote.balance.lastIndexOf(" "));
+      const base = result.rows[0].base.balance.substring(0,result.rows[0].base.balance.lastIndexOf(" "));
+
+      window.aaaChain.getRamPrice(parseFloat(quote/(base/1024)).toFixed(6),error)
+  })
+}
+
+getGlobalRam = function(){
+
+aaa.getTableRows({"json": true,"code": "eosio","scope":"eosio","table":"global"},function (error, result) {
+
+      window.aaaChain.getGlobalRam(JSON.stringify(result),error)
+  })
+
+}
+
+
+//抵押
+mortgage = function(account,receiveAccount,netq,cpuq){
+
+  aaa.transaction(result =>
+    result.delegatebw({
+      from:account,
+      receiver:receiveAccount,
+      stake_net_quantity:netq,
+      stake_cpu_quantity:cpuq,
+      transfer:0
+    })
+  ).then(result=>
+           window.aaaChain.mortgageSuccess(JSON.stringify(result))
+       ).catch(error=>
+           window.aaaChain.mortgageError(error.toString())
+       )
+}
+
+
+//赎回
+redemption = function(account,receiveAccount,netq,cpuq){
+
+  aaa.transaction(result => {
+      result.undelegatebw({
+          from: account,
+          receiver: receiveAccount,
+          unstake_net_quantity: netq,
+          unstake_cpu_quantity: cpuq
+      })
+  }).then(result=>
+            window.aaaChain.redemptionSuccess(JSON.stringify(result))
+        ).catch(error=>
+        window.aaaChain.redemptionError(error.toString())
+        )
+
+}
+
+  /**购买**/
+buyram = function(account,receiveAccount,bytesnum){
+
+  aaa.transaction(tr => {
+      tr.buyrambytes({
+          payer: account,
+          receiver: receiveAccount,
+          bytes: bytesnum
+      })
+  }).then(result=>{
+
+    window.aaaChain.buyramSuccess(JSON.stringify(result))
+  }).catch(error=>{
+  console.log("buy ram error:"+error)
+    window.aaaChain.buyramError(error.toString())
+  })
+
+}
+
+
+//出售
+sellram = function(account,bytesnum){
+
+  aaa.transaction(tr => {
+      tr.sellram({
+          account: account,
+          bytes: bytesnum
+      })
+  }).then(result=>
+        window.aaaChain.sellramSuccess(JSON.stringify(result))
+    ).catch(error=>
+    window.aaaChain.sellramError(error.toString())
+    )
+}
+
+
+//获取账户
+getKeyAccounts = function(publicKey){
+
+  aaa.getKeyAccounts(publicKey,function (error, result) {
+
+    window.aaaChain.getKeyAccounts(JSON.stringify(result),error)
+  })
+
 }

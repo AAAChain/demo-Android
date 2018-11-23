@@ -8,8 +8,6 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-import com.squareup.leakcanary.RefWatcher;
-import org.aaa.chain.ChainApplication;
 import org.aaa.chain.R;
 import org.aaa.chain.utils.CommonUtils;
 import org.json.JSONException;
@@ -126,7 +124,5 @@ public class CreateSmallResumeActivity extends BaseActivity {
 
     @Override protected void onDestroy() {
         super.onDestroy();
-        RefWatcher refWatcher = ChainApplication.getRefWatcher(this);
-        refWatcher.watch(this);
     }
 }

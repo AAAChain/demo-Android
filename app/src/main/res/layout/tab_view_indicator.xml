@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:gravity="center"
-    android:orientation="vertical"
     >
 
   <ImageView
@@ -11,6 +10,8 @@
       android:layout_width="26dp"
       android:layout_height="26dp"
       android:contentDescription="@null"
+      app:layout_constraintEnd_toEndOf="parent"
+      app:layout_constraintStart_toStartOf="parent"
       />
 
   <TextView
@@ -19,6 +20,20 @@
       android:layout_height="wrap_content"
       android:layout_marginTop="1dp"
       android:textSize="12sp"
+      app:layout_constraintEnd_toEndOf="parent"
+      app:layout_constraintStart_toStartOf="parent"
+      app:layout_constraintTop_toBottomOf="@id/tab_iv_image"
       />
 
-</LinearLayout>
+  <TextView
+      android:id="@+id/tv_badgeview"
+      android:layout_width="10dp"
+      android:layout_height="10dp"
+      android:background="@drawable/shape_red_dot"
+      android:textColor="@color/white_color"
+      app:layout_constraintStart_toEndOf="@id/tab_iv_image"
+      android:visibility="gone"
+      />
+
+
+</android.support.constraint.ConstraintLayout>

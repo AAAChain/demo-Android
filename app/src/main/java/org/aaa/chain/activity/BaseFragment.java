@@ -1,5 +1,6 @@
 package org.aaa.chain.activity;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.IdRes;
 import android.support.annotation.NonNull;
@@ -9,9 +10,10 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-public abstract class BaseFragment extends Fragment implements View.OnClickListener{
+public abstract class BaseFragment extends Fragment implements View.OnClickListener {
 
     private View view;
+    public ResourceManagementActivity activity;
 
     @Override public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -35,4 +37,11 @@ public abstract class BaseFragment extends Fragment implements View.OnClickListe
     public abstract int initLayout();
 
     public abstract void getViewById();
+
+    @Override public void onAttach(Context context) {
+        super.onAttach(context);
+        if (context instanceof ResourceManagementActivity) {
+            activity = (ResourceManagementActivity) context;
+        }
+    }
 }

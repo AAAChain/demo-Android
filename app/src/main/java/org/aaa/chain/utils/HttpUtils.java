@@ -35,7 +35,7 @@ public class HttpUtils {
     }
 
     public void AddDataResource(ResumeRequestEntity entity, ServerCallBack callBack) {
-        String url = "http://47.99.61.209:9527/dbnode/data/add?chain=eos";
+        String url = "http://47.99.114.35:9527/dbnode/data/add?chain=aaa";
         JSONObject object = new JSONObject();
         try {
             object.put("source", "it is so beautiful, i love it");
@@ -75,7 +75,7 @@ public class HttpUtils {
     }
 
     public void modifyCustomInfo(String hashId, String signature, String modifyContent, ServerCallBack callBack) {
-        String url = "http://47.99.61.209:9527/dbnode/" + hashId + "?chain=eos";
+        String url = "http://47.99.114.35:9527/dbnode/" + hashId + "?chain=aaa";
         JSONObject object = new JSONObject();
         try {
             object.put("signature", signature);
@@ -89,10 +89,10 @@ public class HttpUtils {
     }
 
     public void getBaseInfo(ServerCallBack callBack) {
-        String url = "http://47.99.61.209:9527/dbnode/find?page=1&pageSize=1&order=-1";
+        String url = "http://47.99.114.35:9527/dbnode/find?page=1&pageSize=1&order=-1";
         JSONObject object = new JSONObject();
         try {
-            object.put("account", Constant.getAccount());
+            object.put("account", Constant.getCurrentAccount());
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -100,14 +100,14 @@ public class HttpUtils {
     }
 
     public void searchResource(int page, String content, ServerCallBack callBack) {
-        String url = "http://47.99.61.209:9527/dbnode/find?page=" + page + "&pageSize=20&sortBy=timestamp&order=-1";
+        String url = "http://47.99.114.35:9527/dbnode/find?page=" + page + "&pageSize=20&sortBy=timestamp&order=-1";
         JSONObject object = new JSONObject();
         try {
             JSONObject object1 = new JSONObject();
             object1.put("$gte", 0);
             object.put("size", object1);
             JSONObject object2 = new JSONObject();
-            object2.put("$ne", Constant.getAccount());
+            object2.put("$ne", Constant.getCurrentAccount());
             object.put("account", object2);
             if (content != null) {
                 JSONObject object3 = new JSONObject();
@@ -125,7 +125,7 @@ public class HttpUtils {
             AddDataResource(entity, callBack);
             return;
         }
-        String url = "http://47.99.61.209:9527/dbnode/file/add?chain=eos";
+        String url = "http://47.99.114.35:9527/dbnode/file/add?chain=aaa";
         File file = new File(entity.getFilepath());
         MediaType type = MediaType.parse("text/x-markdown;charset=utf-8");
         RequestBody fileBody = RequestBody.create(type, file);
@@ -164,18 +164,18 @@ public class HttpUtils {
     }
 
     public void getMyResource(String signature, String message, ServerCallBack callBack) {
-        String url = "http://47.99.61.209:9527/dbnode/mine?chain=eos&page=1&pageSize=2&sortBy=timestamp";
+        String url = "http://47.99.114.35:9527/dbnode/mine?chain=aaa&page=1&pageSize=2&sortBy=timestamp";
         Headers headers = new Headers.Builder().add("signature", signature).add("message", message).build();
         httpRequest(null, headers, METHOD_GET, url, callBack);
     }
 
     public void getAppointResource(String hashId, ServerCallBack callBack) {
-        String url = "http://47.99.61.209:9527/dbnode/" + hashId;
+        String url = "http://47.99.114.35:9527/dbnode/" + hashId;
         httpRequest(null, null, METHOD_GET, url, callBack);
     }
 
     public void downlaodFile(String hashId, ServerCallBack callBack) {
-        String url = "http://47.99.61.209/ipfs/" + hashId;
+        String url = "http://47.99.114.35:8089/ipfs/" + hashId;
         httpRequest(null, null, METHOD_GET, url, callBack);
     }
 
@@ -205,5 +205,43 @@ public class HttpUtils {
             e.printStackTrace();
         }
         httpRequest(object.toString(), null, METHOD_POST, url, callBack);
+    }
+
+    public void newAccount(String account, String publicKey, ServerCallBack callBack) {
+        String url = "http://47.99.114.35:8090/accountService/newAccount";
+        JSONObject jsonObject = new JSONObject();
+        try {
+            jsonObject.put("account", account);
+            jsonObject.put("ownerPubkey", publicKey);
+            jsonObject.put("activePubkey", publicKey);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        httpRequest(jsonObject.toString(), null, METHOD_POST, url, callBack);
+    }
+
+    public void subscribePush(String account, String cid, ServerCallBack callBack) {
+        String url = " http://47.99.114.35:8086/subscribe";
+        JSONObject jsonObject = new JSONObject();
+        try {
+            jsonObject.put("user", account);
+            jsonObject.put("ge_tui_cid", cid);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        httpRequest(jsonObject.toString(), null, METHOD_POST, url, callBack);
+    }
+
+    public void unSubscribePush(String account, ServerCallBack callBack) {
+
+        String url = "http://47.99.114.35:8086/unsubscribe";
+        JSONObject jsonObject = new JSONObject();
+        try {
+            jsonObject.put("user", account);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        httpRequest(jsonObject.toString(), null, METHOD_POST, url, callBack);
     }
 }

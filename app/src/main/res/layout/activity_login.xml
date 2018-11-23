@@ -55,6 +55,7 @@
         android:paddingLeft="10dp"
         android:text="aaauser"
         android:textColor="@color/color_333333"
+        android:textSize="@dimen/text_data_size"
         />
 
 
@@ -77,9 +78,44 @@
     <Button
         android:id="@+id/btn_login"
         android:layout_width="30dp"
-        android:layout_height="30dp"
+        android:layout_height="20dp"
         android:layout_marginRight="10dp"
         android:background="@mipmap/ic_arrow_right"
         />
   </LinearLayout>
+
+
+  <TextView
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="30dp"
+      android:text="@string/create_account_description"
+      android:textSize="@dimen/text_data_size"
+      app:layout_constraintStart_toStartOf="@id/layout"
+      app:layout_constraintTop_toBottomOf="@id/layout"
+      />
+
+  <EditText
+      android:id="@+id/et_new_account"
+      android:layout_width="0dp"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="50dp"
+      android:hint="new account"
+      android:paddingLeft="10dp"
+      app:layout_constraintEnd_toStartOf="@id/btn_create"
+      app:layout_constraintStart_toStartOf="parent"
+      app:layout_constraintTop_toBottomOf="@id/layout"
+      />
+  <Button
+      android:id="@+id/btn_create"
+      android:layout_width="0dp"
+      android:layout_height="wrap_content"
+      android:layout_marginRight="10dp"
+      android:layout_marginTop="50dp"
+      android:text="@string/create_account"
+      android:textAllCaps="false"
+      app:layout_constraintEnd_toEndOf="parent"
+      app:layout_constraintHorizontal_weight="1"
+      app:layout_constraintTop_toBottomOf="@id/layout"
+      />
 </android.support.constraint.ConstraintLayout>

@@ -13,7 +13,6 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import com.google.gson.Gson;
-import com.squareup.leakcanary.RefWatcher;
 import java.io.IOException;
 import java.util.Objects;
 import okhttp3.Call;
@@ -106,7 +105,7 @@ public class UploadHomeFragment extends BaseFragment {
 
     @Override public void onResume() {
         super.onResume();
-        if (searchResponseEntity != null && isRefresh) {
+        if (searchResponseEntity != null && searchResponseEntity.getDocs().size() > 0 && isRefresh) {
             extraEntity = ChainApplication.getInstance().getBaseInfo().getDocs().get(0).getExtra();
             String sex = extraEntity.getSex();
             if ("male".equals(sex)) {
@@ -130,7 +129,8 @@ public class UploadHomeFragment extends BaseFragment {
     }
 
     private void getBaseInfo() {
-        ProgressDialog dialog = ProgressDialog.show(getActivity(), "waiting...", "loading...");
+        ProgressDialog dialog =
+                ProgressDialog.show(getActivity(), getResources().getString(R.string.waiting), getResources().getString(R.string.loading));
         new Thread(new Runnable() {
             @Override public void run() {
                 HttpUtils.getInstance().getBaseInfo(new HttpUtils.ServerCallBack() {
@@ -150,31 +150,39 @@ public class UploadHomeFragment extends BaseFragment {
                             ResponseBody body = response.body();
                             try {
                                 searchResponseEntity = new Gson().fromJson(body.string(), SearchResponseEntity.class);
-                                ChainApplication.getInstance().setBaseInfo(searchResponseEntity);
-                                getActivity().runOnUiThread(new Runnable() {
-                                    @Override public void run() {
-                                        dialog.dismiss();
-                                        extraEntity = searchResponseEntity.getDocs().get(0).getExtra();
-                                        String sex = extraEntity.getSex();
-                                        if ("male".equals(sex)) {
-                                            rbMale.setChecked(true);
-                                        } else {
-                                            rbFemale.setChecked(true);
+                                if (searchResponseEntity.getDocs().size() > 0) {
+                                    ChainApplication.getInstance().setBaseInfo(searchResponseEntity);
+                                    getActivity().runOnUiThread(new Runnable() {
+                                        @Override public void run() {
+                                            dialog.dismiss();
+                                            extraEntity = searchResponseEntity.getDocs().get(0).getExtra();
+                                            String sex = extraEntity.getSex();
+                                            if ("male".equals(sex)) {
+                                                rbMale.setChecked(true);
+                                            } else {
+                                                rbFemale.setChecked(true);
+                                            }
+                                            String startTime = extraEntity.getStartTime();
+                                            tvStartTime.setText(startTime);
+                                            String birthday = extraEntity.getBirthday();
+                                            tvBirthday.setText(birthday);
+                                            String company = extraEntity.getCompany();
+                                            tvCompany.setText(company);
+                                            String jobContentInfo = extraEntity.getJobContentInfo();
+                                            if (!TextUtils.isEmpty(jobContentInfo)) {
+                                                etJobContentInfo.setText(jobContentInfo);
+                                            } else {
+                                                etJobContentInfo.setText(getResources().getString(R.string.last_job_details));
+                                            }
                                         }
-                                        String startTime = extraEntity.getStartTime();
-                                        tvStartTime.setText(startTime);
-                                        String birthday = extraEntity.getBirthday();
-                                        tvBirthday.setText(birthday);
-                                        String company = extraEntity.getCompany();
-                                        tvCompany.setText(company);
-                                        String jobContentInfo = extraEntity.getJobContentInfo();
-                                        if (!TextUtils.isEmpty(jobContentInfo)) {
-                                            etJobContentInfo.setText(jobContentInfo);
-                                        } else {
-                                            etJobContentInfo.setText(getResources().getString(R.string.last_job_details));
+                                    });
+                                } else {
+                                    getActivity().runOnUiThread(new Runnable() {
+                                        @Override public void run() {
+                                            dialog.dismiss();
                                         }
-                                    }
-                                });
+                                    });
+                                }
                             } catch (IOException e) {
                                 e.printStackTrace();
                             }
@@ -208,7 +216,7 @@ public class UploadHomeFragment extends BaseFragment {
                 break;
 
             case R.id.btn_next:
-                if (tvStartTime.getText().toString().equals("请选择")) {
+                if (tvStartTime.getText().toString().equals(getResources().getString(R.string.choose))) {
                     tvStartTime.setText("2010-9");
                 }
                 try {
@@ -217,13 +225,22 @@ public class UploadHomeFragment extends BaseFragment {
                     object.put("company", tvCompany.getText().toString());
                     object.put("jobContentInfo", etJobContentInfo.getText().toString());
 
+                    if (extraEntity == null) {
+                        extraEntity = new ExtraEntity();
+                    }
                     object.put("lastCompany", extraEntity.getLastCompany());
                     object.put("lastWorkingHour", extraEntity.getLastWorkingHour());
                     object.put("jobType", extraEntity.getJobType());
                     object.put("lastJobContentInfo", extraEntity.getLastJobContentInfo());
                     object.put("name", extraEntity.getName());
-                    object.put("hashId", searchResponseEntity.getDocs().get(0).getHashId());
-                    object.put("price", extraEntity.getPrice());
+                    if (searchResponseEntity.getDocs().size() > 0) {
+                        object.put("hashId", searchResponseEntity.getDocs().get(0).getHashId());
+                    }
+                    if (extraEntity.getPrice() == null) {
+                        object.put("price", 1);
+                    } else {
+                        object.put("price", extraEntity.getPrice());
+                    }
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -234,8 +251,6 @@ public class UploadHomeFragment extends BaseFragment {
 
     @Override public void onDestroy() {
         super.onDestroy();
-        RefWatcher refWatcher = ChainApplication.getRefWatcher(getActivity());
-        refWatcher.watch(this);
     }
 
     @Override public void onActivityResult(int requestCode, int resultCode, Intent data) {

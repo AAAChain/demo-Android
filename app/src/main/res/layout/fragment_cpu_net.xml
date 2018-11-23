@@ -1,0 +1,329 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    >
+  <ScrollView
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      >
+    <android.support.constraint.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="20dp"
+        >
+      <TextView
+          android:id="@+id/tv_calculation_resource_label"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="@string/calculation_resource"
+          android:textColor="@color/text_color"
+          android:textSize="@dimen/text_content_size"
+          />
+
+
+      <TextView
+          android:id="@+id/tv_calculation_resource_used"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_marginLeft="10dp"
+          android:text="@string/used"
+          android:textSize="@dimen/text_data_size"
+          app:layout_constraintStart_toStartOf="@id/pb_calculation_resource"
+          app:layout_constraintTop_toTopOf="@id/tv_calculation_resource_label"
+
+          />
+      <TextView
+          android:id="@+id/tv_calculation_resource_available"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="@string/available"
+          app:layout_constraintEnd_toEndOf="parent"
+
+          />
+
+      <android.support.v4.widget.ContentLoadingProgressBar
+          android:id="@+id/pb_calculation_resource"
+          android:layout_width="0dp"
+          android:layout_height="wrap_content"
+          android:layout_marginLeft="20dp"
+          android:max="100"
+          android:progress="50"
+          app:layout_constraintEnd_toEndOf="parent"
+          app:layout_constraintStart_toEndOf="@id/tv_calculation_resource_label"
+          app:layout_constraintTop_toBottomOf="@id/tv_calculation_resource_available"
+          style="?android:attr/progressBarStyleHorizontal"
+          />
+
+      <View
+          android:id="@+id/view1"
+          android:layout_width="match_parent"
+          android:layout_height="1dp"
+          android:layout_marginTop="10dp"
+          android:background="#ECEBF0"
+          app:layout_constraintTop_toBottomOf="@id/tv_calculation_resource_label"
+          />
+
+      <TextView
+          android:id="@+id/tv_network_resource_label"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_marginTop="20dp"
+          android:text="@string/network_resource"
+          android:textColor="@color/text_color"
+          android:textSize="@dimen/text_content_size"
+          app:layout_constraintTop_toBottomOf="@id/view1"
+          />
+
+      <TextView
+          android:id="@+id/tv_network_resource_used"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_marginLeft="10dp"
+          android:text="@string/used"
+          android:textSize="@dimen/text_data_size"
+          app:layout_constraintStart_toStartOf="@id/pb_network_resource"
+          app:layout_constraintTop_toTopOf="@id/tv_network_resource_label"
+          />
+      <TextView
+          android:id="@+id/tv_network_resource_available"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="@string/available"
+          app:layout_constraintEnd_toEndOf="parent"
+          app:layout_constraintTop_toTopOf="@id/tv_network_resource_used"
+          />
+
+      <android.support.v4.widget.ContentLoadingProgressBar
+          android:id="@+id/pb_network_resource"
+          android:layout_width="0dp"
+          android:layout_height="wrap_content"
+          android:layout_marginLeft="20dp"
+          android:max="100"
+          android:progress="50"
+          app:layout_constraintEnd_toEndOf="parent"
+          app:layout_constraintStart_toEndOf="@id/tv_network_resource_label"
+          app:layout_constraintTop_toBottomOf="@id/tv_network_resource_label"
+          style="?android:attr/progressBarStyleHorizontal"
+          />
+
+      <View
+          android:id="@+id/view2"
+          android:layout_width="match_parent"
+          android:layout_height="1dp"
+          android:layout_marginTop="20dp"
+          android:background="#ECEBF0"
+          app:layout_constraintTop_toBottomOf="@id/tv_network_resource_label"
+          />
+
+      <TextView
+          android:id="@+id/tv_redemption_ing_label"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_marginTop="20dp"
+          android:text="@string/redemption_ing"
+          android:textColor="@color/text_color"
+          android:textSize="@dimen/text_content_size"
+          app:layout_constraintTop_toBottomOf="@id/view2"
+          />
+
+      <TextView
+          android:id="@+id/tv_refund_amount"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:textColor="@color/text_color"
+          android:textSize="@dimen/text_content_size"
+          app:layout_constraintEnd_toEndOf="parent"
+          app:layout_constraintTop_toTopOf="@id/tv_redemption_ing_label"
+          />
+
+
+      <View
+          android:id="@+id/view3"
+          android:layout_width="match_parent"
+          android:layout_height="10dp"
+          android:layout_marginTop="20dp"
+          android:background="#ECEBF0"
+          app:layout_constraintTop_toBottomOf="@id/tv_redemption_ing_label"
+          />
+
+
+      <Button
+          android:id="@+id/btn_mortgage"
+          android:layout_width="wrap_content"
+          android:layout_height="30dp"
+          android:layout_marginTop="10dp"
+          android:background="@drawable/shape_blue_bg"
+          android:text="@string/mortgage"
+          android:textColor="@color/white_color"
+          android:textSize="@dimen/text_content_size"
+          android:textAllCaps="false"
+          app:layout_constraintEnd_toStartOf="@id/btn_redemption"
+          app:layout_constraintHorizontal_chainStyle="packed"
+          app:layout_constraintStart_toStartOf="parent"
+          app:layout_constraintTop_toBottomOf="@id/view3"
+          />
+      <Button
+          android:id="@+id/btn_redemption"
+          android:layout_width="wrap_content"
+          android:layout_height="30dp"
+          android:layout_marginLeft="10dp"
+          android:layout_marginTop="10dp"
+          android:background="@drawable/shape_white_bg"
+          android:text="@string/redemption"
+          android:textColor="@color/text_color"
+          android:textSize="@dimen/text_content_size"
+          android:textAllCaps="false"
+          app:layout_constraintEnd_toEndOf="parent"
+          app:layout_constraintStart_toEndOf="@id/btn_mortgage"
+          app:layout_constraintTop_toBottomOf="@id/view3"
+          />
+
+
+      <View
+          android:id="@+id/view4"
+          android:layout_width="match_parent"
+          android:layout_height="1dp"
+          android:layout_marginTop="10dp"
+          android:background="#ECEBF0"
+          app:layout_constraintTop_toBottomOf="@id/btn_mortgage"
+          />
+
+      <TextView
+          android:id="@+id/tv_calculation_mortgage_label"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_marginTop="10dp"
+          android:text="@string/calculation_mortgage"
+          android:textColor="@color/text_color"
+          android:textSize="@dimen/text_content_size"
+          app:layout_constraintTop_toBottomOf="@id/view4"
+          />
+
+      <TextView
+          android:id="@+id/tv_calculation_redemption_num"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="@string/available_redemption"
+          android:textColor="@color/text_color"
+          android:textSize="@dimen/text_data_size"
+          android:visibility="gone"
+          app:layout_constraintEnd_toEndOf="parent"
+          app:layout_constraintTop_toTopOf="@id/tv_calculation_mortgage_label"
+          />
+
+      <EditText
+          android:id="@+id/et_calculation_mortgage"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:layout_marginTop="10dp"
+          android:background="@null"
+          android:hint="@string/input_AAA"
+          android:inputType="numberDecimal"
+          android:textSize="@dimen/text_content_size"
+          app:layout_constraintTop_toBottomOf="@id/tv_calculation_mortgage_label"
+          />
+
+      <View
+          android:id="@+id/view5"
+          android:layout_width="match_parent"
+          android:layout_height="1dp"
+          android:layout_marginTop="10dp"
+          android:background="#ECEBF0"
+          app:layout_constraintTop_toBottomOf="@id/et_calculation_mortgage"
+          />
+
+      <TextView
+          android:id="@+id/tv_network_mortgage_label"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_marginTop="10dp"
+          android:text="@string/network_mortgage"
+          android:textColor="@color/text_color"
+          android:textSize="@dimen/text_content_size"
+          app:layout_constraintTop_toBottomOf="@id/view5"
+          />
+
+      <TextView
+          android:id="@+id/tv_network_redemption_num"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="@string/available_redemption"
+          android:textColor="@color/text_color"
+          android:textSize="@dimen/text_data_size"
+          android:visibility="gone"
+          app:layout_constraintEnd_toEndOf="parent"
+          app:layout_constraintTop_toTopOf="@id/tv_network_mortgage_label"
+          />
+
+      <EditText
+          android:id="@+id/et_network_mortgage"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:layout_marginTop="10dp"
+          android:background="@null"
+          android:hint="@string/input_AAA"
+          android:inputType="numberDecimal"
+          android:textSize="@dimen/text_content_size"
+          app:layout_constraintTop_toBottomOf="@id/tv_network_mortgage_label"
+          />
+      <View
+          android:id="@+id/view6"
+          android:layout_width="match_parent"
+          android:layout_height="1dp"
+          android:layout_marginTop="10dp"
+          android:background="#ECEBF0"
+          app:layout_constraintTop_toBottomOf="@id/et_network_mortgage"
+          />
+
+      <TextView
+          android:id="@+id/tv_receive_account_label"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_marginTop="10dp"
+          android:text="@string/receive_account"
+          android:textColor="@color/text_color"
+          android:textSize="@dimen/text_content_size"
+          app:layout_constraintTop_toBottomOf="@id/view6"
+          />
+
+      <EditText
+          android:id="@+id/et_receive_account"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:layout_marginTop="10dp"
+          android:background="@null"
+          android:hint="aaauser"
+          android:textSize="@dimen/text_content_size"
+          app:layout_constraintTop_toBottomOf="@id/tv_receive_account_label"
+          />
+
+      <TextView
+          android:id="@+id/tv_balance_show"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_marginTop="10dp"
+          android:text="@string/balance"
+          android:textColor="@color/text_color"
+          app:layout_constraintTop_toBottomOf="@id/et_receive_account"
+          />
+
+      <Button
+          android:id="@+id/btn_confirm_mortgage"
+          android:layout_width="match_parent"
+          android:layout_height="50dp"
+          android:layout_marginLeft="20dp"
+          android:layout_marginRight="20dp"
+          android:layout_marginTop="20dp"
+          android:background="@drawable/shape_blue_bg"
+          android:text="@string/mortgage"
+          android:textAllCaps="false"
+          android:textColor="@color/white_color"
+          android:textSize="@dimen/text_content_size"
+          app:layout_constraintTop_toBottomOf="@id/tv_balance_show"
+          />
+    </android.support.constraint.ConstraintLayout>
+
+  </ScrollView>
+</android.support.constraint.ConstraintLayout>

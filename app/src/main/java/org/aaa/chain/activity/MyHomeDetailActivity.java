@@ -1,24 +1,33 @@
 package org.aaa.chain.activity;
 
 import android.app.ProgressDialog;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
-import com.squareup.leakcanary.RefWatcher;
+import android.widget.Toast;
+import com.igexin.sdk.PushManager;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import okhttp3.Call;
+import okhttp3.Response;
 import org.aaa.chain.ChainApplication;
 import org.aaa.chain.Constant;
 import org.aaa.chain.JSInteraction;
 import org.aaa.chain.R;
 import org.aaa.chain.entities.ResumeRequestEntity;
+import org.aaa.chain.utils.HttpUtils;
 import org.aaa.chain.views.CommonPopupWindow;
 
-public class MyHomeDetailActivity extends BaseActivity {
+public class MyHomeDetailActivity extends BaseActivity implements CommonPopupWindow.TransferListener {
 
     private List<ResumeRequestEntity> dataEntities = new ArrayList<>();
     private TextView tvBalance;
     ProgressDialog dialog = null;
+    private CommonPopupWindow commonPopupWindow;
 
     @Override public int initLayout() {
         return R.layout.activity_my_home_detail;
@@ -30,26 +39,41 @@ public class MyHomeDetailActivity extends BaseActivity {
         assert bundle != null;
         String title = bundle.getString("title");
         setTitleName(title);
+
+        commonPopupWindow = new CommonPopupWindow(this);
+        ClipboardManager cm = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
         if (getResources().getString(R.string.myAccount).equals(title)) {
             $(R.id.cl_my_home_detail_account).setVisibility(View.VISIBLE);
             $(R.id.tv_change_phone_number).setOnClickListener(this);
             TextView account = $(R.id.tv_account_name);
-            account.setText(ChainApplication.getInstance().getBaseInfo().getDocs().get(0).getAccount());
+            account.setText(Constant.getCurrentAccount());
+            $(R.id.tv_account_copy).setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) {
+                    cm.setText(Constant.getCurrentAccount());
+                    Toast.makeText(MyHomeDetailActivity.this, getResources().getString(R.string.copy_success), Toast.LENGTH_LONG).show();
+                }
+            });
         } else if (getResources().getString(R.string.myWallet).equals(title)) {
             $(R.id.cl_my_home_detail_wallet).setVisibility(View.VISIBLE);
             tvBalance = $(R.id.tv_available_balance);
-            JSInteraction.getInstance().getBalance(Constant.getAccount(), new JSInteraction.JSCallBack() {
-                @Override public void onSuccess(String content) {
+            ((TextView) $(R.id.tv_wallet_address)).setText(Constant.getCurrentAccount());
+            JSInteraction.getInstance().getBalance(Constant.getCurrentAccount(), new JSInteraction.JSCallBack() {
+                @Override public void onSuccess(String... stringArray) {
                     runOnUiThread(new Runnable() {
                         @Override public void run() {
                             dialog.dismiss();
-                            tvBalance.setText(String.valueOf(content));
+                            if (!"undefined".equals(stringArray[0])) {
+                                tvBalance.setText(String.valueOf(stringArray[0]));
+                            } else {
+                                tvBalance.setText("0.0000 AAA");
+                            }
                         }
                     });
                 }
 
                 @Override public void onProgress() {
-                    dialog = ProgressDialog.show(MyHomeDetailActivity.this, "waiting...", "loading...");
+                    dialog = ProgressDialog.show(MyHomeDetailActivity.this, getResources().getString(R.string.waiting),
+                            getResources().getString(R.string.loading));
                 }
 
                 @Override public void onError(String error) {
@@ -58,14 +82,73 @@ public class MyHomeDetailActivity extends BaseActivity {
             });
 
             TextView tvMyResumeTitle = $(R.id.tv_my_resume_title);
-            tvMyResumeTitle.setText(String.format(getResources().getString(R.string.my_resume_title),
-                    ChainApplication.getInstance().getBaseInfo().getDocs().get(0).getExtra().getJobType()));
+            if (ChainApplication.getInstance().getBaseInfo() != null) {
+                tvMyResumeTitle.setText(String.format(getResources().getString(R.string.my_resume_title),
+                        ChainApplication.getInstance().getBaseInfo().getDocs().get(0).getExtra().getJobType()));
+            }
 
             $(R.id.rl_transaction_history).setOnClickListener(this);
             $(R.id.rl_my_resume).setOnClickListener(this);
             $(R.id.tv_transfer_accounts).setOnClickListener(this);
+
+            TextView privateKey = $(R.id.tv_private_key);
+            privateKey.setText(Constant.getCurrentPrivateKey());
+            TextView tvCopyPublicKey = $(R.id.tv_copy1);
+            TextView tvCopyPrivateKey = $(R.id.tv_copy2);
+            tvCopyPublicKey.setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) {
+                    cm.setText(Constant.getCurrentPublicKey());
+                    Toast.makeText(MyHomeDetailActivity.this, getResources().getString(R.string.copy_success), Toast.LENGTH_LONG).show();
+                }
+            });
+
+            tvCopyPrivateKey.setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) {
+                    cm.setText(Constant.getCurrentPrivateKey());
+                    Toast.makeText(MyHomeDetailActivity.this, getResources().getString(R.string.copy_success), Toast.LENGTH_LONG).show();
+                }
+            });
         } else {
             $(R.id.cl_my_home_detail_setting).setVisibility(View.VISIBLE);
+            $(R.id.btn_logout).setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) {
+                    ProgressDialog progressDialog = ProgressDialog.show(MyHomeDetailActivity.this, getResources().getString(R.string.logouting),
+                            getResources().getString(R.string.waiting));
+                    HttpUtils.getInstance().unSubscribePush(Constant.getCurrentAccount(), new HttpUtils.ServerCallBack() {
+                        @Override public void onFailure(Call call, IOException e) {
+                            Log.i("info", "unbind push error");
+                            runOnUiThread(new Runnable() {
+                                @Override public void run() {
+                                    progressDialog.dismiss();
+                                }
+                            });
+                        }
+
+                        @Override public void onResponse(Call call, Response response) {
+
+                            if (response.code() == 200) {
+                                Log.i("info", "unbind push success");
+
+                                PushManager.getInstance().stopService(MyHomeDetailActivity.this);
+                                runOnUiThread(new Runnable() {
+                                    @Override public void run() {
+                                        progressDialog.dismiss();
+                                        startActivity(LoginActivity.class, null);
+                                        finish();
+                                    }
+                                });
+                            } else {
+                                runOnUiThread(new Runnable() {
+                                    @Override public void run() {
+                                        progressDialog.dismiss();
+                                    }
+                                });
+                                Log.i("info", "unbind push error");
+                            }
+                        }
+                    });
+                }
+            });
         }
 
         dataEntities.clear();
@@ -81,11 +164,12 @@ public class MyHomeDetailActivity extends BaseActivity {
 
         switch (v.getId()) {
             case R.id.rl_transaction_history:
-                new CommonPopupWindow(MyHomeDetailActivity.this).pupupWindowTransactionHistory(dataEntities);
+                commonPopupWindow.pupupWindowTransactionHistory(dataEntities);
                 break;
 
             case R.id.tv_transfer_accounts:
-                new CommonPopupWindow(MyHomeDetailActivity.this).pupupWindowTransferAccounts();
+                commonPopupWindow.pupupWindowTransferAccounts(tvBalance.getText().toString());
+                commonPopupWindow.setTransferListener(this);
                 break;
             case R.id.rl_my_resume:
 
@@ -94,15 +178,35 @@ public class MyHomeDetailActivity extends BaseActivity {
                 startActivity(ResumeDetailsActivity.class, bundle);
                 break;
             case R.id.tv_change_phone_number:
-                new CommonPopupWindow(MyHomeDetailActivity.this).pupupWindowChangePhoneNumber();
+                commonPopupWindow.pupupWindowChangePhoneNumber();
                 break;
         }
     }
 
     @Override protected void onDestroy() {
         super.onDestroy();
-        RefWatcher refWatcher = ChainApplication.getRefWatcher(this);
-        refWatcher.watch(this);
         JSInteraction.getInstance().removeListener();
+    }
+
+    @Override public void transferSuccess() {
+        JSInteraction.getInstance().getBalance(Constant.getCurrentAccount(), new JSInteraction.JSCallBack() {
+            @Override public void onSuccess(String... stringArray) {
+                runOnUiThread(new Runnable() {
+                    @Override public void run() {
+                        dialog.dismiss();
+                        tvBalance.setText(String.valueOf(stringArray[0]));
+                    }
+                });
+            }
+
+            @Override public void onProgress() {
+                dialog = ProgressDialog.show(MyHomeDetailActivity.this, getResources().getString(R.string.waiting),
+                        getResources().getString(R.string.loading));
+            }
+
+            @Override public void onError(String error) {
+
+            }
+        });
     }
 }

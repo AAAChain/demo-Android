@@ -13,15 +13,14 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import com.google.gson.Gson;
-import com.squareup.leakcanary.RefWatcher;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import okhttp3.Call;
 import okhttp3.Response;
-import org.aaa.chain.ChainApplication;
 import org.aaa.chain.R;
 import org.aaa.chain.adapter.BaseRecyclerViewAdapter;
 import org.aaa.chain.adapter.BaseViewHolder;
@@ -122,7 +121,7 @@ public class SearchResourceFragment extends BaseFragment implements BindViewHold
                     try {
                         searchResponse = new Gson().fromJson(response.body().string(), SearchResponseEntity.class);
                         list.addAll(searchResponse.getDocs());
-                        getActivity().runOnUiThread(new Runnable() {
+                        Objects.requireNonNull(getActivity()).runOnUiThread(new Runnable() {
                             @Override public void run() {
                                 if (page > 1 && page <= searchResponse.getPages()) {
                                     adapter.updateList(true);
@@ -151,8 +150,6 @@ public class SearchResourceFragment extends BaseFragment implements BindViewHold
 
     @Override public void onDestroy() {
         super.onDestroy();
-        RefWatcher refWatcher = ChainApplication.getRefWatcher(getActivity());
-        refWatcher.watch(this);
     }
 
     @Override public void bindViewHolder(BaseViewHolder holder, SearchResponseEntity.DocsResponse dataEntity) {
@@ -160,7 +157,7 @@ public class SearchResourceFragment extends BaseFragment implements BindViewHold
             @Override public void onClick(View v) {
                 startActivity(new Intent(getActivity(), ResumeDetailsActivity.class).putExtra("type", 0)
                         .putExtra("price", dataEntity.getExtra().getPrice())
-                        .putExtra("name", dataEntity.getAccount())
+                        .putExtra("seller", dataEntity.getAccount())
                         .putExtra("hashId", dataEntity.getHashId()));
             }
         });

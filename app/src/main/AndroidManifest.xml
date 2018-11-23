@@ -17,16 +17,25 @@
   <uses-permission android:name="com.android.launcher.permission.READ_SETTINGS"/>
   <uses-permission android:name="android.permission.BROADCAST_STICKY"/>
   <uses-permission android:name="android.permission.BLUETOOTH"/>
+  <uses-permission android:name="android.permission.GET_TASKS" />
+  <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+  <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
   <uses-permission android:name="android.permission.CAMERA"/>
+  <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+  <uses-permission android:name="getui.permission.GetuiService.org.aaa.chain"/>
+
+  <permission
+      android:name="getui.permission.GetuiService.org.aaa.chain"
+      android:protectionLevel="normal"/>
 
   <application
       android:name=".ChainApplication"
       android:allowBackup="true"
       android:icon="${APP_ICON_VALUE}"
       android:label="${APP_LABEL_VALUE}"
-      android:roundIcon="@mipmap/ic_launcher_round"
       android:supportsRtl="true"
-      android:theme="@style/AppTheme">
+      android:theme="@style/AppTheme"
+      android:usesCleartextTraffic="true">
     <activity
         android:name=".activity.MainActivity"
         android:configChanges="orientation|keyboardHidden"
@@ -34,14 +43,7 @@
     </activity>
 
     <activity
-        android:name=".activity.LoginActivity"
-        android:label="@string/app_name1">
-      <intent-filter>
-        <action android:name="android.intent.action.MAIN"/>
-
-        <category android:name="android.intent.category.LAUNCHER"/>
-      </intent-filter>
-    </activity>
+        android:name=".activity.LoginActivity"/>
 
     <activity
         android:name=".activity.CreateSmallResumeActivity"
@@ -55,7 +57,63 @@
     <activity android:name=".activity.UpdateInfoActivity"/>
     <activity android:name=".activity.UploadResumeActivity"/>
     <activity android:name=".activity.ResumeDetailsActivity"/>
+    <activity
+        android:name=".activity.SplashActivity"
+        android:label="@string/app_name1">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN"/>
 
+        <category android:name="android.intent.category.LAUNCHER"/>
+      </intent-filter>
+    </activity>
+    <activity
+        android:name=".activity.ResourceManagementActivity"
+        android:windowSoftInputMode="adjustResize|stateHidden"/>
+
+    <meta-data
+        android:name="PUSH_APPID"
+        android:value="${GETUI_APP_ID}"/>
+    <meta-data
+        android:name="PUSH_APPKEY"
+        android:value="${GETUI_APP_KEY}"/>
+    <meta-data
+        android:name="PUSH_APPSECRET"
+        android:value="${GETUI_APP_SECRET}"/>
+
+    <!-- 配置SDK核心服务 -->
+    <service
+        android:name="com.igexin.sdk.PushService"
+        android:exported="true"
+        android:label="NotificationCenter"
+        android:process=":pushservice">
+      <intent-filter>
+        <action android:name="com.igexin.sdk.action.service.message"/>
+      </intent-filter>
+    </service>
+
+    <receiver
+        android:name="com.igexin.sdk.PushReceiver">
+      <intent-filter>
+        <action android:name="android.intent.action.BOOT_COMPLETED"/>
+        <action android:name="android.net.conn.CONNECTIVITY_CHANGE"/>
+        <action android:name="android.intent.action.USER_PRESENT"/>
+        <action android:name="com.igexin.sdk.action.refreshls"/>
+        <action android:name="android.intent.action.MEDIA_MOUNTED"/>
+        <action android:name="android.intent.action.ACTION_POWER_CONNECTED"/>
+        <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED"/>
+      </intent-filter>
+    </receiver>
+
+    <!-- 用户自定义服务继承自GTIntentService,作为SDK与APP桥梁服务,用来接收各种消息和命令回复-->
+    <service android:name="org.aaa.chain.utils.GeTuiIntentService"/>
+
+    <!-- 用户自定义服务名 -->
+    <service
+        android:name="org.aaa.chain.utils.GeTuiPushService"
+        android:exported="true"
+        android:label="PushService"
+        android:process=":pushservice">
+    </service>
   </application>
 
 </manifest>

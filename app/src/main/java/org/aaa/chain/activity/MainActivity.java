@@ -3,24 +3,30 @@ package org.aaa.chain.activity;
 import android.annotation.TargetApi;
 import android.support.annotation.NonNull;
 import android.support.v4.app.FragmentTabHost;
+import android.util.Log;
 import android.view.View;
 import android.widget.TabHost;
 import android.widget.Toast;
-import com.squareup.leakcanary.RefWatcher;
+import com.igexin.sdk.message.GTNotificationMessage;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import okhttp3.Call;
+import okhttp3.Response;
 import org.aaa.chain.ChainApplication;
+import org.aaa.chain.Constant;
 import org.aaa.chain.JSInteraction;
 import org.aaa.chain.R;
 import org.aaa.chain.adapter.TabItem;
 import org.aaa.chain.permissions.PermissionsManager;
 import org.aaa.chain.permissions.PermissionsResultAction;
+import org.aaa.chain.utils.HttpUtils;
 
 /**
  * Created by benson on 2018/5/3.
  */
 
-public class MainActivity extends BaseActivity {
+public class MainActivity extends BaseActivity implements ReceiveMsgListener {
 
     private FragmentTabHost tabHost;
     private List<TabItem> tabItemList;
@@ -33,16 +39,29 @@ public class MainActivity extends BaseActivity {
         tabHost = $(android.R.id.tabhost);
         tabHost.setup(this, getSupportFragmentManager(), android.R.id.tabcontent);
 
+        ChainApplication.getInstance().setReceiveMsgListener(this);
+
+        JSInteraction.getInstance().initConfig(Constant.getCurrentPrivateKey());
+        HttpUtils.getInstance().subscribePush(Constant.getCurrentAccount(), ChainApplication.cid, new HttpUtils.ServerCallBack() {
+            @Override public void onFailure(Call call, IOException e) {
+                Log.i("info", "bind push error");
+            }
+
+            @Override public void onResponse(Call call, Response response) {
+                Log.i("info", "bind push success");
+            }
+        });
         initTab();
         requestPermissions();
-        JSInteraction.getInstance().initWebKit(this);
     }
 
     private void initTab() {
         tabItemList = new ArrayList<>();
-        tabItemList.add(new TabItem(this, R.mipmap.tab_upload, R.mipmap.tab_upload, R.string.upload_home, UploadHomeFragment.class));
-        tabItemList.add(new TabItem(this, R.mipmap.tab_search_and_trans, R.mipmap.tab_search_and_trans, R.string.search_trans, SearchAndTransFragment.class));
-        tabItemList.add(new TabItem(this, R.mipmap.tab_my, R.mipmap.tab_my, R.string.my_home, MyHomeFragment.class));
+        tabItemList.add(
+                new TabItem(getApplicationContext(), R.mipmap.tab_upload, R.mipmap.tab_upload, R.string.upload_home, UploadHomeFragment.class));
+        tabItemList.add(new TabItem(getApplicationContext(), R.mipmap.tab_search_and_trans, R.mipmap.tab_search_and_trans, R.string.search_trans,
+                SearchAndTransFragment.class));
+        tabItemList.add(new TabItem(getApplicationContext(), R.mipmap.tab_my, R.mipmap.tab_my, R.string.my_home, MyHomeFragment.class));
 
         for (int i = 0; i < tabItemList.size(); i++) {
             TabItem tabItem = tabItemList.get(i);
@@ -99,7 +118,15 @@ public class MainActivity extends BaseActivity {
 
     @Override protected void onDestroy() {
         super.onDestroy();
-        RefWatcher refWatcher = ChainApplication.getRefWatcher(this);
-        refWatcher.watch(this);
+        ChainApplication.getInstance().removeReceiveMsgListener();
+    }
+
+    @Override public void receiveMsg(GTNotificationMessage message) {
+
+        tabItemList.get(1).view.findViewById(R.id.tv_badgeview).setVisibility(View.VISIBLE);
+    }
+
+    public boolean isShowNotifi() {
+        return tabItemList.get(1).view.findViewById(R.id.tv_badgeview).isShown();
     }
 }

@@ -8,12 +8,13 @@ public class OrderDataEntity implements Parcelable {
     private String buyer;
     private String seller;
     private String goodId;
-    private int price;
+    private float price;
     private long createTime;
     private long payTime;
-    private String payRefId;
-    private String deliverRefId;
+    private String payMsg;
+    private String deliverMsg;
     private int status;
+    private String ext1;
 
     public OrderDataEntity() {
     }
@@ -23,12 +24,13 @@ public class OrderDataEntity implements Parcelable {
         buyer = in.readString();
         seller = in.readString();
         goodId = in.readString();
-        price = in.readInt();
+        price = in.readFloat();
         createTime = in.readLong();
         payTime = in.readLong();
-        payRefId = in.readString();
-        deliverRefId = in.readString();
+        payMsg = in.readString();
+        deliverMsg = in.readString();
         status = in.readInt();
+        ext1 = in.readString();
     }
 
     public static final Creator<OrderDataEntity> CREATOR = new Creator<OrderDataEntity>() {
@@ -73,11 +75,11 @@ public class OrderDataEntity implements Parcelable {
         this.goodId = goodId;
     }
 
-    public int getPrice() {
+    public float getPrice() {
         return price;
     }
 
-    public void setPrice(int price) {
+    public void setPrice(float price) {
         this.price = price;
     }
 
@@ -97,20 +99,20 @@ public class OrderDataEntity implements Parcelable {
         this.payTime = payTime;
     }
 
-    public String getPayRefId() {
-        return payRefId;
+    public String getPayMsg() {
+        return payMsg;
     }
 
-    public void setPayRefId(String payRefId) {
-        this.payRefId = payRefId;
+    public void setPayMsg(String payMsg) {
+        this.payMsg = payMsg;
     }
 
-    public String getDeliverRefId() {
-        return deliverRefId;
+    public String getDeliverMsg() {
+        return deliverMsg;
     }
 
-    public void setDeliverRefId(String deliverRefId) {
-        this.deliverRefId = deliverRefId;
+    public void setDeliverMsg(String deliverMsg) {
+        this.deliverMsg = deliverMsg;
     }
 
     public int getStatus() {
@@ -119,6 +121,14 @@ public class OrderDataEntity implements Parcelable {
 
     public void setStatus(int status) {
         this.status = status;
+    }
+
+    public String getExt1() {
+        return ext1;
+    }
+
+    public void setExt1(String ext1) {
+        this.ext1 = ext1;
     }
 
     @Override public int describeContents() {
@@ -130,11 +140,12 @@ public class OrderDataEntity implements Parcelable {
         dest.writeString(buyer);
         dest.writeString(seller);
         dest.writeString(goodId);
-        dest.writeInt(price);
+        dest.writeFloat(price);
         dest.writeLong(createTime);
         dest.writeLong(payTime);
-        dest.writeString(payRefId);
-        dest.writeString(deliverRefId);
+        dest.writeString(payMsg);
+        dest.writeString(deliverMsg);
         dest.writeInt(status);
+        dest.writeString(ext1);
     }
 }

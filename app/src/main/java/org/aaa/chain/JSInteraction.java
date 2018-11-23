@@ -48,6 +48,13 @@ import org.json.JSONObject;
         webView.loadUrl(content);
     }
 
+    public void getPublicKey(String privateKey, JSCallBack callback) {
+        this.listener = callback;
+        listener.onProgress();
+        String content = "javascript:getPublicKey(" + "'" + privateKey + "'" + ")";
+        webView.loadUrl(content);
+    }
+
     public void encryptKey(String privateKey, String anotherPublicKey, String key, JSCallBack callback) {
         this.listener1 = callback;
         listener1.onProgress();
@@ -82,11 +89,107 @@ import org.json.JSONObject;
         webView.loadUrl(content);
     }
 
+    public void generationSecretKey(JSCallBack callBack) {
+        this.listener = callBack;
+        String content = "javascript:generationSecretKey()";
+        webView.loadUrl(content);
+    }
+
+    public void authPermission(String account) {
+        String content = "javascript:authPermission(" + "'" + account + "'" + ")";
+        webView.loadUrl(content);
+    }
+
+    public void transfer(String from, String to, String amount, String remark, JSCallBack callBack) {
+        this.listener = callBack;
+        String content = "javascript:transfer(" + "'" + from + "'" + "," + "'" + to + "'" + "," + "'" + amount + "'" + "," + "'" + remark + "'" + ")";
+        webView.loadUrl(content);
+    }
+
+    public void getAccountInfo(String account, JSCallBack callBack) {
+        this.listener = callBack;
+        String content = "javascript:getAccountInfo(" + "'" + account + "'" + ")";
+        webView.loadUrl(content);
+    }
+
+    public void mortgage(String account, String receiveAccount, String netq, String cpuq, JSCallBack callBack) {
+        this.listener = callBack;
+        String content = "javascript:mortgage("
+                + "'"
+                + account
+                + "'"
+                + ","
+                + "'"
+                + receiveAccount
+                + "'"
+                + ","
+                + "'"
+                + netq
+                + "'"
+                + ","
+                + "'"
+                + cpuq
+                + "'"
+                + ")";
+        webView.loadUrl(content);
+    }
+
+    public void redemption(String account, String receiveAccount, String netq, String cpuq, JSCallBack callBack) {
+        this.listener = callBack;
+        String content = "javascript:redemption("
+                + "'"
+                + account
+                + "'"
+                + ","
+                + "'"
+                + receiveAccount
+                + "'"
+                + ","
+                + "'"
+                + netq
+                + "'"
+                + ","
+                + "'"
+                + cpuq
+                + "'"
+                + ")";
+        webView.loadUrl(content);
+    }
+
+    public void buyram(String account, String receiveAccount, long bytesnum, JSCallBack callBack) {
+        this.listener = callBack;
+        String content = "javascript:buyram(" + "'" + account + "'" + "," + "'" + receiveAccount + "'" + "," + bytesnum + ")";
+        webView.loadUrl(content);
+    }
+
+    public void sellram(String account, long bytesnum, JSCallBack callback) {
+        this.listener = callback;
+        String content = "javascript:sellram(" + "'" + account + "'" + "," + bytesnum + ")";
+        webView.loadUrl(content);
+    }
+
+    public void getRamPrice(JSCallBack callback) {
+        this.listener = callback;
+        String content = "javascript:getRamPrice()";
+        webView.loadUrl(content);
+    }
+
+    public void getKeyAccounts(String publicKey, JSCallBack callback) {
+        this.listener = callback;
+        String content = "javascript:getKeyAccounts(" + "'" + publicKey + "'" + ")";
+        webView.loadUrl(content);
+    }
+
+    public void initConfig(String privateKey) {
+        String content = "javascript:initConfig(" + "'" + privateKey + "'" + ")";
+        webView.loadUrl(content);
+    }
+
     public class JsInteraction {
 
-        @JavascriptInterface public void getEosBalance(String error, String[] balance) {
-            Log.i("info", "balance:" + balance[0]);
-            listener.onSuccess(balance[0]);
+        @JavascriptInterface public void getAAABalance(String error, String balance) {
+            Log.i("info", "balance:" + balance);
+            listener.onSuccess(balance);
         }
 
         @JavascriptInterface public void getSignature(String signature) {
@@ -123,6 +226,7 @@ import org.json.JSONObject;
             Log.i("info", "payFailureStatus:" + error);
             listener.onError(error);
         }
+
         @JavascriptInterface public void paySuccess(String value) {
             Log.i("info", "paySuccess:" + value);
             listener.onSuccess(value);
@@ -132,13 +236,102 @@ import org.json.JSONObject;
             Log.i("info", "payFailure:" + error);
             listener.onError(error);
         }
+
+        @JavascriptInterface public void generationSecretKey(String privateKey, String publicKey) {
+            Log.i("info", "privateKey:" + privateKey);
+            Log.i("info", "publicKey:" + publicKey);
+            listener.onSuccess(privateKey, publicKey);
+        }
+
+        @JavascriptInterface public void getPublicKey(String publicKey) {
+            Log.i("info", "publicKey1:" + publicKey);
+            listener.onSuccess(publicKey);
+        }
+
+        @JavascriptInterface public void transfer(String result, String error) {
+            if (error == null) {
+                listener.onSuccess(result);
+                Log.i("info", "transfer successful:" + result);
+            } else {
+                listener.onError(error);
+                Log.i("info", "transfer failure:" + error);
+            }
+        }
+
+        @JavascriptInterface public void getAccountInfo(String result, String error) {
+            if (error == null) {
+                listener.onSuccess(result);
+                Log.i("info", "getAccountInfo successful:" + result);
+            } else {
+                listener.onError(error);
+                Log.i("info", "getAccountInfo failure:" + error);
+            }
+        }
+
+        @JavascriptInterface public void mortgageSuccess(String result) {
+            Log.i("info", "mortgageSuccess:" + result);
+            listener.onSuccess(result);
+        }
+
+        @JavascriptInterface public void mortgageError(String error) {
+            Log.i("info", "mortgageError:" + error);
+            listener.onError(error);
+        }
+
+        @JavascriptInterface public void redemptionSuccess(String result) {
+            Log.i("info", "redemptionSuccess:" + result);
+            listener.onSuccess(result);
+        }
+
+        @JavascriptInterface public void redemptionError(String error) {
+            Log.i("info", "redemptionError:" + error);
+            listener.onError(error);
+        }
+
+        @JavascriptInterface public void buyramSuccess(String result) {
+            Log.i("info", "buyramSuccess:" + result);
+            listener.onSuccess(result);
+        }
+
+        @JavascriptInterface public void buyramError(String error) {
+            Log.i("info", "buyramError:" + error);
+            listener.onError(error);
+        }
+
+        @JavascriptInterface public void sellramSuccess(String result) {
+            Log.i("info", "sellramSuccess:" + result);
+            listener.onSuccess(result);
+        }
+
+        @JavascriptInterface public void sellramError(String error) {
+            Log.i("info", "sellramError:" + error);
+            listener.onError(error);
+        }
+
+        @JavascriptInterface public void getRamPrice(String ramPrice, String error) {
+            Log.i("info", "getRamPrice:" + ramPrice);
+            if (error == null) {
+                listener.onSuccess(ramPrice);
+            } else {
+                listener.onError(error);
+            }
+        }
+
+        @JavascriptInterface public void getKeyAccounts(String accounts, String error) {
+            Log.i("info", "getKeyAccounts:" + accounts);
+            if (error == null) {
+                listener.onSuccess(accounts);
+            } else {
+                listener.onError(error);
+            }
+        }
     }
 
     private JSCallBack listener;
     private JSCallBack listener1;
 
     public interface JSCallBack {
-        void onSuccess(String content);
+        void onSuccess(String... stringArray);
 
         void onProgress();
 

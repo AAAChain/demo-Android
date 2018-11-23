@@ -12,6 +12,7 @@
 
   <string name="myAccount">我的账户</string>
   <string name="myWallet">我的钱包</string>
+  <string name="myResourceManagement">资源管理</string>
   <string name="setting">设置</string>
 
 
@@ -19,6 +20,44 @@
     <item>查询</item>
     <item>通知</item>
   </array>
+
+  <array name="resource_management_tab">
+    <item>CPU/NET</item>
+    <item>内存</item>
+  </array>
+
+  <string name="calculation_resource">计算资源</string>
+  <string name="network_resource">网络资源</string>
+  <string name="redemption_ing">赎回中</string>
+  <string name="redemption">赎回</string>
+  <string name="calculation_redemption">计算赎回</string>
+  <string name="network_redemption">网络赎回</string>
+  <string name="receive_account">接收账户</string>
+
+  <string name="buy">购买</string>
+  <string name="mortgage">抵押</string>
+  <string name="calculation_mortgage">计算抵押</string>
+  <string name="network_mortgage">网络抵押</string>
+
+  <string name="memory_resource">内存资源</string>
+  <string name="all_resource">全网内存</string>
+  <string name="sell">出售</string>
+  <string name="buy_memory">购买内存</string>
+  <string name="sell_memory">出售内存</string>
+  <string name="input_AAA">输入AAA数量</string>
+
+  <string name="available_redemption">可赎回： %s</string>
+  <string name="available">可用 %s</string>
+  <string name="used">已用 %s</string>
+  <string name="current_price">当前价格： %s AAA/kb</string>
+  <string name="balance">余额:%s</string>
+
+  <string name="copy">复制</string>
+  <string name="copy_success">复制成功</string>
+  e
+  <string name="generate_pwd">生成app密码</string>
+  <string name="create_account_description">生成新的账号(包含秘钥)</string>
+  <string name="create_account">创建账号</string>
 
 
   <string name="company_name">公司名称</string>
@@ -85,6 +124,36 @@
   <string name="position_and_company">游戏设计 雷尚科技</string>
   <string name="my_resume_title">链聘：%s工程师简历</string>
 
+  <string name="order_refresh_failure">订单刷新失败</string>
+  <string name="order_refresh_success">订单刷新成功</string>
+  <string name="modify_failure">修改失败</string>
+  <string name="waiting">等待中</string>
+  <string name="loading">加载中...</string>
+  <string name="logouting">正在退出</string>
+  <string name="create_order_failure">创建订单失败，请重试</string>
+  <string name="mortgage_failure">抵押失败</string>
+  <string name="mortgage_success">抵押成功</string>
+  <string name="redemption_success">赎回成功</string>
+  <string name="redemption_failure">赎回失败</string>
+  <string name="not_null">内容不能为空</string>
+  <string name="buy_success">购买成功</string>
+  <string name="buy_failure">购买失败</string>
+  <string name="sell_success">卖出成功</string>
+  <string name="sell_failure">卖出失败</string>
+  <string name="get_account_success">获取账户信息成功</string>
+  <string name="get_account_failure">获取账户信息失败</string>
+  <string name="order_updating">订单更新中</string>
+  <string name="order_sent">发送订单</string>
+  <string name="input_new_account">请输入新账户名</string>
+  <string name="account_name_rule">账户名必须是12位</string>
+  <string name="not_sufficient_funds">余额不足</string>
+
+  <string name="create_account_failure">创建账户失败，请重试</string>
+  <string name="create_account_success">创建账户成功</string>
+  <string name="creating">创建中</string>
+  <string name="input_password">请输入密码</string>
+  <string name="input_confirm_password">请再次确认密码</string>
+  <string name="password_not_identical">密码不一致</string>
 
   <string name="java_engineer">%s 高级工程师</string>
   <string name="applicant_name">刘钢锋</string>
@@ -107,12 +176,13 @@
   <string name="change_phone_number">更换手机号</string>
   <string name="commit">提交</string>
 
-  <string name="wallet_address">钱包地址</string>
+  <string name="wallet_account">钱包账号</string>
   <string name="available_balance">可用余额</string>
   <string name="transfer_accounts">转账</string>
   <string name="transfer_amount">转账金额</string>
-  <string name="account_password">账号密码</string>
+  <string name="wallet_password">钱包密码</string>
   <string name="transaction_history">交易历史</string>
+  <string name="private_key_export">私钥导出</string>
 
   <string name="user_agreement">用户协议</string>
   <string name="about_us">关于我们</string>
